@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+  <title>Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles/login.css">
+  <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/static/img/icone-mobile.png">
+
+
+</head>
+
+<body class="d-flex justify-content-center align-items-center"
+  style="height: 100vh; background-color: #121212; padding-top: 80px;">
+
+  <header
+    class="header position-fixed top-0 start-0 w-100 bg-dark p-3 d-flex justify-content-between align-items-center"
+    style="z-index: 100;">
+    <img src="/static/img/agendamento.png" alt="sua agenda" class="logo-header">
+
+      <a href="https://gccxbkoejigwkqwyvcav.supabase.co/storage/v1/object/public/app%20release//Sua%20agenda.apk" id="download-link" class="header-link" style="background-color: green; border: 1px solid white; "><strong>Download</strong> </a>
+ 
+  </header>
+
+  <!-- Modal de Login -->
+  <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #1e1e1e; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loginModalLabel">Login</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"
+            style="background-color: red;"></button>
+        </div>
+        <div class="modal-body">
+          <div id="error-messages"></div>
+      
+        
+          <form method="POST" action="{{ url_for('login.login') }}">
+            <div class="text-center mb-4">
+              <img src="/static/img/logo login.png" alt="Logo" style="border: none; height: 80px; width: auto;">
+            </div>
+          
+            <div class="mb-3">
+              <label for="empresa" class="form-label">Nome da Empresa</label>
+              <input type="text" id="empresa" name="empresa" class="form-control" required
+                placeholder="Digite o nome da empresa">
+            </div>
+            <div class="mb-3">
+              <label for="usuario" class="form-label">Usuário</label>
+              <input type="text" id="usuario" name="usuario" class="form-control" required
+                placeholder="Digite o nome do usuário">
+            </div>
+            <div class="mb-3">
+              <label for="senha" class="form-label">Senha</label>
+              <input type="password" id="senha" name="senha" class="form-control" required placeholder="Digite a senha">
+            </div>
+            <div class="mb-4">
+              <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#ModalEmail"
+                style="color: white;">Esqueci minha senha</button>
+          
+              <a href="/adquirir">cadastre-se</a>
+              <button type="submit" class="btn btn-primary w-100">Entrar</button>
+            </div>
+          </form>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Redefinição de Senha -->
+  <div class="modal fade" id="ModalEmail" tabindex="-1" aria-labelledby="ModalEmailLabel"
+    style="background-color: #121212; color: white;" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #1e1e1e; color: white;">
+        <div class="modal-header" style="background-color: #1e1e1e; color: white;">
+          <h5 class="modal-title" id="ModalEmailLabel">Redefinir Senha</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" style="background-color: red;"></button>
+        </div>
+        <div class="modal-body" style="background-color: #1e1e1e; color: white;">
+          <h3>Para redefinir sua senha, entre em contato com o usuario administrador de sua empresa.</h3><br>
+          <h5>Ou contate o suporte e informe seu email e CNPJ empresa.</h5><a href="https://wa.me/3497227288?text=ola esqueci minha senha" target="_blank"><strong>Suporte</strong></a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-container" style="max-width: 400px; width: 100%; margin: auto;">
+    <div class="text-center mb-4">
+      <img src="/static/img/logo login.png" alt="Logo" style="border: none; height: 100px; width: auto;">
+    </div>
+
+
+    <!-- Botões -->
+    <div id="buttons" class="text-center">
+      <a href="/agendamento" class="btn btn-primary">Sou cliente</a>
+      <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#loginModal">Quero acessar minha
+        agenda</button>
+    </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault(); // Previne o recarregamento da página
+
+        const formData = new FormData(form);
+        const errorMessages = document.getElementById("error-messages");
+        errorMessages.style.display = "none"; // Oculta os erros anteriores
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: formData,
+            });
+
+            const contentType = response.headers.get("content-type");
+
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("Resposta do servidor não é JSON.");
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                errorMessages.innerHTML = data.message || "Erro desconhecido."; // ⬅️ Alterado para innerHTML
+                errorMessages.style.display = "block";
+            }
+        } catch (error) {
+            console.error("Erro ao enviar o formulário:", error);
+            errorMessages.textContent = "Erro de conexão com o servidor.";
+            errorMessages.style.display = "block";
+        }
+    });
+});
+
+
+</script>
+
+
+  <script>
+    let deferredPrompt;
+
+    // Verifica se o aplicativo já está instalado
+    const isAppInstalled = () => {
+      // Para iOS: navigator.standalone
+      if (window.navigator.standalone) {
+        return true;
+      }
+
+      // Para navegadores compatíveis com display-mode
+      if (window.matchMedia('(display-mode: standalone)').matches) {
+        return true;
+      }
+
+      return false;
+    };
+
+    const checkInstallation = () => {
+      if (isAppInstalled()) {
+        console.log("O aplicativo já está instalado.");
+        document.getElementById('add-to-home').style.display = 'none';
+      } else {
+        console.log("O aplicativo não está instalado.");
+        document.getElementById('add-to-home').style.display = 'block';
+      }
+    };
+
+    // Verificação inicial
+    checkInstallation();
+
+    // Detecta o evento 'beforeinstallprompt' para dispositivos compatíveis
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+
+      // Exibe o botão se não estiver instalado
+      if (!isAppInstalled()) {
+        document.getElementById('add-to-home').style.display = 'block';
+      }
+
+      document.getElementById('add-to-home').addEventListener('click', () => {
+        deferredPrompt.prompt();
+
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('Usuário aceitou o prompt.');
+          } else {
+            console.log('Usuário rejeitou o prompt.');
+          }
+          deferredPrompt = null;
+        });
+      });
+    });
+
+    // Atualiza a verificação no caso de mudanças no display-mode
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', checkInstallation);
+  </script>
+  <script src="/static/scripts/script.js"></script>
+  <!-- Scripts do Bootstrap -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+
+</body>
+
+</html>

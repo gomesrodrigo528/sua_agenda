@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultar Agendamentos</title>
+    <link rel="stylesheet" href="/static/styles/agenda_cliente.css">
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+</head>
+
+<header class="header">
+    <img src="/static/img/agendamento.png" alt="sua agenda" class="logo-header">
+    <a href="https://wa.me/+5534997227288?text='Gostaria de ter minha agenda'"
+     class="header-link" target='blank' style="background-color: #FDC81D;">Quero a minha agenda</a>
+</header>
+<body>
+
+    <div class="container">
+        <div class="dados">
+            <form id="formAgendamentos">
+                <h1>Consultar Agendamentos</h1>
+                <label for="email">Seu email:</label>
+                <input type="email" id="email" name="email" placeholder="Digite seu email" required>
+                <button type="button" onclick="buscarAgendamentos()">Buscar Agendamentos</button>
+            </form>
+        </div>
+        <div class="msg" style="display: none;">
+            <h2>Agendamentos para você:</h2>
+        </div>
+        <div id="resultado"></div>
+    </div>
+
+    
+    <script src="/static/scripts/agenda_cliente.js"></script>
+</body>
+<footer class="footer">
+    <a href="/agendamento" class="footer-btn">Novo Agendamento</a>
+    <a href="/login" class="footer-btn">Início</a>
+</footer>
+
+</html>

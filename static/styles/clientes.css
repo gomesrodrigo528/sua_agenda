@@ -1,0 +1,144 @@
+/* Variáveis para cores e tamanhos para fácil manutenção */
+:root {
+    --cor-primaria: #343a40;
+    --cor-texto: black;
+    --tamanho-fonte-botao: 1rem;
+    --padding-botao: 10px 15px;
+    --gap-botoes: 10px;
+}
+
+/* Estilos para a caixa de rolagem da lista */
+.tabela-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Bloqueia o scroll da página */
+body {
+    overflow: hidden;
+}
+
+/* Estilos para fixar o cabeçalho da tabela */
+.tabela-scroll thead {
+    position: sticky;
+    top: 0;
+    background-color: var(--cor-primaria);
+    z-index: 1;
+}
+
+/* Estilos para o header */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+}
+
+/* Ajuste para o botão do menu */
+#toggle-menu {
+    font-size: 2rem;
+    color: var(--cor-texto);
+    background-color: transparent;
+    border: none;
+}
+
+/* Ajuste para o botão Criar Cliente */
+#btnCriarCliente {
+    margin-left: auto;
+    margin-top: 0;
+}
+
+/* Estilos para os botões (editar, WhatsApp) */
+.botoes {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--gap-botoes);
+    align-items: center;
+    margin-top: 10px;
+}
+
+.botoes button {
+    font-size: var(--tamanho-fonte-botao);
+    padding: var(--padding-botao);
+    flex-grow: 1;
+    text-align: center;
+}
+
+#btnEnviarMensagem-responsivo {
+    display: none;
+}
+
+/* Estilo para dispositivos móveis */
+@media (max-width: 768px) {
+    .table th:nth-child(2),
+    .table td:nth-child(2),
+    .table th:nth-child(3),
+    .table td:nth-child(3) {
+        display: none;
+    }
+
+    .btnEnviarMensagem-responsivo {
+        display: block;
+    }
+
+    #btnVoltar {
+        margin-left: 2%;
+        display: block;
+    }
+
+    #toggle-menu {
+        font-size: 1.5rem;
+    }
+
+    .container {
+        padding: 0 10px;
+    }
+
+    .btn {
+        font-size: 0.9rem;
+        padding: 8px 16px;
+    }
+
+    .botoes {
+        flex-direction: row;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .botoes button {
+        font-size: 0.9rem;
+        width: 45%;
+        padding: 8px 10px;
+    }
+
+    .btn.btn-success.btn-sm {
+        display: none;
+    }
+
+    #btnEnviarMensagem-responsivo {
+        display: inline-block;
+    }
+}
+
+/* Estilo para dispositivos maiores (desktop) */
+@media (min-width: 769px) {
+    .btn.btn-success.btn-sm .btn-group {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+    }
+
+    #btnVoltar {
+        display: none;
+    }
+
+    #btnEnviarMensagem-responsivo {
+        display: none;
+    }
+
+    .btn.btn-success.btn-sm {
+        display: inline-block;
+    }
+}

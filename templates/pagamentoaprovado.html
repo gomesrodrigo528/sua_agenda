@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Empresa e Usuário</title>
+    <link rel="stylesheet" href="/static/styles/telascadastro.css"> <!-- Referência para o CSS externo -->
+</head>
+
+<body>
+    <div class="container">
+        <div class="title">
+        <p>Preencha as suas informações abaixo para começar a usar a sua agenda!</p>
+        <h3>Cadastro</h3>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <p class="alert {{ category }}">{{ message }}</p>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% if not empresa_cadastrada %}
+
+
+    </div>
+        <!-- Formulário de Cadastro da Empresa -->
+        <form method="POST" action="/sucesso">
+            <label for="nome_empresa">Nome da Empresa:</label>
+            <input type="text" id="nome_empresa" name="nome_empresa" required placeholder="Sua Empresa">
+
+            <label for="cnpj">CNPJ ou CPF:</label>
+            <input type="text" id="cnpj" name="cnpj" required placeholder="XX.XXX.XXX/XXXX-XX">
+
+            <label for="email">E-mail:</label>
+            <input type="email" id="email" name="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" placeholder="sua@empresa">
+
+            <label for="descricao">Descrição:</label>
+            <textarea id="descricao" name="descricao" rows="3" required maxlength="30" placeholder="A melhor clínica da cidade"></textarea>
+
+            <label for="setor">Setor</label>
+            <select id="setor" name="setor" required>
+                <option value="Tecnologia">Tecnologia</option>
+                <option value="Beleza">Beleza</option>
+                <option value="Barbearia">Barbearia</option>
+                <option value="Saude">Saúde</option>
+                <option value="Outro">Outro</option>
+            </select>
+
+            <label for="tel_empresa">Telefone:</label>
+            <input type="tel" id="tel_empresa" name="tel_empresa" required placeholder="(00) 0000-0000">
+
+            <div class="endereco-container">
+                <div class="campo-cidade">
+                    <label for="cidade">Cidade:</label>
+                    <input type="text" id="cidade" name="cidade" required placeholder="SUA CIDADE">
+                </div>
+                <div class="campo-cep">
+                    <label for="cep">.</label>
+                    <input type="number" id="cep" name="cep" required placeholder="CEP (codigo postal)" maxlength="8">
+                </div>
+            </div>
+
+            <label for="endereco">Endereço:</label>
+            <input type="text" id="endereco" name="endereco" required placeholder="Rua São Paulo, 123">
+
+            <button type="submit">Cadastrar Empresa</button>
+        </form>
+        {% else %}
+        <!-- Formulário de Cadastro do Primeiro Usuário -->
+        <form method="POST" action="/sucesso">
+            <input type="hidden" name="empresa_id" value="{{ empresa_id }}">
+            <label for="nome_usuario">Nome do Usuário:</label>
+            <input type="text" id="nome_usuario" name="nome_usuario" required placeholder="Seu Nome">
+
+            <label for="email_usuario">E-mail:</label>
+            <input type="email" id="email_usuario" name="email_usuario" required placeholder="seu@email.com">
+
+            <label for="telefone">Telefone:</label>
+            <input type="tel" id="telefone" name="telefone" required placeholder="(00) 0000-0000">
+
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha" required>
+
+            <button type="submit">Cadastrar Usuário</button>
+        </form>
+        {% endif %}
+    </div>
+</body>
+
+</html>

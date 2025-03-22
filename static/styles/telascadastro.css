@@ -1,0 +1,113 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 100%;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #1E1E1E;
+    border-radius: 8px;
+}
+
+p {
+    font-size: 16px;
+}
+
+h3 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+label {
+    font-size: 14px;
+}
+
+input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, select {
+    background-color: #2c2c2c;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+input[type="text"]:focus, input[type="email"]:focus, input[type="tel"]:focus, input[type="number"]:focus, textarea:focus, select:focus {
+    border-color: #6C63FF;
+    outline: none;
+}
+
+textarea {
+    resize: vertical;
+}
+
+button {
+    background-color: #6C63FF;
+    border: none;
+    color: #fff;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background-color: #4a44cc;
+}
+
+.endereco-container {
+    display: flex;
+    gap: 10px;
+}
+
+
+
+.campo-cidade input {
+    width: 100%;
+    
+}
+
+.campo-cep input  {
+    width: 80%;
+    margin-left: 50%;
+}
+
+@media (max-width: 768px) {
+    .title{
+        max-width: 80%;
+        align-items: center;
+    }
+    form{
+        max-width: 90%;
+    }
+    .endereco-container {
+        flex-direction: column;
+    }
+
+    .campo-cep label {
+        display: none;
+        
+    }
+    .campo-cidade{
+        width: 90%;
+    }
+
+    .campo-cep input {
+        width: 90%;
+        margin-left: 0;
+    }
+    
+
+   
+}

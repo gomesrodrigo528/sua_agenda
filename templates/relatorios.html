@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <link rel="stylesheet" href="/static/styles/relatorios.css">
+    <link rel="stylesheet" href="/static/styles/users.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+</head>
+
+
+<body >
+
+    <div>
+        <button id="toggle-menu" class="d-block d-md-none"
+            style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
+            ☰
+        </button>
+    </div>
+    <div class="d-flex" style="flex: 1; width: 100%;">
+
+
+        <!-- Menu Lateral -->
+        <div id="menu-container"></div>
+        
+        <!-- Conteúdo Principal -->
+        <div class="container mt-4">
+            <div class="container mt-4">
+                
+                
+                <div class="text-center mb-4">
+                    <h1 class="display-5">Dashboard de Relatórios</h1>
+                    <p class="text-muted">Visualize informações importantes sobre sua operação.</p>
+                </div>
+                
+                <!-- Sub-Abas -->
+                <ul class="nav nav-pills mb-4" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="financeiro-tab" data-bs-toggle="tab" href="#financeiro" role="tab">Financeiro</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="atendimentos-tab" data-bs-toggle="tab" href="#atendimentos" role="tab">Atendimentos</a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="usuarios-tab" data-bs-toggle="tab" href="#usuarios" role="tab">Desempenho de Usuários</a>
+                    </li>
+                    <!-- Nova Aba de Gráficos -->
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="graficos-tab" data-bs-toggle="tab" href="#graficos" role="tab">Gráficos</a>
+                    </li>
+                </ul>
+                
+                <!-- Conteúdo das Sub-Abas -->
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="financeiro" role="tabpanel">
+                        <div id="cardsContainerFinanceiro" class="row"></div>
+                    </div>
+                    <div class="tab-pane fade" id="atendimentos" role="tabpanel">
+                        <div id="cardsContainerAtendimentos" class="row"></div>
+                    </div>
+                    <div class="tab-pane fade" id="usuarios" role="tabpanel">
+                        <div id="cardsContainerUsuarios" class="row"></div>
+                    </div>
+                    <!-- Conteúdo dos Gráficos -->
+                    <div class="tab-pane fade" id="graficos" role="tabpanel">
+                        <div class="row mt-5">
+                            <div class="col-md-6">
+                                <h3>Faturamento por Usuário</h3>
+                                <canvas id="graficoFaturamento"></canvas>
+                            </div>
+                            <div class="col-md-6">
+                                <h3>Evolução de Atendimentos</h3>
+                                <canvas id="graficoAtendimentos"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="loading">Carregando...</div>
+    <script src="static/scripts/menu.js"></script>
+    <script>
+        renderMenu('menu-container');
+        </script>
+    
+    
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+    // Variáveis para armazenar os dados passados pelo Flask
+    const financeiroData = {{ financeiro | tojson }}; 
+    const atendimentosData = {{ atendimentos | tojson }}; 
+    const financeiroUsuarioData = {{ financeiro_usuario | tojson }};
+
+    if (typeof financeiroData === 'undefined' || typeof atendimentosData === 'undefined' || typeof financeiroUsuarioData === 'undefined') {
+        console.error('Erro: Dados financeiros ou de atendimentos não estão definidos.');
+        return;
+    }
+
+    // Variáveis para os elementos das abas
+    const tabLinks = document.querySelectorAll('#myTab .nav-link');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    function alternarAbas(event) {
+        event.preventDefault();
+
+        tabLinks.forEach(link => link.classList.remove('active'));
+        tabPanes.forEach(pane => pane.classList.remove('show', 'active'));
+
+        const targetTab = event.target;
+        targetTab.classList.add('active');
+        const targetPane = document.querySelector(targetTab.getAttribute('href'));
+        targetPane.classList.add('show', 'active');
+    }
+
+    tabLinks.forEach(link => {
+        link.addEventListener('click', alternarAbas);
+    });
+
+    // Carregar os dados nos cards
+    carregarDadosNosCards(financeiroData, atendimentosData, financeiroUsuarioData);
+    inicializarGraficos(financeiroUsuarioData, atendimentosData);
+});
+
+function criarCard(titulo, valor, containerId, cor) {
+    const container = document.getElementById(containerId);
+    const card = document.createElement('div');
+    card.className = `card col-md-4 mb-4 ${cor}`;
+    card.innerHTML = `
+        <div class="card-body">
+            <h5 class="card-title">${titulo}</h5>
+            <p class="card-text">${valor}</p>
+        </div>`;
+    container.appendChild(card);
+}
+
+function carregarDadosNosCards(financeiroData, atendimentosData, financeiroUsuarioData) {
+    const financeiroTotal = Object.values(financeiroData).reduce((acc, val) => acc + val, 0);
+    const atendimentosTotal = Object.values(atendimentosData).reduce((acc, val) => acc + val, 0);
+
+    // Cards Financeiro
+    criarCard('Faturamento Total', `R$ ${financeiroTotal.toFixed(2)}`, 'cardsContainerFinanceiro', 'card-financeiro');
+    
+    // Cards Atendimentos
+    criarCard('Atendimentos Totais', atendimentosTotal, 'cardsContainerAtendimentos', 'card-atendimento');
+    
+    // Cards de Usuários
+    for (const [usuario, valor] of Object.entries(financeiroUsuarioData)) {
+        criarCard(` ${usuario}`, `R$ ${valor.toFixed(2)}`, 'cardsContainerUsuarios', 'card-usuario');
+    }
+}
+
+function inicializarGraficos(financeiroUsuarioData, atendimentosData) {
+    const ctxFaturamento = document.getElementById('graficoFaturamento').getContext('2d');
+    const ctxAtendimentos = document.getElementById('graficoAtendimentos').getContext('2d');
+    
+    // Gráfico de Faturamento por Usuário
+    new Chart(ctxFaturamento, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(financeiroUsuarioData),
+            datasets: [{
+                label: 'Faturamento por Usuário',
+                data: Object.values(financeiroUsuarioData),
+                backgroundColor: '#6f42c1',
+                borderColor: '#6f42c1',
+                borderWidth: 1
+            }]
+        }
+    });
+
+    // Gráfico de Evolução de Atendimentos
+    new Chart(ctxAtendimentos, {
+        type: 'line',
+        data: {
+            labels: Object.keys(atendimentosData),
+            datasets: [{
+                label: 'Atendimentos',
+                data: Object.values(atendimentosData),
+                fill: false,
+                borderColor: '#28a745',
+                tension: 0.1
+            }]
+        }
+    });
+}
+</script>
+</body>
+
+</html>

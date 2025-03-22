@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renovação de Plano</title>
+    <link rel="stylesheet" href="/static/styles/telascadastro.css">
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">Renovação de Plano</h2>
+        <p>insira seu CNPJ ou CPF para renovar</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="{{ url_for('renovacao.renovacao') }}">
+            <div class="campo">
+                <label for="cnpj">CNPJ ou CPF:</label>
+                <input type="text" id="cnpj" name="cnpj" required placeholder="XX.XXX.XXX/XXXX-XX">
+            </div>
+            <button type="submit">Renovar Plano</button>
+        </form>
+    </div>
+</body>
+</html>

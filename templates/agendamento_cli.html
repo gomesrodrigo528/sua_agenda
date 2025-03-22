@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link rel="stylesheet" href="/static/styles/agendamentos.css">
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+
+</head>
+<header class="header">
+    <img src="/static/img/agendamento.png" alt="sua agenda" class="logo-header">
+    <a href="/adquirir" class="header-link"
+        style="background-color: #FDC81D;">Quero a minha agenda</a>
+</header>
+
+<body>
+
+
+    <body>
+
+
+
+        <div class="corpo">
+            <h3>Buscar Empresa</h3>
+            <div id="search-container" class="search-container">
+                <input id="search-bar" type="text" class="form-control" placeholder="Buscar empresa por nome">
+                <button id="btn-definir-cidade" class="btn-quadrado">
+                    <i class="bi bi-geo-alt-fill"></i>
+                </button>
+            </div>
+            
+            <!-- Campo de busca -->
+            <div id="empresas-lista"></div>
+
+            <div class="container">
+                <div id="informacoes-empresa"></div>
+                <!-- Modal de Agendamento -->
+               <div id="modal-agendamento" style="display: none;">
+
+  
+
+                    <form id="form-agendamento">
+
+
+                        <h4 class="titulo">Selecione o servico e o profissional</h4>
+                        <select name="servico_id" id="servico-select" onchange="carregarUsuarioResponsavel()">
+                            <option value="">Selecione o Serviço</option>
+                        </select>
+                        
+                        <select name="usuario_id" id="profissional-select">
+                            <option value="">Selecione o Profissional</option>
+                        </select>
+                        <label for="data-input" class="form-label">Selecione a data</label>
+                        <input id="data-input" type="date" name="data" required />
+                        <div id="horarios-disponiveis" class="horarios-container"> </div>
+                        <div id="horario-selecionado"></div>
+                        <label for="descricao" class="form-label">Descrição</label>
+                        <textarea name="descricao" placeholder="Descrição (opcional)"></textarea>
+                        <hr>
+
+
+                        <h4>Suas informações</h4>
+                        <input type="text" name="nome" placeholder="Seu nome" required />
+                        <input id="telefone-input" type="tel" name="telefone" placeholder="Telefone" required />
+                        <input type="email" name="email" placeholder="E-mail" required />
+
+                        <button type="submit" class="btn btn-success">Agendar</button>
+                        <button id="fechar-modal" class="btn btn-danger">cancelar</button>
+                    </form>
+                </div>
+
+                <div id="loading-screen"
+                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;">
+                    <div class="spinner"
+                        style="width: 50px; height: 50px; border: 5px solid #ccc; border-top: 5px solid #000; border-radius: 50%; animation: spin 1s linear infinite;">
+                    </div>
+                    <p style="color: #fff; margin-top: 10px;"> Agendando...</p>
+                </div>
+
+                <script src="/static/scripts/agendamento.js">  </script>
+    </body>
+    </div>
+    <footer class="footer">
+        <a href="/login" class="footer-btn">inicio</a>
+        <a href="/agenda_cliente" class="footer-btn-2">Ver meus agendamentos</a>
+    </footer>
+
+
+</html>

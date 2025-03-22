@@ -1,0 +1,419 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #121212;
+    color: #f5f5f5;
+    margin: 0;
+    padding: 0 0 100px 0; /* Inclui espaço para o footer fixo */
+}
+
+.corpo {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.form-label{
+    display: none;
+}
+
+h1 {
+    text-align: center;
+    margin: 20px 0;
+}
+
+
+.btn-quadrado {
+    width: 50px;  /* Define a largura */
+    height: 50px; /* Define a altura para ser um quadrado */
+    border-radius: 12px; /* Arredonda as bordas */
+    border: none; /* Remove a borda padrão */
+    background-color: #6c63ff; /* Cor de fundo (ajuste conforme o design) */
+    color: white; /* Cor do ícone */
+    font-size: 24px; /* Tamanho do ícone */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.search-container {
+    display: flex; /* Organiza os elementos lado a lado */
+    align-items: center; /* Alinha verticalmente */
+    gap: 10px; /* Espaço entre o input e o botão */
+    justify-content: center; /* Centraliza no contêiner */
+    width: 100%; /* Ocupa toda a largura disponível */
+}
+
+/* Ajuste opcional para o input */
+#search-bar {
+    max-width: 60%;
+    padding: 10px;
+}
+
+/* Ajuste opcional para o botão */
+.btn-quadrado {
+    width: 50px;
+    height: 50px;
+}
+
+
+/* Efeito de hover */
+.btn-quadrado:hover {
+    background-color: #5a54e1;
+}
+
+/* Efeito de clique */
+.btn-quadrado:active {
+    background-color: #4b46c4;
+}
+
+
+.footer {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 15px;
+    background-color: #1e1e1e;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 1000;
+}
+
+.mb-3{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 90%;
+}
+.footer-btn,
+.header .header-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 10px 20px;
+    background-color: #007bff;
+    border-radius: 8px;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.footer-btn:hover,
+.header .header-link:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+.header img {
+    height: 80px;
+    width: auto;
+    border-radius: 8px;
+}
+
+input,
+select,
+textarea,
+button {
+    padding: 12px;
+    font-size: 14px;
+    border: 1px solid #333;
+    border-radius: 5px;
+    background-color: #2c2c2c;
+    color: #f5f5f5;
+    margin-bottom: 10px; /* Melhorando o espaçamento */
+}
+
+button,
+.btn-agendar {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 8px 12px;
+}
+
+button:hover,
+.btn-agendar:hover {
+    background-color: #0056b3;
+}
+
+#empresas-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.card {
+    border: 1px solid #333;
+    border-radius: 8px;
+    width: 350px;
+    height: 180px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+    background-color: #292929;
+    color: #f5f5f5;
+    padding: 15px; /* Melhorando o espaçamento interno */
+}
+
+.card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.card-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.tiulo {
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo {
+    border-radius: 8px;
+    width: 100px;
+    height: 100px;
+}
+
+#horarios-disponiveis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.container {
+    margin-top: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Detalhes da empresa */
+.empresa-info {
+
+    position: relative;
+    padding: 25px;
+    text-align: center;
+    width: 100%; /* Ajustando o tamanho */
+    max-width: 480px; /* Limitando o tamanho */
+    margin: 0 auto; /* Centralizando */
+}
+
+.logo-descricao {
+    width: 120px;
+    height: auto;
+    margin: 0 auto 20px auto;
+    display: block;
+    border-radius: 100%;
+    box-shadow: 5px 5px 10px #121212, -5px -5px 10px #292929;
+}
+
+.nome-empresa {
+    text-align: center;
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #fff;
+}
+
+.descricao,
+.horario,
+.telefone {
+    font-size: 16px;
+    margin: 8px 0; /* Melhorando o espaçamento */
+}
+
+.comodidades-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+    justify-content: space-evenly;
+    margin: 20px 0;
+    flex-wrap: wrap;
+}
+
+.botao-neumorphism {
+    width: 150px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #1f1f1f;
+    border-radius: 15px;
+
+    color: #fff;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.botao-neumorphism:hover {
+    box-shadow: inset 5px 5px 15px #121212, inset -5px -5px 15px #292929;
+    background: #292929;
+}
+
+.botao-neumorphism i {
+    font-size: 28px;
+    margin-bottom: 12px; /* Aumentando o espaçamento */
+    color: #4caf50; /* Verde para ícones */
+}
+
+.botao-neumorphism span {
+    font-size: 14px;
+}
+
+.whatsapp-card {
+    position: fixed;
+    bottom: 20px; /* Distância do fundo */
+    right: 20px;  /* Distância da lateral direita */
+   
+    padding:0;
+    transition: all 0.3s ease-in-out;
+    margin-bottom: 60px;
+    z-index: 999; /* Garantir que o botão fique sobre os outros elementos */
+}
+
+.whatsapp-card img {
+    width: 55px;
+    height: 55px;
+    margin-right: 12px;
+}
+
+.whatsapp-card img:hover {
+    transform: scale(1.1);
+}
+.footer-btn-2{
+    color: #f5f5f5;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 10px 20px;
+    background-color:#1da840;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+.footer-btn-2:hover {
+    background-color: #0056b3;
+}
+
+
+@media screen and (max-width: 768px) {
+    .botao-neumorphism {
+        width: 100px;
+        height: 100px;
+    }
+    .footer-btn-2{
+        padding: auto;
+        width:auto;
+        background-color: red;
+        height: 48px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        transition: all 0.3s ease-in-out;
+ 
+    }
+    
+    
+    .comodidades-container{
+        max-width: 90%;
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    }
+    .header-link {
+        font-size: 10px;
+    }
+    .form-label{
+        display: block;
+    }
+
+
+    header{
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 20px;
+        background-color: #1e1e1e;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        max-height: 60px;
+    }
+
+
+    form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .corpo {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    
+    color: #f5f5f5;
+}
+
+
+    #modal-agendamento {
+        border-radius: 5px;
+       
+        width: 90%;
+        max-width: 400px;
+        color: #f5f5f5;
+       
+    } 
+    
+    #empresas-lista {
+        align-items: center;
+        justify-content: center;
+        display: flex;
+        flex-wrap: column;
+        gap: 10px;
+        margin-top: 10px;
+        flex-direction: column;
+    }
+
+    
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}

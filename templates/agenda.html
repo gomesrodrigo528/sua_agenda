@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AGENDA</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <link rel="stylesheet" href="/static/styles/agenda.css">
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="icon" href="/static/img/icone-mobile.png">
+
+</head>
+
+<body>
+
+    <div id="loading">Carregando...</div>
+
+
+
+    <!-- Modal de Notificações -->
+    <div class="modal fade" id="notificacaoModal" tabindex="-1" aria-labelledby="notificacaoModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="notificacaoModalLabel">Notificações</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="text-align: center;">
+                    <form style="background-color: transparent;" method="POST"
+                        action="{{ url_for('agenda_bp.verificar_notificacoes') }}">
+                        <p>Você tem <strong id="total-nao-vistos"></strong> novos agendamentos.</p>
+                        <button type="submit" class="btn btn-success">OK</button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Pop-up de Notificação Simples -->
+    <div id="popup" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive"
+        aria-atomic="true"
+        style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1050; display: none;">
+        <div class="d-flex">
+            <div class="toast-body">
+
+                <h5 style="text-align: center;">Nenhum novo agendamento.</h3>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                aria-label="Close"></button>
+        </div>
+    </div>
+    <div id="nomeUsuario"></div>
+
+
+    <div class="d-flex" style="flex: 1; width: 100%;">
+        <!-- Menu Lateral -->
+        <div id="menu-container"></div>
+
+
+        <!-- Conteúdo Principal -->
+        <div class="container mt-4 flex-grow-1">
+
+
+            <!-- Botão de alternância do menu lateral -->
+            <button id="toggle-menu" class="d-block d-md-none"
+                style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
+                ☰
+            </button>
+
+
+            <!-- Botão para exibir o formulário -->
+            <button type="button" id="btn-agendar" class="btn btn-primary mb-4" data-bs-toggle="modal"
+                data-bs-target="#agendamentoModal">
+                Novo Agendamento
+            </button>
+
+
+
+            <!-- Botão para abrir o modal -->
+
+
+
+
+            <!-- Modal para exibir detalhes do agendamento -->
+            <div class="modal fade" id="agendamentoDetalhesModal" tabindex="-1"
+                aria-labelledby="agendamentoDetalhesModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modal-title">Detalhes do Agendamento</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="modal-body">
+                            <!-- Detalhes do agendamento serão exibidos aqui -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="loading-screen" style="display: none;">
+                <div class="spinner"></div>
+                <p>Carregando...</p>
+            </div>
+
+
+            <!-- Modal de Agendamento -->
+            <div class="modal fade" id="agendamentoModal" tabindex="-1" aria-labelledby="agendamentoModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="agendamentoModalLabel">Novo Agendamento</h5>
+                            <button type="button" class="btn-close" onclick="window.location.reload();" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="form-agendamento" class="mb-4">
+                                <!-- Cliente -->
+                                <div class="row align-items-center mb-3">
+                                    <label for="cliente-agendamento" class="form-label" style="font-weight: bold;" >Cliente</label>
+                                    <div class="d-flex align-items-center">
+                                        <select id="cliente-agendamento" class="form-select" style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);"required>
+                                            <option value="Selecione um cliente">Selecione um cliente</option>
+                                        </select>
+                                        <button type="button" class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal"
+                                            data-bs-target="#addClienteModal">
+                                            <i class="bi bi-person-add"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Compromisso -->
+                                <div class="row align-items-center mb-3">
+                                    <label for="servico-agendamento" class="form-label" style="font-weight: bold;">Compromisso</label>
+                                    <div class="d-flex align-items-center">
+                                        <select id="servico-agendamento" class="form-select" style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                            <option value="">Selecione um compromisso</option>
+                                        </select>
+                                        <button type="button" class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal"
+                                            data-bs-target="#addServiceModal">
+                                            <i class="bi bi-node-plus-fill"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Profissional -->
+                                <div class="row align-items-center mb-3">
+                                    <label for="usuario-agendamento" class="form-label" style="font-weight: bold;">Profissional</label>
+                                    <select id="usuario-agendamento" class="form-select"  style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                        <option value="">Selecione um profissional</option>
+                                    </select>
+                                </div>
+                                <!-- Descrição -->
+                                <div class="mb-3">
+                                    <label for="descricao-agendamento" class="form-label" style="font-weight: bold;">Descrição</label>
+                                    <textarea id="descricao-agendamento" name="descricao" class="form-control" rows="3"
+                                        placeholder="Adicione detalhes sobre o compromisso"  style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);"></textarea>
+                                </div>
+                                <!-- Data e Horário -->
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <label for="data-agendamento" class="form-label bold-label" style="font-weight: bold;">Data</label>
+                                        <input type="date" id="data-agendamento" class="form-control" style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="hora-agendamento" class="form-label" style="font-weight: bold;">Horário</label>
+                                        <input type="time" id="hora-agendamento" class="form-control"  style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                    </div>
+                                </div>
+                                <!-- Botão de Enviar -->
+                                <button type="submit" class="btn btn-success">Agendar</button>
+                                <button type="button" class="btn btn-danger" onclick="window.location.reload();">Cancelar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="modal fade" id="pagamentoModal" tabindex="-1" aria-labelledby="pagamentoModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="pagamentoModalLabel">Informações de Pagamento</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body" id="modal-pagamento-body">
+                            <!-- Conteúdo gerado dinamicamente -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="calendar-container">
+                <div id="calendar"></div>
+            </div>
+
+            <div id="list-container" style="box-shadow:transparent; background-color:transparent; border: none;">
+                <div>
+                    <select id="filter">
+                        <option value="day">Hoje</option>
+                        <option value="week">Semana</option>
+                        <option value="month">Mês</option>
+                    </select>
+                </div>
+                <ul id="appointment-list"></ul>
+            </div>
+
+        </div>
+    </div>
+
+
+
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel"
+    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addServiceModalLabel">Cadastrar Serviço</h5>
+                   
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="/add_service">
+                        <div class="mb-3">
+                            <label for="nome_servico" class="form-label">Nome do Serviço</label>
+                            <input type="text" class="form-control" id="nome_servico" name="nome_servico" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="preco" class="form-label">Preço (R$)</label>
+                            <input type="number" step="0.01" class="form-control" id="preco" name="preco" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="tempo" class="form-label">Tempo Estimado (minutos)</label>
+                            <input type="number" class="form-control" id="tempo" name="tempo" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="responsavel" class="form-label">Responsável pelo Serviço</label>
+                            <select name="responsavel" id="responsavel" class="form-control">
+                                <option value="" disabled selected>Selecione o responsável</option>
+                                <!-- Adicione as opções dinamicamente aqui -->
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <input type="checkbox" class="form-check-input" id="disp_cliente" name="disp_cliente"
+                                value="1" required checked>
+                            <label class="form-check-label" for="disp_cliente">Disponível para os clientes</label>
+                        </div>
+                        <button type="submit" class="btn btn-success">Cadastrar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="addClienteModal" tabindex="-1" aria-labelledby="addClienteModalLabel"
+    aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addClienteModalLabel">Cadastrar Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form method="POST" action="/add_cliente">
+                        <div class="mb-3">
+                            <label for="nome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="nome" name="nome"
+                                placeholder="Digite o nome do cliente" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">E-mail</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                placeholder="Digite o e-mail do cliente" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="telefone" class="form-label">Telefone</label>
+                            <input type="number" class="form-control" id="telefone" name="telefone"
+                                placeholder="Digite o telefone do cliente" required>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">Cadastrar</button>
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap CSS and JS (necessário para o modal funcionar) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+    // Listener para o formulário de cadastro de clientes
+    document.querySelector("#addClienteModal form").addEventListener("submit", function (event) {
+        event.preventDefault(); // Evita o recarregamento da página
+
+        let formData = new FormData(this);
+
+        fetch("/add_cliente", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json()) // Espera o JSON de resposta
+        .then(data => {
+            if (data.message) {
+                console.log("Sucesso:", data.message);
+
+                // Fecha o modal de cliente
+                let modal = bootstrap.Modal.getInstance(document.getElementById("addClienteModal"));
+                modal.hide();
+
+                // Limpa os campos do formulário
+                event.target.reset();
+
+                // Exibe uma mensagem de sucesso
+                alert(data.message);
+            } else {
+                console.error("Erro:", data.error);
+                alert("Erro ao cadastrar cliente: " + data.error);
+            }
+        })
+        .catch(error => {
+            console.error("Erro na requisição:", error);
+            alert("Erro ao cadastrar cliente");
+        });
+    });
+});
+document.addEventListener("DOMContentLoaded", function () {
+    // Listener para o formulário de cadastro de serviços
+    document.querySelector("#addServiceModal form").addEventListener("submit", function (event) {
+        event.preventDefault(); // Evita o recarregamento da página
+
+        let formData = new FormData(this);
+
+        fetch("/add_service", {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json()) // Espera o JSON de resposta
+        .then(data => {
+            if (data.message) {
+                console.log("Sucesso:", data.message);
+
+                // Fecha o modal de serviço
+                let modal = bootstrap.Modal.getInstance(document.getElementById("addServiceModal"));
+                modal.hide();
+
+                // Limpa os campos do formulário
+                event.target.reset();
+
+                // Exibe uma mensagem de sucesso
+                alert(data.message);  // Exibe a mensagem de sucesso
+            } else if (data.error) {
+                console.error("Erro:", data.error);
+                alert(data.error);  // Exibe a mensagem de erro
+            }
+        })
+        .catch(error => {
+            console.error("Erro na requisição:", error);
+            alert("Erro ao cadastrar serviço");
+        });
+    });
+});
+
+   
+
+    </script>
+    
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const agendamentoModal = document.getElementById("agendamentoModal");
+    
+            // Impede que o modal principal seja fechado
+            agendamentoModal.addEventListener("hide.bs.modal", function (event) {
+                event.preventDefault(); // Evita o fechamento
+            });
+    
+            document.querySelectorAll(".modal").forEach((modal) => {
+                modal.addEventListener("shown.bs.modal", function () {
+                    let modaisAbertos = document.querySelectorAll(".modal.show").length;
+                    this.style.zIndex = 1050 + (modaisAbertos * 10);
+                    
+                    // Mantém o backdrop abaixo do modal principal
+                    let backdrops = document.querySelectorAll(".modal-backdrop");
+                    backdrops.forEach((backdrop) => {
+                        backdrop.style.zIndex = 1040;
+                    });
+                });
+    
+                modal.addEventListener("hidden.bs.modal", function () {
+                    // Se ainda houver modais abertos, mantém a classe modal-open no body
+                    if (document.querySelectorAll(".modal.show").length > 0) {
+                        document.body.classList.add("modal-open");
+                    } else {
+                        // Se o agendamentoModal ainda está visível, forçamos a reabertura
+                        if (agendamentoModal.classList.contains("show")) {
+                            document.body.classList.add("modal-open");
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+    
+    
+    
+    
+
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const totalNaoVistos = {{ total_nao_vistos }};
+
+
+        if (totalNaoVistos > 0) {
+            // Exibe o modal com notificações
+            document.getElementById("total-nao-vistos").textContent = totalNaoVistos;
+            const notificacaoModal = new bootstrap.Modal(document.getElementById("notificacaoModal"));
+            notificacaoModal.show();
+        } else {
+            // Exibe o pop-up por 3 segundos
+            const popup = document.getElementById("popup");
+            popup.style.display = "block";
+            setTimeout(() => {
+                popup.style.display = "none";
+            }, 3000);
+        }
+        });
+    </script>
+
+
+    <script src="static/scripts/agenda.js"></script>
+    <!-- Bootstrap JS e Dependências -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+    <!-- Biblioteca FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <!-- JS Personalizado -->
+    <script src="static/scripts/menu.js"></script>
+    <script>
+        renderMenu('menu-container');
+    </script>
+    <script src="static/scripts/script.js"></script>
+
+    <script>
+        fetch('/api/usuarios')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const usuarioSelect = document.getElementById('responsavel');
+                if (usuarioSelect) {
+                    data.forEach(usuario => {
+                        const option = document.createElement('option');
+                        option.value = usuario.id;
+                        option.textContent = usuario.nome_usuario;
+                        usuarioSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Elemento select com ID "responsavel" não encontrado.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar ou processar os usuários:', error.message);
+            });
+
+    </script>
+
+</body>
+
+</html>

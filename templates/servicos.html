@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serviços</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <link rel="stylesheet" href="/static/styles/users.css">
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+</head>
+
+<body>
+    <div>
+    <button id="toggle-menu" class="d-block d-md-none"
+        style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
+        ☰
+    </button>
+</div>
+    <div class="d-flex">
+        
+        <!-- Menu Lateral -->
+        <div id="menu-container"></div>
+        <!-- Conteúdo Principal -->
+        <div class="container mt-4">
+            <div id="loading">Carregando...</div>
+         
+            <!-- Botão para exibir o formulário -->
+            <button id="btnCriarServico" class="btn btn-primary mb-4" onclick="exibirFormulario()">CRIAR SERVIÇO</button>
+
+            <!-- Formulário de Cadastro de Serviços -->
+            <div id="formularioCadastro" style="display: none;">
+                <h3>Cadastro de Serviços</h3>
+                <form method="POST" action="/add_service">
+                    <div class="mb-3">
+                        <label for="nome_servico" class="form-label">Nome do Serviço</label>
+                        <input type="text" class="form-control" id="nome_servico" name="nome_servico" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="preco" class="form-label">Preço (R$)</label>
+                        <input type="number" step="0.01" class="form-control" id="preco" name="preco" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tempo" class="form-label">Tempo Estimado (minutos)</label>
+                        <input type="number" class="form-control" id="tempo" name="tempo" required>
+                    </div>
+                    <div class="mb-3">
+                    <label for="responsavel" class="form-label"> responsavel pelo serviço</label>
+                    <select name="responsavel" id="responsavel" class="form-control"> selecione o responsavel</select>   
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" id="disp_cliente" name="disp_cliente" value="1" required checked >
+                        <label class="form-check-label" for="disp_cliente">Disponivel para os clientes</label>
+                       
+                        </div>                   
+                    <button type="submit" class="btn btn-success">Cadastrar</button>
+                </form>
+                <hr>
+            </div>
+
+            <!-- Formulário de Pesquisa -->
+            <form method="POST" action="/servicos" class="mb-4">
+                <div class="input-group">
+                <input type="text" class="form-control" name="search_query" placeholder="Pesquisar serviços">
+                    <button class="btn btn-outline-primary" type="submit">
+                        <i class="bi bi-search"></i> Pesquisar
+                    </button>
+                    </div>
+            </form>
+
+            <!-- Listagem de Serviços -->
+          
+            {% if services %}
+            <div class="tab_serv-scroll">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Preço</th>
+                            <th>Tempo</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for service in services %}
+                        <tr>
+                            <td>{{ service.nome_servico }}</td>
+                            <td>R$ {{ service.preco | round(2) }}</td>
+                            <td>{{ service.tempo  }}min</td>
+                            <td>
+                                <a href="/excluir_servico/{{ service.id }}" class="btn btn-danger btn-sm" onclick="return confirm('Deseja realmente excluir este serviço?');">
+                                    <i class="bi bi-trash"></i> Excluir
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Nenhum serviço cadastrado.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script src="static/scripts/menu.js"></script>
+    <script>
+        renderMenu('menu-container');
+    </script>
+    <script>
+        // Função para exibir o formulário de cadastro
+        function exibirFormulario() {
+            document.getElementById('formularioCadastro').style.display = 'block';
+            document.getElementById('btnCriarServico').style.display = 'none';
+        }
+    
+        // Função para lidar com o envio do formulário de cadastro
+        document.querySelector("#formularioCadastro form").addEventListener("submit", function(event) {
+            event.preventDefault(); // Evita o recarregamento da página ao submeter o formulário
+    
+            const formData = new FormData(this); // Coleta os dados do formulário
+    
+            // Envia os dados via AJAX (fetch)
+            fetch("/add_service", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json()) // Espera a resposta como JSON
+            .then(data => {
+                // Se a resposta contiver uma mensagem de sucesso
+                if (data.message) {
+                    alert(data.message); // Exibe a mensagem de sucesso
+                    // Fecha o formulário de cadastro e exibe o botão novamente
+                    document.getElementById('formularioCadastro').style.display = 'none';
+                    document.getElementById('btnCriarServico').style.display = 'block';
+                    // Limpa o formulário após sucesso
+                    document.querySelector("#formularioCadastro form").reset();
+                    // Atualiza a listagem de serviços
+                    location.reload();
+                } 
+                // Se a resposta contiver uma mensagem de erro
+                else if (data.error) {
+                    alert(data.error); // Exibe a mensagem de erro
+                }
+            })
+            .catch(error => {
+                console.error("Erro ao cadastrar serviço:", error);
+                alert("Erro ao cadastrar serviço. Tente novamente.");
+            });
+        });
+    
+        // Função para preencher o select de responsáveis com os dados da API
+        fetch('/api/usuarios')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                const usuarioSelect = document.getElementById('responsavel');
+                if (usuarioSelect) {
+                    data.forEach(usuario => {
+                        const option = document.createElement('option');
+                        option.value = usuario.id;
+                        option.textContent = usuario.nome_usuario;
+                        usuarioSelect.appendChild(option);
+                    });
+                } else {
+                    console.error('Elemento select com ID "responsavel" não encontrado.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar ou processar os usuários:', error.message);
+            });
+    </script>
+    
+
+</body>
+
+</html>
