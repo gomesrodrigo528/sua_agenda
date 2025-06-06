@@ -17,10 +17,16 @@ sucesso_bp = Blueprint('sucesso', __name__)
 empresa_cadastrada = {}
 
 
-@sucesso_bp.route('/sucesso', methods=['GET', 'POST'])
-def sucesso():
+@sucesso_bp.route('/sucesso/<plano>', methods=['GET', 'POST'])
+def sucesso(plano):
     global empresa_cadastrada
-
+    if plano == "trimestral":
+        plano = "90"
+    elif plano == "anual":
+        plano = "365"
+    else:
+        plano = "30"
+    
     if request.method == 'POST':
         # Verificar se é cadastro de empresa ou de usuário
         if 'nome_empresa' in request.form:
@@ -49,7 +55,7 @@ def sucesso():
                 "endereco": endereco,
                 "setor": setor,
                 "cep": cep,
-                "dias_restantes": 30,
+                "dias_restantes": plano,
                 "teste_de_app": True,
                 "cidade": cidade,
                 "endereco": endereco ,

@@ -13,9 +13,11 @@ def payment():
 @payment_bp.route('/adquirir/<plano>', methods=['GET'])
 def process_payment(plano):
     try:
-        # Gerar o link de pagamento baseado no plano escolhido
         link_pagamento = gerar_link_pagamento(plano)
-        return redirect(link_pagamento)  # Redireciona para o Mercado Pago
+        if not link_pagamento:
+            flash("Erro ao gerar link de pagamento. Tente novamente mais tarde.", "error")
+            return redirect('/adquirir')
+        return redirect(link_pagamento)
     except ValueError:
         flash("Plano inválido!", "error")
         return redirect('/adquirir')
@@ -24,10 +26,14 @@ def process_payment(plano):
 def renovar_pagamento(plano):
     try:
         link_pagamento = gerar_link_pagamento(plano, tipo="renovacao")
+        if not link_pagamento:
+            flash("Erro ao gerar link de pagamento. Tente novamente mais tarde.", "error")
+            return redirect('/renovacao')
         return redirect(link_pagamento)
     except ValueError:
         flash("Plano inválido!", "error")
         return redirect('/renovacao')
+
 
 @payment_bp.route('/renovacao', methods=['GET'])
 def renovacao():

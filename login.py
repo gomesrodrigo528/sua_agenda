@@ -28,37 +28,18 @@ def login():
         return render_template('login.html')
 
     # Obtém os valores do formulário e faz validação inicial
-    empresa = request.form.get('empresa', '').strip().upper()
-    usuario = request.form.get('usuario', '').strip().upper()
+    email = request.form.get('email', '').strip()
     senha = request.form.get('senha', '').strip()
 
-    if not empresa:
-        return jsonify(success=False, message='O campo "Nome da Empresa" é obrigatório.'), 400
-    if not usuario:
-        return jsonify(success=False, message='O campo "Usuário" é obrigatório.'), 400
+    
     if not senha:
         return jsonify(success=False, message='O campo "Senha" é obrigatório.'), 400
 
     try:
-        # Busca a empresa no banco
-        empresa_data = supabase.table('empresa').select('id, acesso').eq('nome_empresa', empresa).single().execute()
-        if not empresa_data.data:
-            return jsonify(success=False, message='Empresa não encontrada. Verifique o nome e tente novamente.'), 404
-
-        id_empresa = empresa_data.data['id']
-        acesso_empresa = empresa_data.data['acesso']
-
-        if not acesso_empresa:
-            mensagem = (
-                'Atenção! Sua licença está expirada. '
-                '<a href="/renovacao" class="btn btn-warning btn-sm">Renovar Licença</a>'
-            )
-            return jsonify(success=False, message=mensagem), 403
-
-        # Busca o usuário
-        usuario_data = supabase.table('usuarios').select('id, nome_usuario, senha').eq('nome_usuario', usuario).eq('id_empresa', id_empresa).single().execute()
+        # Busca email:
+        usuario_data = supabase.table('usuarios').select('id, nome_usuario, senha, id_empresa').eq('email', email).single().execute()
         if not usuario_data.data:
-            return jsonify(success=False, message='Usuário não encontrado. Verifique o nome e tente novamente.'), 404
+            return jsonify(success=False, message='Email não encontrado. Verifique o email e tente novamente.'), 404
 
         # Verifica a senha
         if usuario_data.data['senha'] != senha:
@@ -67,8 +48,8 @@ def login():
         # Login bem-sucedido, cria cookies
         resp = make_response(jsonify(success=True, redirect_url=url_for('agenda_bp.renderizar_agenda')))
         resp.set_cookie('user_id', str(usuario_data.data['id']), max_age=timedelta(days=30))
-        resp.set_cookie('user_name', usuario_data.data['nome_usuario'], max_age=timedelta(days=30))
-        resp.set_cookie('empresa_id', str(id_empresa), max_age=timedelta(days=30))
+        resp.set_cookie('user_name', str(usuario_data.data['nome_usuario']), max_age=timedelta(days=30))
+        resp.set_cookie('empresa_id', str(usuario_data.data['id_empresa']), max_age=timedelta(days=30))
         return resp
 
     except Exception as e:
@@ -81,7 +62,7 @@ def logout():
     resp = make_response(redirect(url_for('login.login')))
     resp.delete_cookie('user_id')  # Remove o cookie user_id
     resp.delete_cookie('user_name')  # Remove o cookie user_name
-    resp.delete_cookie('empresa_id')  # Remove o cookie empresa_id
+    resp.delete_cookie('id_empresa')  # Remove o cookie empresa_id
     flash('Você foi desconectado com sucesso!', 'success')
     return resp
 

@@ -2,30 +2,40 @@ import mercadopago
 
 
 def gerar_link_pagamento(plano, tipo="assinatura"):
-    sdk = mercadopago.SDK("TEST-8366438482131716-012512-3295b15c4cfa4a66d28bda499ab5eeda-1360530545")
+    sdk = mercadopago.SDK("TEST-1242682277274715-060519-40f45c2b119be74c36a87e6263c9f5e5-1360530545")
 
     planos = {
-        "mensal": {"id": "1", "title": "Assinatura da Sua Agenda - 1 mês", "unit_price": 1},
-        "trimestral": {"id": "2", "title": "Assinatura da Sua Agenda - 3 meses", "unit_price": 3},
-        "anual": {"id": "3", "title": "Assinatura da Sua Agenda - 1 ano", "unit_price": 12}
+        "mensal": {
+            "id": "1",
+            "title": "Assinatura da Sua Agenda - 1 mês",
+            "unit_price": 35.0
+        },
+        "trimestral": {
+            "id": "2",
+            "title": "Assinatura da Sua Agenda - 3 meses",
+            "unit_price": 85.0
+        },
+        "anual": {
+            "id": "3",
+            "title": "Assinatura da Sua Agenda - 1 ano",
+            "unit_price": 125.0
+        }
     }
 
     if plano not in planos:
         raise ValueError("Plano inválido!")
 
-    # Definir as URLs de redirecionamento com base no tipo de pagamento
+    # Garantir que todas as URLs estejam presentes
     if tipo == "renovacao":
-        back_urls = {
-            "success": "http://www.suaagenda.fun/renovacaoconfirmada",
-            "failure": "http://www.suaagenda.fun/pagamentonaoaprovado",
-            "pending": "http://www.suaagenda.fun/pagamentonaoaprovado",
-        }
+        success_url = "www.suaagenda.fun/renovacaoconfirmada"
     else:
-        back_urls = {
-            "success": "http://www.suaagenda.fun/pagamentoaprovado",
-            "failure": "http://www.suaagenda.fun/pagamentonaoaprovado",
-            "pending": "http://www.suaagenda.fun/pagamentonaoaprovado",
-        }
+        success_url = "www.suaagenda.fun/pagamentoaprovado"
+
+    back_urls = {
+        "success": success_url,
+        "failure": "www.suaagenda.fun/pagamentonaoaprovado",
+        "pending": "www.suaagenda.fun/pagamentonaoaprovado",
+    }
 
     payment_data = {
         "items": [
@@ -38,12 +48,23 @@ def gerar_link_pagamento(plano, tipo="assinatura"):
             }
         ],
         "back_urls": back_urls,
-        "auto_return": "all",
+        "auto_return": "approved",  # Correto e suportado pela API
         "payment_methods": {
-            "excluded_payment_methods": [{"id": "pix"}]  # Bloquear Pix
+            
         }
     }
 
-    result = sdk.preference().create(payment_data)
-    payment = result.get("response", {})
-    return payment.get("init_point", "Link de pagamento não disponível")
+    try:
+        result = sdk.preference().create(payment_data)
+        payment = result.get("response", {})
+        init_point = payment.get("init_point")
+
+        if not init_point:
+            print("Erro ao gerar link de pagamento:", payment)
+            return None
+
+        return init_point
+
+    except Exception as e:
+        print("Erro na criação do pagamento:", e)
+        return None
