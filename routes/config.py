@@ -26,6 +26,7 @@ def configuracao_empresa():
 
     # Busca os dados da empresa no banco de dados
     response = supabase.table("empresa").select("*").eq("id", empresa_id).execute()
+    print(response.data)
     if not response.data:
         flash('Empresa não encontrada.', 'danger')
         return redirect(url_for('login.login'))  # Redireciona para a página de login

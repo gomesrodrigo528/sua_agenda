@@ -69,9 +69,9 @@
                         </div>
                     </div>
                     <div class="form-check">
-                        <input type="color" id="cor" name="cor" value="{{ empresa.cor  }}">
-
-                        <label class="form-check-label" for="status">Cor do menu lateral</label>
+                        <input type="color" id="cor" name="cor" value="{{ empresa.cor_emp}}" pattern="^#[0-9A-Fa-f]{6}$">
+                        <label class="form-check-label" for="cor">Cor do menu lateral</label>
+                        <div class="field-error-message" id="cor-error"></div>
                     </div>
 
                     <!-- Campos de Texto -->
@@ -152,6 +152,44 @@
     // Chamar a função ao carregar a página
     document.addEventListener("DOMContentLoaded", function() {
         fetchDiasRestantes();  // Sem o empresa_id
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const corInput = document.getElementById('cor');
+        
+        // Garante que o valor inicial esteja no formato correto
+        if (corInput.value && !corInput.value.startsWith('#')) {
+            corInput.value = '#' + corInput.value;
+        }
+
+        // Atualiza o valor quando o usuário seleciona uma cor
+        corInput.addEventListener('change', function() {
+            let cor = this.value;
+            // Garante que a cor esteja no formato hexadecimal correto
+            if (cor && !cor.startsWith('#')) {
+                cor = '#' + cor;
+            }
+            this.value = cor;
+        });
+
+        // Validação do formato da cor antes do envio do formulário
+        const form = corInput.closest('form');
+        form.addEventListener('submit', function(e) {
+            const cor = corInput.value;
+            const hexRegex = /^#[0-9A-Fa-f]{6}$/;
+            
+            if (!hexRegex.test(cor)) {
+                e.preventDefault();
+                const errorDiv = document.getElementById('cor-error');
+                errorDiv.textContent = 'Cor inválida. Use o formato hexadecimal (ex: #030413)';
+                errorDiv.style.display = 'block';
+                errorDiv.style.color = '#dc3545';
+                errorDiv.style.fontSize = '12px';
+                errorDiv.style.marginTop = '5px';
+            }
+        });
     });
 </script>
 
