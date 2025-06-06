@@ -57,7 +57,8 @@
                         <label class="form-check-label" for="disp_cliente">Disponivel para os clientes</label>
                        
                         </div>                   
-                    <button type="submit" class="btn btn-success">Cadastrar</button>
+                        <button type="submit" class="btn btn-success">Cadastrar</button>
+                        <button type="button" onclick="cancelarCadastro()" class="btn btn-danger">Cancelar</button>
                 </form>
                 <hr>
             </div>
@@ -109,6 +110,10 @@
     <script src="static/scripts/menu.js"></script>
     <script>
         renderMenu('menu-container');
+        function cancelarCadastro() {
+            document.getElementById('formularioCadastro').style.display = 'none';
+            document.getElementById('btnCriarCliente').style.display = 'block';
+        }
     </script>
     <script>
         // Função para exibir o formulário de cadastro

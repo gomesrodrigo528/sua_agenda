@@ -54,6 +54,7 @@
                             placeholder="Digite uma senha" required>
                     </div>
                     <button type="submit" class="btn btn-primary">Cadastrar</button>
+                    <button type="button" onclick="cancelarCadastro()" class="btn btn-danger">Cancelar</button>
                 </form>
             </div>
 
@@ -157,6 +158,10 @@
     <script src="static/scripts/menu.js"></script>
     <script>
         renderMenu('menu-container');
+        function cancelarCadastro() {
+            document.getElementById('formularioCadastro').style.display = 'none';
+            document.getElementById('btnCriarCliente').style.display = 'block';
+        }
     </script>
 
     <!-- Bootstrap JS -->
