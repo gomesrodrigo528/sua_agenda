@@ -26,12 +26,15 @@ def sucesso(plano):
         plano = "365"
     else:
         plano = "30"
+
+    print(plano)
     
     if request.method == 'POST':
         # Verificar se é cadastro de empresa ou de usuário
         if 'nome_empresa' in request.form:
             # Cadastro da empresa
             nome_empresa = request.form.get('nome_empresa').strip().upper()
+            plano = request.form.get('plano').strip()
             cnpj = request.form.get('cnpj').strip()
             email = request.form.get('email').strip()
             descricao = request.form.get('descricao').strip()
@@ -101,4 +104,5 @@ def sucesso(plano):
             except Exception as e:
                 flash(f"Erro ao cadastrar usuário: {e}", "danger")
 
-    return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada)
+    return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
+

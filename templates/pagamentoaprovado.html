@@ -6,42 +6,160 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Empresa e Usuário</title>
     <link rel="stylesheet" href="/static/styles/telascadastro.css"> <!-- Referência para o CSS externo -->
+    <!-- Incluindo biblioteca para máscaras -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <style>
+        .error-message {
+            color: #dc3545;
+            background-color: #ffe6e6;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            display: none;
+            font-size: 14px;
+        }
+
+        .input-error {
+            border-color: #dc3545 !important;
+            background-color: #fff8f8 !important;
+        }
+
+        .error-icon {
+            color: #dc3545;
+            margin-right: 5px;
+        }
+
+        .success-icon {
+            color: #28a745;
+            margin-right: 5px;
+        }
+
+        .form-group {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .field-error-message {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .toast-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            max-width: 350px;
+            background: #fff;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            padding: 16px;
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .toast-error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast-success {
+            border-left: 4px solid #28a745;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+            to {
+                opacity: 0;
+            }
+        }
+    </style>
 </head>
 
 <body>
+    <!-- Toast para mensagens -->
+    <div id="toastMessage" class="toast-message">
+        <span id="toastText"></span>
+    </div>
+
     <div class="container">
         <div class="title">
-        <p>Preencha as suas informações abaixo para começar a usar a sua agenda!</p>
+        <h1>Plano {{plano}} Dias</h1>
+        <h4>Preencha as suas informações abaixo para começar a usar a sua agenda!</h4>
         <h3>Cadastro</h3>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        {% for category, message in messages %}
-        <p class="alert {{ category }}">{{ message }}</p>
-        {% endfor %}
-        {% endif %}
-        {% endwith %}
+        <!-- Sistema de mensagens de erro do servidor -->
+        <div id="server-errors" style="margin-bottom: 20px;">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="error-message" style="display: block;">
+                <span class="error-icon">⚠️</span>
+                {% if 'duplicate key' in message %}
+                    Este e-mail já está cadastrado. Por favor, use outro e-mail.
+                {% else %}
+                    {{ message }}
+                {% endif %}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+        </div>
 
         {% if not empresa_cadastrada %}
 
 
     </div>
         <!-- Formulário de Cadastro da Empresa -->
-        <form method="POST" action="/sucesso">
-            <label for="nome_empresa">Nome da Empresa:</label>
-            <input type="text" id="nome_empresa" name="nome_empresa" required placeholder="Sua Empresa">
+        <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="empresaForm" onsubmit="return validarFormularioEmpresa()">
+            <input type="hidden" name="plano" value="{{ plano }}">
 
-            <label for="cnpj">CNPJ ou CPF:</label>
-            <input type="text" id="cnpj" name="cnpj" required placeholder="XX.XXX.XXX/XXXX-XX">
+            <div class="form-group">
+                <label for="nome_empresa">Nome da Empresa:</label>
+                <input type="text" id="nome_empresa" name="nome_empresa" required placeholder="Sua Empresa" minlength="3" maxlength="100">
+                <div class="field-error-message" id="nome_empresa-error"></div>
+            </div>
 
-            <label for="email">E-mail:</label>
-            <input type="email" id="email" name="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" placeholder="sua@empresa">
+            <div class="form-group">
+                <label for="cnpj">CNPJ ou CPF:</label>
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <select id="tipo_documento" style="width: 100px;">
+                        <option value="cpf">CPF</option>
+                        <option value="cnpj">CNPJ</option>
+                    </select>
+                    <input type="text" id="cnpj" name="cnpj" required placeholder="Digite o documento">
+                </div>
+                <div class="field-error-message" id="cnpj-error"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">E-mail:</label>
+                <input type="email" id="email" name="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" placeholder="sua@empresa">
+                <div class="field-error-message" id="email-error"></div>
+            </div>
 
             <label for="descricao">Descrição:</label>
             <textarea id="descricao" name="descricao" rows="3" required maxlength="30" placeholder="A melhor clínica da cidade"></textarea>
 
             <label for="setor">Setor</label>
             <select id="setor" name="setor" required>
+                <option value="">Selecione um setor</option>
                 <option value="Tecnologia">Tecnologia</option>
                 <option value="Beleza">Beleza</option>
                 <option value="Barbearia">Barbearia</option>
@@ -50,44 +168,389 @@
             </select>
 
             <label for="tel_empresa">Telefone:</label>
-            <input type="tel" id="tel_empresa" name="tel_empresa" required placeholder="(00) 0000-0000">
+            <input type="text" id="tel_empresa" name="tel_empresa" required placeholder="(00) 00000-0000">
 
             <div class="endereco-container">
                 <div class="campo-cidade">
                     <label for="cidade">Cidade:</label>
-                    <input type="text" id="cidade" name="cidade" required placeholder="SUA CIDADE">
+                    <input type="text" id="cidade" name="cidade" required placeholder="SUA CIDADE" minlength="3">
                 </div>
                 <div class="campo-cep">
-                    <label for="cep">.</label>
-                    <input type="number" id="cep" name="cep" required placeholder="CEP (codigo postal)" maxlength="8">
+                    <label for="cep">CEP:</label>
+                    <input type="text" id="cep" name="cep" required placeholder="00000-000">
                 </div>
             </div>
 
             <label for="endereco">Endereço:</label>
-            <input type="text" id="endereco" name="endereco" required placeholder="Rua São Paulo, 123">
+            <input type="text" id="endereco" name="endereco" required placeholder="Rua São Paulo, 123" minlength="5">
 
             <button type="submit">Cadastrar Empresa</button>
         </form>
         {% else %}
         <!-- Formulário de Cadastro do Primeiro Usuário -->
-        <form method="POST" action="/sucesso">
+        <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="usuarioForm" onsubmit="return validarFormularioUsuario()">
+            <input type="hidden" name="plano" value="{{ plano }}">
             <input type="hidden" name="empresa_id" value="{{ empresa_id }}">
+
             <label for="nome_usuario">Nome do Usuário:</label>
-            <input type="text" id="nome_usuario" name="nome_usuario" required placeholder="Seu Nome">
+            <input type="text" id="nome_usuario" name="nome_usuario" required placeholder="Seu Nome" minlength="3" maxlength="100">
 
             <label for="email_usuario">E-mail:</label>
             <input type="email" id="email_usuario" name="email_usuario" required placeholder="seu@email.com">
 
             <label for="telefone">Telefone:</label>
-            <input type="tel" id="telefone" name="telefone" required placeholder="(00) 0000-0000">
+            <input type="text" id="telefone" name="telefone" required placeholder="(00) 00000-0000">
 
             <label for="senha">Senha:</label>
-            <input type="password" id="senha" name="senha" required>
+            <div style="position: relative;">
+                <input type="password" id="senha" name="senha" required minlength="8">
+                <button type="button" id="mostrarSenha" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">👁️</button>
+            </div>
+            <div id="requisitos-senha" style="font-size: 12px; margin-top: 5px;">
+                <p style="margin: 0;">A senha deve conter:</p>
+                <ul style="margin: 5px 0; padding-left: 20px;">
+                    <li id="req-tamanho">Mínimo de 8 caracteres</li>
+                    <li id="req-maiuscula">Pelo menos uma letra maiúscula</li>
+                    <li id="req-minuscula">Pelo menos uma letra minúscula</li>
+                    <li id="req-numero">Pelo menos um número</li>
+                </ul>
+            </div>
 
             <button type="submit">Cadastrar Usuário</button>
         </form>
         {% endif %}
     </div>
+
+    <script>
+        function showToast(message, isError = true) {
+            const toast = $('#toastMessage');
+            toast.removeClass('toast-error toast-success')
+                 .addClass(isError ? 'toast-error' : 'toast-success');
+            $('#toastText').text(message);
+            toast.fadeIn();
+            
+            setTimeout(() => {
+                toast.fadeOut();
+            }, 5000);
+        }
+
+        function showFieldError(fieldId, message) {
+            const field = $(`#${fieldId}`);
+            const errorDiv = $(`#${fieldId}-error`);
+            
+            field.addClass('input-error');
+            errorDiv.text(message).slideDown();
+            
+            // Limpa o erro quando o usuário começa a corrigir
+            field.one('input', function() {
+                $(this).removeClass('input-error');
+                errorDiv.slideUp();
+            });
+        }
+
+        function clearFieldErrors() {
+            $('.input-error').removeClass('input-error');
+            $('.field-error-message').slideUp();
+        }
+
+        $(document).ready(function() {
+            // Máscaras para os campos
+            $('#tel_empresa, #telefone').mask('(00) 00000-0000');
+            $('#cep').mask('00000-000');
+            
+            // Máscara inicial como CPF
+            $('#cnpj').mask('000.000.000-00');
+
+            // Alternar entre máscaras de CPF e CNPJ
+            $('#tipo_documento').on('change', function() {
+                var tipo = $(this).val();
+                var campo = $('#cnpj');
+                campo.val(''); // Limpa o campo ao trocar
+                if (tipo === 'cpf') {
+                    campo.mask('000.000.000-00');
+                    campo.attr('placeholder', 'Digite o CPF');
+                } else {
+                    campo.mask('00.000.000/0000-00');
+                    campo.attr('placeholder', 'Digite o CNPJ');
+                }
+            });
+
+            // Validação em tempo real da senha
+            $('#senha').on('input', function() {
+                validarSenha($(this).val());
+            });
+
+            // Botão para mostrar/ocultar senha
+            $('#mostrarSenha').on('click', function() {
+                const senhaInput = $('#senha');
+                if (senhaInput.attr('type') === 'password') {
+                    senhaInput.attr('type', 'text');
+                    $(this).text('🔒');
+                } else {
+                    senhaInput.attr('type', 'password');
+                    $(this).text('👁️');
+                }
+            });
+
+            // Validação em tempo real dos campos
+            $('input').on('input', function() {
+                $(this).removeClass('input-error');
+                $(`#${this.id}-error`).slideUp();
+            });
+
+            // Validação em tempo real do nome da empresa
+            $('#nome_empresa').on('input', function() {
+                const nome = $(this).val().trim();
+                if(nome.length < 3) {
+                    showFieldError('nome_empresa', 'O nome da empresa deve ter pelo menos 3 caracteres');
+                } else {
+                    $(`#nome_empresa-error`).slideUp();
+                    $(this).removeClass('input-error');
+                }
+            });
+
+            // Validação em tempo real da descrição
+            $('#descricao').on('input', function() {
+                const desc = $(this).val().trim();
+                if(desc.length === 0) {
+                    showFieldError('descricao', 'A descrição é obrigatória');
+                } else if(desc.length > 30) {
+                    showFieldError('descricao', 'A descrição deve ter no máximo 30 caracteres');
+                } else {
+                    $(`#descricao-error`).slideUp();
+                    $(this).removeClass('input-error');
+                }
+            });
+
+            // Validação em tempo real do setor
+            $('#setor').on('change', function() {
+                if($(this).val() === '') {
+                    showFieldError('setor', 'Selecione um setor');
+                } else {
+                    $(`#setor-error`).slideUp();
+                    $(this).removeClass('input-error');
+                }
+            });
+
+            // Validação em tempo real da cidade
+            $('#cidade').on('input', function() {
+                const cidade = $(this).val().trim();
+                if(cidade.length < 3) {
+                    showFieldError('cidade', 'Nome da cidade inválido');
+                } else {
+                    $(`#cidade-error`).slideUp();
+                    $(this).removeClass('input-error');
+                }
+            });
+
+            // Validação em tempo real do endereço
+            $('#endereco').on('input', function() {
+                const endereco = $(this).val().trim();
+                if(endereco.length < 5) {
+                    showFieldError('endereco', 'Endereço inválido');
+                } else {
+                    $(`#endereco-error`).slideUp();
+                    $(this).removeClass('input-error');
+                }
+            });
+
+            // Se houver erro do servidor, mostra o toast
+            if($('.error-message').length > 0) {
+                showToast('Ocorreram erros no cadastro. Por favor, verifique os dados.', true);
+            }
+        });
+
+        // Função para validar CPF
+        function validarCPF(cpf) {
+            cpf = cpf.replace(/[^\d]+/g,'');
+            if(cpf.length !== 11) return false;
+            
+            // Validação do primeiro dígito
+            let soma = 0;
+            for(let i = 0; i < 9; i++) {
+                soma += parseInt(cpf.charAt(i)) * (10 - i);
+            }
+            let resto = 11 - (soma % 11);
+            let digitoVerificador1 = resto > 9 ? 0 : resto;
+            if(digitoVerificador1 != cpf.charAt(9)) return false;
+
+            // Validação do segundo dígito
+            soma = 0;
+            for(let i = 0; i < 10; i++) {
+                soma += parseInt(cpf.charAt(i)) * (11 - i);
+            }
+            resto = 11 - (soma % 11);
+            let digitoVerificador2 = resto > 9 ? 0 : resto;
+            if(digitoVerificador2 != cpf.charAt(10)) return false;
+
+            return true;
+        }
+        
+        // Função para validar CNPJ
+        function validarCNPJ(cnpj) {
+            cnpj = cnpj.replace(/[^\d]+/g,'');
+            if(cnpj.length !== 14) return false;
+
+            // Validação do primeiro dígito
+            let soma = 0;
+            let multiplicador = 5;
+            for(let i = 0; i < 12; i++) {
+                soma += parseInt(cnpj.charAt(i)) * multiplicador;
+                multiplicador = multiplicador === 2 ? 9 : multiplicador - 1;
+            }
+            let resto = soma % 11;
+            let digitoVerificador1 = resto < 2 ? 0 : 11 - resto;
+            if(digitoVerificador1 != cnpj.charAt(12)) return false;
+
+            // Validação do segundo dígito
+            soma = 0;
+            multiplicador = 6;
+            for(let i = 0; i < 13; i++) {
+                soma += parseInt(cnpj.charAt(i)) * multiplicador;
+                multiplicador = multiplicador === 2 ? 9 : multiplicador - 1;
+            }
+            resto = soma % 11;
+            let digitoVerificador2 = resto < 2 ? 0 : 11 - resto;
+            if(digitoVerificador2 != cnpj.charAt(13)) return false;
+
+            return true;
+        }
+
+        function validarEmail(email) {
+            const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            return re.test(email);
+        }
+
+        function validarSenha(senha) {
+            const temTamanhoMinimo = senha.length >= 8;
+            const temMaiuscula = /[A-Z]/.test(senha);
+            const temMinuscula = /[a-z]/.test(senha);
+            const temNumero = /[0-9]/.test(senha);
+
+            // Atualiza o visual dos requisitos
+            $('#req-tamanho').css('color', temTamanhoMinimo ? 'green' : 'red');
+            $('#req-maiuscula').css('color', temMaiuscula ? 'green' : 'red');
+            $('#req-minuscula').css('color', temMinuscula ? 'green' : 'red');
+            $('#req-numero').css('color', temNumero ? 'green' : 'red');
+
+            return temTamanhoMinimo && temMaiuscula && temMinuscula && temNumero;
+        }
+
+        function validarFormularioEmpresa() {
+            clearFieldErrors();
+            let hasErrors = false;
+
+            // Validação do nome da empresa
+            if($('#nome_empresa').val().trim().length < 3) {
+                showFieldError('nome_empresa', 'O nome da empresa deve ter pelo menos 3 caracteres');
+                hasErrors = true;
+            }
+
+            const cnpjCpf = $('#cnpj').val().replace(/[^\d]+/g,'');
+            const tipoDocumento = $('#tipo_documento').val();
+            
+            // Validação do CNPJ/CPF
+            if(tipoDocumento === 'cpf') {
+                if(!validarCPF(cnpjCpf)) {
+                    showFieldError('cnpj', 'CPF inválido');
+                    hasErrors = true;
+                }
+            } else {
+                if(!validarCNPJ(cnpjCpf)) {
+                    showFieldError('cnpj', 'CNPJ inválido');
+                    hasErrors = true;
+                }
+            }
+
+            // Validação do e-mail
+            const email = $('#email').val();
+            if(!validarEmail(email)) {
+                showFieldError('email', 'E-mail inválido');
+                hasErrors = true;
+            }
+
+            // Validação da descrição
+            const descricao = $('#descricao').val().trim();
+            if(descricao.length === 0) {
+                showFieldError('descricao', 'A descrição é obrigatória');
+                hasErrors = true;
+            } else if(descricao.length > 30) {
+                showFieldError('descricao', 'A descrição deve ter no máximo 30 caracteres');
+                hasErrors = true;
+            }
+
+            // Validação do setor
+            if($('#setor').val() === '') {
+                showFieldError('setor', 'Selecione um setor');
+                hasErrors = true;
+            }
+
+            // Validação do telefone
+            const telefone = $('#tel_empresa').val().replace(/[^\d]+/g,'');
+            if(telefone.length !== 11) {
+                showFieldError('tel_empresa', 'Telefone inválido');
+                hasErrors = true;
+            }
+
+            // Validação da cidade
+            if($('#cidade').val().trim().length < 3) {
+                showFieldError('cidade', 'Nome da cidade inválido');
+                hasErrors = true;
+            }
+
+            // Validação do CEP
+            const cep = $('#cep').val().replace(/[^\d]+/g,'');
+            if(cep.length !== 8) {
+                showFieldError('cep', 'CEP inválido');
+                hasErrors = true;
+            }
+
+            // Validação do endereço
+            if($('#endereco').val().trim().length < 5) {
+                showFieldError('endereco', 'Endereço inválido');
+                hasErrors = true;
+            }
+
+            if(hasErrors) {
+                showToast('Por favor, corrija os erros destacados no formulário');
+                return false;
+            }
+
+            return true;
+        }
+
+        function validarFormularioUsuario() {
+            clearFieldErrors();
+            let hasErrors = false;
+
+            // Validação do e-mail
+            if(!validarEmail($('#email_usuario').val())) {
+                showFieldError('email_usuario', 'E-mail inválido');
+                hasErrors = true;
+            }
+
+            // Validação do telefone
+            const telefone = $('#telefone').val().replace(/[^\d]+/g,'');
+            if(telefone.length !== 11) {
+                showFieldError('telefone', 'Telefone inválido');
+                hasErrors = true;
+            }
+
+            // Validação da senha
+            const senha = $('#senha').val();
+            if(!validarSenha(senha)) {
+                showFieldError('senha', 'A senha não atende aos requisitos mínimos de segurança');
+                hasErrors = true;
+            }
+
+            if(hasErrors) {
+                showToast('Por favor, corrija os erros destacados no formulário');
+                return false;
+            }
+
+            return true;
+        }
+    </script>
 </body>
 
 </html>
