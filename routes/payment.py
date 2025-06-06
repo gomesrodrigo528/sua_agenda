@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, flash
-from api_mercadopago import gerar_link_pagamento
+from routes.api_mercadopago import gerar_link_pagamento
 
 
 

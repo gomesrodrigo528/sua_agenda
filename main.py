@@ -1,18 +1,18 @@
 from flask import Flask, redirect, url_for
-from services import services_bp
-from users import users_bp
-from clientes import clientes_bp
-from relatorios import relatorios_bp
-from agenda import agenda_bp
-from login import login_bp
-from agendamento import agendamento_bp
-from agenda_cliente import agenda_cliente_bp
-from lembrete_email import lembrete_email_bp, verificar_agendamentos  # Importe a função aqui
-from config import config_bp
-from payment import payment_bp
-from sucesso import sucesso_bp
-from tasks import tasks_bp
-from renovacao import renovacao_bp
+from routes.services import services_bp
+from routes.users import users_bp
+from routes.clientes import clientes_bp
+from routes.relatorios import relatorios_bp
+from routes.agenda import agenda_bp
+from routes.login import login_bp
+from routes.agendamento import agendamento_bp
+from routes.agenda_cliente import agenda_cliente_bp
+from routes.lembrete_email import lembrete_email_bp, verificar_agendamentos  # Importe a função aqui
+from routes.config import config_bp
+from routes.payment import payment_bp
+from routes.sucesso import sucesso_bp
+from routes.tasks import tasks_bp
+from routes.renovacao import renovacao_bp
 import os
 
 # Configuração do Flask

@@ -27,14 +27,14 @@ def gerar_link_pagamento(plano, tipo="assinatura"):
 
     # Garantir que todas as URLs estejam presentes
     if tipo == "renovacao":
-        success_url = "www.suaagenda.fun/renovacaoconfirmada"
+        success_url = "https://sua-agenda-dihe.onrender.com/renovacaoconfirmada"
     else:
-        success_url = "www.suaagenda.fun/pagamentoaprovado"
+        success_url = "https://sua-agenda-dihe.onrender.com/pagamentoaprovado"
 
     back_urls = {
         "success": success_url,
-        "failure": "www.suaagenda.fun/pagamentonaoaprovado",
-        "pending": "www.suaagenda.fun/pagamentonaoaprovado",
+        "failure": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
+        "pending": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
     }
 
     payment_data = {
