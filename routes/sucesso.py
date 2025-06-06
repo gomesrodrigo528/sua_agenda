@@ -17,7 +17,7 @@ sucesso_bp = Blueprint('sucesso', __name__)
 empresa_cadastrada = {}
 
 
-@sucesso_bp.route('/sucesso/<plano>', methods=['GET', 'POST'])
+@sucesso_bp.route('/pagamentoaprovado/<plano>', methods=['GET', 'POST'])
 def sucesso(plano):
     global empresa_cadastrada
     if plano == "trimestral":

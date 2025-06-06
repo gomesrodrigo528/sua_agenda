@@ -27,15 +27,19 @@ def gerar_link_pagamento(plano, tipo="assinatura"):
 
     # Garantir que todas as URLs estejam presentes
     if tipo == "renovacao":
-        success_url = "https://sua-agenda-dihe.onrender.com/renovacaoconfirmada"
+            back_urls = {
+                "success": "https://sua-agenda-dihe.onrender.com/renovacaoconfirmada/<plano>",
+                "failure": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado/<plano>",
+                "pending": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado/<plano>",
+            }
     else:
-        success_url = "https://sua-agenda-dihe.onrender.com/pagamentoaprovado"
+        back_urls = {
+            "success": "https://sua-agenda-dihe.onrender.com/pagamentoaprovado/<plano>",
+            "failure": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado/<plano>",
+            "pending": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado/<plano>",
+        }
 
-    back_urls = {
-        "success": success_url,
-        "failure": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
-        "pending": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
-    }
+
 
     payment_data = {
         "items": [
@@ -48,9 +52,11 @@ def gerar_link_pagamento(plano, tipo="assinatura"):
             }
         ],
         "back_urls": back_urls,
-        "auto_return": "approved",  # Correto e suportado pela API
+        "auto_return": "all",  # Correto e suportado pela API
         "payment_methods": {
-            
+            "pix": {
+                "expires_after_days": 1
+            }
         }
     }
 
