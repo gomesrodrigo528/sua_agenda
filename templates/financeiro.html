@@ -29,16 +29,22 @@
         <div class="container mt-4">
             <div id="loading">Carregando...</div>
 
-
-
+            
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <a href="/receitas">receitas</a>
+                <a href="/despesa">despesas</a>
+                <a href="/caixa">caixa</a>
+    
+            </div>
             <div class="d-flex justify-content-between mb-3">
                 <button class="btn btn-primary" id="add-saida" onclick="mostrar_form_saida()">Adicionar Saída</button>
                 <button class="btn btn-success" id="add-entrada" onclick="mostrar_form_entrada()">Adicionar
                     Entrada</button>
-
-            </div>
-
-            <form onsubmit="event.preventDefault(); inserirsaida();" style="display: none;" class="mt-4"
+                    
+                </div>
+                
+                <form onsubmit="event.preventDefault(); inserirsaida();" style="display: none;" class="mt-4"
                 id="form-saida">
                 <label for="saida" class="form-label">motivo da saída</label>
                 <input type="text" class="form-control" name="saida" id="saida" required>
@@ -65,7 +71,7 @@
                 </div>
             </form>
 
-            <div id="financeiro-table" class="table-responsive">
+            <div id="financeiro-table-entrada" class="table-responsive">
                 <table class="table table-striped">
                     <thead>
                         <tr>
@@ -79,6 +85,21 @@
                         <!-- Dados serão inseridos aqui -->
                     </tbody>
                 </table>
+                <div id="financeiro-table-saida" class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Motivo</th>
+                            <th>Valor</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="financeiro-body">
+                        <!-- Dados serão inseridos aqui -->
+                    </tbody>
+                </table>
+
 
             </div>
 
@@ -112,11 +133,13 @@
                         body: JSON.stringify({
                             motivo: document.getElementById('saida').value,
                             valor: document.getElementById('valor_saida').value // <- aqui tá o pulo do gato
+
                         })
                     })
                         .then(res => res.text())
                         .then(console.log)
                         .catch(err => console.error('ERRO:', err));
+                    window.location.reload();
                 }
 
 
@@ -140,18 +163,40 @@
 
 
                 function listar() {
-                    fetch('/financeiro')
-                        .then(res => res.json())
+                    fetch('/financeiro/listar')
+                        .then(res => {
+                            if (!res.ok) {
+                                throw new Error(`Erro na resposta: ${res.status}`);
+                            }
+                            return res.json();
+                        })
                         .then(data => {
+                            const tbody = document.getElementById('financeiro-body');
+                            tbody.innerHTML = ''; // Limpa o conteúdo anterior
+
                             data.entradas.forEach(item => {
-                                console.log("ENTRADA:", item.motivo, item.valor_entrada);
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                    <td>Entrada</td>
+                    <td>${item.motivo}</td>
+                    <td>R$ ${item.valor_entrada}</td>
+                    <td>${item.data}</td>
+                `;
+                                tbody.appendChild(row);
                             });
 
                             data.saidas.forEach(item => {
-                                console.log("SAÍDA:", item.motivo, item.valor_saida);
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                    <td>Saída</td>
+                    <td>${item.motivo}</td>
+                    <td>R$ ${item.valor_saida}</td>
+                    <td>${item.data}</td>
+                `;
+                                tbody.appendChild(row);
                             });
                         })
-                        .catch(err => console.error('Erro ao listar:', err));
+                        .catch(err => console.error('ERRO:', err));
                 }
 
                 listar();
