@@ -13,6 +13,8 @@ from routes.payment import payment_bp
 from routes.sucesso import sucesso_bp
 from routes.tasks import tasks_bp
 from routes.renovacao import renovacao_bp
+from routes.financeiro import financeiro_bp
+from routes.check_health import check_health_bp
 import os
 
 # Configuração do Flask
@@ -34,7 +36,8 @@ app.register_blueprint(login_bp)
 app.register_blueprint(agendamento_bp)
 app.register_blueprint(agenda_cliente_bp)
 app.register_blueprint(lembrete_email_bp)
-
+app.register_blueprint(financeiro_bp)
+app.register_blueprint(check_health_bp)
 # Configuração do agendador
 
 

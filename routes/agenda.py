@@ -1,3 +1,4 @@
+
 from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for
 from supabase import create_client
 import os

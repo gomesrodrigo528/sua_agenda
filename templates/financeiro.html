@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serviços</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- CSS Personalizado -->
+    <link rel="stylesheet" href="/static/styles/style.css">
+    <link rel="stylesheet" href="/static/styles/users.css">
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+</head>
+
+<body>
+    <div>
+        <button id="toggle-menu" class="d-block d-md-none"
+            style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
+            ☰
+        </button>
+    </div>
+    <div class="d-flex">
+
+        <!-- Menu Lateral -->
+        <div id="menu-container"></div>
+        <!-- Conteúdo Principal -->
+        <div class="container mt-4">
+            <div id="loading">Carregando...</div>
+
+
+
+            <div class="d-flex justify-content-between mb-3">
+                <button class="btn btn-primary" id="add-saida" onclick="mostrar_form_saida()">Adicionar Saída</button>
+                <button class="btn btn-success" id="add-entrada" onclick="mostrar_form_entrada()">Adicionar
+                    Entrada</button>
+
+            </div>
+
+            <form onsubmit="event.preventDefault(); inserirsaida();" style="display: none;" class="mt-4"
+                id="form-saida">
+                <label for="saida" class="form-label">motivo da saída</label>
+                <input type="text" class="form-control" name="saida" id="saida" required>
+                <label for="valor_saida" class="form-label">Valor</label>
+                <input type="number" class="form-control" name="valor_saida" id="valor_saida" required>
+                <div class="d-flex justify-content-between mb-3">
+                    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Salvar</button>
+                    <button type="button" class="btn btn-secondary" style="margin-top:10px;"
+                        onclick="document.getElementById('form-saida').style.display = 'none';">Cancelar</button>
+                </div>
+            </form>
+
+
+            <form onsubmit="event.preventDefault(); inserirentrada();" style="display: none;" class="mt-4"
+                id="form-entrada">
+                <label for="entrada" class="form-label">motivo da entrada</label>
+                <input type="text" class="form-control" name="entrada" id="entrada" required>
+                <label for="valor" class="form-label">Valor</label>
+                <input type="number" class="form-control" name="valor" id="valor_entrada" required>
+                <div class="d-flex justify-content-between mb-3">
+                    <button type="submit" class="btn btn-primary" style="margin-top:10px;">Salvar</button>
+                    <button type="button" class="btn btn-secondary" style="margin-top:10px;"
+                        onclick="document.getElementById('form-entrada').style.display = 'none';">Cancelar</button>
+                </div>
+            </form>
+
+            <div id="financeiro-table" class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Tipo</th>
+                            <th>Motivo</th>
+                            <th>Valor</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody id="financeiro-body">
+                        <!-- Dados serão inseridos aqui -->
+                    </tbody>
+                </table>
+
+            </div>
+
+
+            <button onclick="versaldoatual()" class="btn btn-primary" style="position: fixed-bottom; display: none;">
+                <i>Ver Saldo</i></button>
+            <script src="static/scripts/menu.js"></script>
+            <script>
+                renderMenu('menu-container');
+
+            </script>
+
+            <script>
+                function mostrar_form_saida() {
+                    document.getElementById('form-saida').style.display = 'block';
+                    document.getElementById('form-entrada').style.display = 'none';
+                }
+                function mostrar_form_entrada() {
+                    document.getElementById('form-entrada').style.display = 'block';
+                    document.getElementById('form-saida').style.display = 'none';
+                }
+            </script>
+
+            <script>
+                function inserirsaida() {
+                    fetch('/financeiro/saida', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            motivo: document.getElementById('saida').value,
+                            valor: document.getElementById('valor_saida').value // <- aqui tá o pulo do gato
+                        })
+                    })
+                        .then(res => res.text())
+                        .then(console.log)
+                        .catch(err => console.error('ERRO:', err));
+                }
+
+
+                function inserirentrada() {
+
+                    fetch('/financeiro/entrada', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            motivo: document.getElementById('entrada').value,
+                            valor: document.getElementById('valor_entrada').value
+                        })
+                    })
+                        .then(res => res.text())
+                        .then(console.log)
+                        .catch(err => console.error('ERRO:', err));
+                    window.location.reload();
+                }
+
+
+                function listar() {
+                    fetch('/financeiro')
+                        .then(res => res.json())
+                        .then(data => {
+                            data.entradas.forEach(item => {
+                                console.log("ENTRADA:", item.motivo, item.valor_entrada);
+                            });
+
+                            data.saidas.forEach(item => {
+                                console.log("SAÍDA:", item.motivo, item.valor_saida);
+                            });
+                        })
+                        .catch(err => console.error('Erro ao listar:', err));
+                }
+
+                listar();
+
+            </script>
+
+</body>
+
+</html>

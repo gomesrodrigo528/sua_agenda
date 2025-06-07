@@ -38,6 +38,9 @@ function renderMenu(containerId) {
                             <a href="/configuracao" class="nav-link text-white"><i class="bi bi-gear"></i> Configurações</a>
                         </li>
                         <li class="nav-item mb-3">
+                            <a href="/financeiro" class="nav-link text-white"><i class="bi bi-cash"></i> Financeiro</a>
+                        </li>
+                        <li class="nav-item mb-3">
                             <a href="/login" class="nav-link text-white"><i class="bi bi-arrow-90deg-up"></i> sair</a>
                         </li>
                     </ul>
