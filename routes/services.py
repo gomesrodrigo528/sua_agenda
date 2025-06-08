@@ -112,6 +112,8 @@ def excluir_servico(service_id):
 
 
 
+
+
 @services_bp.route('/api/usuarios', methods=['GET'])
 def listar_usuarios():
     if verificar_login():
@@ -122,3 +124,21 @@ def listar_usuarios():
     response = supabase.table("usuarios").select("id, nome_usuario").eq("id_empresa", empresa_id).execute()
     
     return jsonify(response.data), 200
+
+
+
+
+
+
+@services_bp.route('/sevicos/listar')
+def listar_servicos():
+    try:
+        empresa_id = request.cookies.get('empresa_id')
+        response = (supabase.table('servicos')
+                    .select('*')
+                    .eq('id_empresa', empresa_id)
+                    .execute())
+        servicos = response.data if response.data else []
+        return jsonify(servicos)
+    except Exception as e:
+        return jsonify([]), 500

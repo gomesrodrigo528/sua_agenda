@@ -154,3 +154,17 @@ def excluir_cliente(id):
     except Exception as e:
         print(f"Erro ao excluir cliente: {e}")
         return redirect(url_for('clientes_bp.clientes', error="Erro ao excluir cliente."))
+    
+@clientes_bp.route('/clientes/listar', methods=['GET'])
+def listar_clientes():
+    try:
+        empresa_id = request.cookies.get('empresa_id')
+        response = (supabase.table('clientes')
+                    .select('*')
+                    .eq('id_empresa', empresa_id)
+                    .execute())
+        clientes = response.data if response.data else []
+        return jsonify(clientes)
+    except Exception as e:
+
+        return jsonify([]), 500

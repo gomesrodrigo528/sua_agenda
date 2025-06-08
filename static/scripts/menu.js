@@ -16,37 +16,53 @@ function renderMenu(containerId) {
             const corEmpresa = data.cor_emp || '#343a40';
 
             container.innerHTML = `
-                <nav id="menu-lateral" class="text-white p-3" style="width: 250px; min-height: 100vh; background-color: ${corEmpresa};">
-                    <ul class="nav flex-column mt-4">
-                        <img src="${logo}" id="logo" alt="Logo da Empresa" style="max-width: 100%; height: 180px;">
-                        <li class="nav-item mb-3">
-                            <a href="/agenda" class="nav-link text-white"><i class="bi bi-calendar3"></i> Agenda</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/clientes" class="nav-link text-white"><i class="bi bi-people"></i> Clientes</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/usuarios" class="nav-link text-white"><i class="bi bi-person-badge"></i> Usuários</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/servicos" class="nav-link text-white"><i class="bi bi-hammer"></i> Serviços</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/relatorios" class="nav-link text-white"><i class="bi bi-bar-chart"></i> Relatórios</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/configuracao" class="nav-link text-white"><i class="bi bi-gear"></i> Configurações</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/financeiro" class="nav-link text-white"><i class="bi bi-cash"></i> Financeiro</a>
-                        </li>
-                        <li class="nav-item mb-3">
-                            <a href="/login" class="nav-link text-white"><i class="bi bi-arrow-90deg-up"></i> sair</a>
-                        </li>
-                    </ul>
-                </nav>
+ <nav id="menu-lateral" class="text-white p-3" style="width: 250px; min-height: 100vh; background-color: ${corEmpresa};">
+  <ul class="nav flex-column mt-4">
+    <img src="${logo}" id="logo" alt="Logo da Empresa" style="max-width: 100%; height: 180px;">
+
+    <!-- Ações principais -->
+    <li class="nav-item mb-3">
+      <a href="/agenda" class="nav-link text-white"><i class="bi bi-calendar3"></i> Agenda</a>
+    </li>
+    <li class="nav-item mb-3">
+      <a href="/vendas" class="nav-link text-white"><i class="bi bi-currency-dollar"></i> Vender</a>
+    </li>
+    <li class="nav-item mb-3">
+      <a href="/clientes" class="nav-link text-white"><i class="bi bi-people"></i> Clientes</a>
+    </li>
+
+    <!-- Operações de suporte -->
+    <li class="nav-item mb-3">
+      <a href="/servicos" class="nav-link text-white"><i class="bi bi-hammer"></i> Serviços</a>
+    </li>
+    <li class="nav-item mb-3">
+      <a href="/produtos" class="nav-link text-white"><i class="bi bi-box-seam"></i> Produtos</a>
+    </li>
+
+    <!-- Gestão e administração -->
+    <li class="nav-item mb-3">
+      <a href="/financeiro" class="nav-link text-white"><i class="bi bi-cash"></i> Financeiro</a>
+    </li>
+    <li class="nav-item mb-3">
+      <a href="/relatorios" class="nav-link text-white"><i class="bi bi-bar-chart"></i> Relatórios</a>
+    </li>
+    <li class="nav-item mb-3">
+      <a href="/usuarios" class="nav-link text-white"><i class="bi bi-person-badge"></i> Usuários</a>
+    </li>
+    <li class="nav-item mb-3">
+      <a href="/configuracao" class="nav-link text-white"><i class="bi bi-gear"></i> Configurações</a>
+    </li>
+
+    <!-- Sair -->
+    <li class="nav-item mb-3">
+      <a href="/login" class="nav-link text-white"><i class="bi bi-arrow-90deg-up"></i> Sair</a>
+    </li>
+  </ul>
+</nav>
+
+
             `;
-            
+
             // Garantir que o código de manipulação do menu seja chamado depois de renderizar o menu
             setupMenu();
         })
@@ -70,12 +86,12 @@ function setupMenu() {
     }
 
     // Evento para abrir o menu
-    toggleMenu.addEventListener("click", function() {
+    toggleMenu.addEventListener("click", function () {
         menuLateral.classList.toggle("open");
     });
 
     // Fechar o menu ao clicar fora dele
-    document.addEventListener("click", function(event) {
+    document.addEventListener("click", function (event) {
         // Verifica se o clique foi fora do menu lateral e do botão de alternância
         if (!menuLateral.contains(event.target) && !toggleMenu.contains(event.target) && !menuContainer.contains(event.target)) {
             closeMenu();

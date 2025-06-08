@@ -1,0 +1,191 @@
+from flask import Flask, Blueprint, render_template, request, redirect, url_for, jsonify
+from flask import flash, session
+from flask import current_app as app
+from datetime import datetime
+from supabase import create_client, Client
+
+import os
+import datetime
+produtos_bp = Blueprint('produtos_bp', __name__)
+
+supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
+supabase_key = os.getenv(
+    'SUPABASE_KEY',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
+)
+supabase=create_client(supabase_url,supabase_key)
+
+
+def verificar_login():
+    if not request.cookies.get('user_id') or not request.cookies.get('empresa_id'):
+        return redirect(url_for('login.login'))  # Redireciona para a página de login se não estiver autenticado
+    return None
+
+
+
+@produtos_bp.route('/produtos', methods=['GET'])
+def render_produtos():
+    return render_template('produtos.html')
+
+@produtos_bp.route('/produtos/cadastro', methods=['POST'])
+def iserir_produtos():
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        data = request.get_json()
+        print("JSON recebido:", data)
+
+        id_empresa = request.cookies.get('empresa_id')
+        id_usuario = request.cookies.get('user_id')
+
+        if not id_empresa or not id_usuario:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        response = supabase.table("produtos").insert({
+        "nome_produto": data.get('nome_produto'),
+        "preco": data.get('preco'),
+        "estoque": data.get('estoque'),
+        "id_empresa": id_empresa,
+        "grupo":"sem grupo definido"
+        }).execute()
+
+        return jsonify({"message": "Produto cadastrado com sucesso!"}), 201
+
+    except Exception as e:
+        print("ERRO:", str(e))
+        return jsonify({"error": str(e)}), 500
+    
+
+
+@produtos_bp.route('/produtos/listar', methods=['GET'])
+def listar_produtos():
+    try:
+        empresa_id = request.cookies.get('empresa_id')
+        response = (supabase.table('produtos')
+                    .select('*')
+                    .eq('id_empresa', empresa_id)
+                    .execute())
+        produtos = response.data if response.data else []
+        return jsonify(produtos)
+    except Exception as e:
+        return jsonify([]), 500
+    
+
+@produtos_bp.route('/produtos/excluir/<int:id>', methods=['DELETE'])
+def excluir(id):
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        supabase.table("produtos").delete().eq("id", id).execute()
+        return jsonify({"message": "Produto excluido com sucesso!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@produtos_bp.route('/produtos/editar/<int:id>', methods=['PUT'])
+def editar(id):
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        data = request.get_json()
+        supabase.table("produtos").update(data).eq("id", id).execute()
+        return jsonify({"message": "Produto alterado com sucesso!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+
+
+@produtos_bp.route('/produtos/venda/<int:id>/<int:quantidade>', methods=['GET'])
+def venda(id,quantidade):
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        data = request.get_json()
+        supabase.table("produtos").update(data).eq("id", id).execute()
+        return jsonify({"message": "Produto alterado com sucesso!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+      
+        
+
+    
+@produtos_bp.route('/produtos/consultar', methods=['POST'])
+def consultar_produto():
+    try:
+        if verificar_login():
+            return verificar_login()
+
+        data = request.get_json()
+        id_produto = data.get("id_produto")
+        quantidade = int(data.get("quantidade", 1))
+
+        if not id_produto or quantidade <= 0:
+            return jsonify({"error": "Dados inválidos: informe id_produto e quantidade > 0"}), 400
+
+        # Busca o produto
+        response = supabase.table("produtos").select("*").eq("id", id_produto).single().execute()
+
+        if not response.data:
+            return jsonify({"error": "Produto não encontrado"}), 404
+
+        produto = response.data
+        estoque_disponivel = produto.get("estoque", 0)
+
+        if estoque_disponivel < quantidade:
+            return jsonify({
+                "error": "Estoque insuficiente",
+                "estoque_disponivel": estoque_disponivel
+            }), 400
+
+        # Retorna os dados do produto (para preencher no carrinho/PDV)
+        return jsonify({
+            "id": produto["id"],
+            "nome": produto["nome_produto"],
+            "preco": produto["preco"],
+            "estoque_disponivel": estoque_disponivel
+        }), 200
+
+    except Exception as e:
+        print(f"Erro ao consultar produto: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@produtos_bp.route('/api/produtos/buscar', methods=['GET'])
+def buscar_produtos():
+    try:
+        if verificar_login():
+            return verificar_login()
+
+        termo = request.args.get('termo', '').strip()
+        id_empresa = request.cookies.get('empresa_id')
+
+        if not termo:
+            return jsonify([])
+
+        # Busca produtos que contenham o termo no nome
+        response = supabase.table("produtos") \
+            .select("id, nome_produto, preco, estoque") \
+            .eq("id_empresa", id_empresa) \
+            .ilike("nome_produto", f"%{termo}%") \
+            .execute()
+
+        produtos = response.data if response.data else []
+        
+        # Formata os dados para o frontend
+        produtos_formatados = [{
+            'id': p['id'],
+            'nome': p['nome_produto'],
+            'preco': p['preco'],
+            'estoque': p['estoque']
+        } for p in produtos]
+
+        return jsonify(produtos_formatados)
+
+    except Exception as e:
+        print("Erro ao buscar produtos:", str(e))
+        return jsonify({"error": str(e)}), 500

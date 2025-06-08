@@ -1,7 +1,9 @@
 from flask import Flask, Blueprint, render_template, request, redirect, url_for, jsonify
 from flask import flash, session
 from flask import current_app as app
+from datetime import datetime
 from supabase import create_client, Client
+
 import os
 import datetime
 
@@ -9,7 +11,8 @@ import datetime
 
 financeiro_bp = Blueprint('financeiro_bp' , __name__)
 
-dataatual = datetime.datetime.now().strftime('%Y-%m-%d')
+dataatual = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+print(dataatual)
 
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
 supabase_key = os.getenv(
@@ -30,14 +33,17 @@ def verificar_login():
     return None
 
 
+
+
 @financeiro_bp.route('/financeiro/entrada', methods=['POST'])
 def receber():
     try:
         if verificar_login():
             return verificar_login()
+        
 
         data = request.get_json()
-        print("JSON recebido:", data)
+        print("Payload recebido:", data)
 
         id_empresa = request.cookies.get('empresa_id')
         id_usuario = request.cookies.get('user_id')
@@ -45,29 +51,64 @@ def receber():
         if not id_empresa or not id_usuario:
             return jsonify({"error": "Usuário não autenticado"}), 401
 
-        print("Dados inserção Supabase:", {
-            "data": dataatual,
-            "id_empresa": id_empresa,
-            "valor_entrada": float(data.get('valor')),
-            "motivo": data.get('motivo'),
-            "id_usuario": id_usuario
-        })
+        # Validação de campos obrigatórios
+        motivo = data.get('motivo')
+        valor = data.get('valor')
+        meio_pagamento = data.get('meio_pagamento')
+        servico = data.get('servico')
+        cliente = data.get('cliente')
+
+        erros = []
+
+        if not motivo:
+            erros.append("Motivo é obrigatório.")
+        if not valor:
+            erros.append("Valor é obrigatório.")
+        else:
+            try:
+                valor = float(valor)
+            except ValueError:
+                erros.append("Valor deve ser numérico.")
+
+        if not meio_pagamento:
+            erros.append("Meio de pagamento é obrigatório.")
+
+        try:
+            servico = int(servico)
+        except (TypeError, ValueError):
+            erros.append("Serviço inválido.")
+
+        try:
+            cliente = int(cliente)
+        except (TypeError, ValueError):
+            erros.append("Cliente inválido.")
+
+        if erros:
+            return jsonify({"error": erros}), 400
+
 
         response = supabase.table("financeiro_entrada").insert({
             "data": dataatual,
             "id_empresa": id_empresa,
-            "valor_entrada": float(data.get('valor')),
-            "motivo": data.get('motivo'),
+            "valor_entrada": valor,
+            "motivo": motivo,
+            "meio_pagamento": meio_pagamento,
+            "id_servico": servico,
+            "id_cliente": cliente,
             "id_usuario": id_usuario
         }).execute()
 
         return jsonify({"message": "Entrada registrada com sucesso!"}), 201
 
     except Exception as e:
-    
+        print(f"Erro ao registrar entrada: {e}")
         return jsonify({"error": str(e)}), 500
 
+        return jsonify({"message": "Entrada registrada com sucesso!"}), 201
 
+    except Exception as e:
+        print(f"Erro ao registrar entrada: {e}")  # Loga o erro no console
+        return jsonify({"error": "Erro interno ao registrar entrada."}), 500
 
 @financeiro_bp.route('/financeiro/saida', methods=['POST'])
 def despesa():
@@ -84,13 +125,6 @@ def despesa():
         if not id_empresa or not id_usuario:
             return jsonify({"error": "Usuário não autenticado"}), 401
 
-        print("Dados inserção Supabase:", {
-            "data": dataatual,
-            "id_empresa": id_empresa,
-            "valor_saida": float(data.get('valor')),
-            "motivo": data.get('motivo'),
-            "id_usuario": id_usuario
-        })
 
         response = supabase.table("financeiro_saida").insert({
             "data": dataatual,
@@ -107,6 +141,32 @@ def despesa():
         return jsonify({"error": str(e)}), 500
     
 
+@financeiro_bp.route('/financeiro/entrada/excluir/<int:id>', methods=['DELETE'])
+def excluir(id):
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+
+    
+        supabase.table("financeiro_entrada").delete().eq("id", id).execute()
+        return jsonify({"message": "Entrada excluida com sucesso!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@financeiro_bp.route('/financeiro/saida/excluir/<int:id>', methods=['DELETE'])
+def excluir_saida(id):
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        supabase.table("financeiro_saida").delete().eq("id", id).execute()
+        return jsonify({"message": "Despesa excluida com sucesso!"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 @financeiro_bp.route('/financeiro/listar', methods=['GET'])
 def listar_financeiro():
@@ -119,16 +179,115 @@ def listar_financeiro():
         if not id_empresa:
             return jsonify({"error": "Usuário não autenticado"}), 401
 
-        response_entrada = supabase.table("financeiro_entrada").select("*").eq("id_empresa", id_empresa).execute()
-        response_saida = supabase.table("financeiro_saida").select("*").eq("id_empresa", id_empresa).execute()
+        # Busca todas as entradas
+        response_entrada = supabase.table("financeiro_entrada") \
+            .select("*") \
+            .eq("id_empresa", id_empresa) \
+            .order("data", desc=True) \
+            .execute()
 
-        entradas = response_entrada.data
-        saidas = response_saida.data
+        entradas_raw = response_entrada.data if response_entrada.data else []
+        entradas_formatadas = []
+
+        for entrada in entradas_raw:
+            try:
+                # Resolvendo os nomes das FKs com tratamento de erro para cada consulta
+                cliente_nome = "Não identificado"
+                usuario_nome = "Não identificado"
+                servico_nome = "Não identificado"
+
+                if entrada.get("id_cliente"):
+                    cliente = supabase.table("clientes").select("nome_cliente").eq("id", entrada["id_cliente"]).single().execute()
+                    if cliente.data:
+                        cliente_nome = cliente.data.get("nome_cliente", "Não identificado")
+
+                if entrada.get("id_usuario"):
+                    usuario = supabase.table("usuarios").select("nome_usuario").eq("id", entrada["id_usuario"]).single().execute()
+                    if usuario.data:
+                        usuario_nome = usuario.data.get("nome_usuario", "Não identificado")
+
+                if entrada.get("id_servico"):
+                    servico = supabase.table("servicos").select("nome_servico").eq("id", entrada["id_servico"]).single().execute()
+                    if servico.data:
+                        servico_nome = servico.data.get("nome_servico", "Não identificado")
+
+                entradas_formatadas.append({
+                    "id_entrada": entrada.get("id"),
+                    "data": entrada.get("data", ""),
+                    "meio_pagamento": entrada.get("meio_pagamento", "Não informado"),
+                    "motivo": entrada.get("motivo", "Não informado"),
+                    "valor_entrada": float(entrada.get("valor_entrada", 0)),
+                    "cliente": cliente_nome,
+                    "usuario": usuario_nome,
+                    "servico": servico_nome
+                })
+            except Exception as e:
+                print(f"Erro ao processar entrada {entrada.get('id')}: {str(e)}")
+                continue
+
+        # Busca todas as saídas com tratamento de dados
+        response_saida = supabase.table("financeiro_saida").select("*").eq("id_empresa", id_empresa).execute()
+        saidas_raw = response_saida.data if response_saida.data else []
+        
+        saidas_formatadas = []
+        for saida in saidas_raw:
+            try:
+                saidas_formatadas.append({
+                    "id": saida.get("id"),
+                    "data": saida.get("data", ""),
+                    "motivo": saida.get("motivo", "Não informado"),
+                    "valor_saida": float(saida.get("valor_saida", 0))
+                })
+            except Exception as e:
+                print(f"Erro ao processar saída {saida.get('id')}: {str(e)}")
+                continue
 
         return jsonify({
-            "entradas": entradas,
-            "saidas": saidas
+            "entradas": entradas_formatadas,
+            "saidas": saidas_formatadas
         }), 200
 
     except Exception as e:
+        print(f"Erro em /financeiro/listar: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+
+@financeiro_bp.route('/financeiro/totais', methods = ['GET'])
+def total_entradas():
+    try:
+        id_empresa = request.cookies.get('empresa_id')
+
+        if not id_empresa:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        try:
+            response_entrada = supabase.table("financeiro_entrada").select("valor_entrada").eq("id_empresa", id_empresa).execute()
+            total_entradas = sum(float(item.get('valor_entrada', 0)) for item in (response_entrada.data or []))
+        except Exception as e:
+            print(f"Erro ao calcular total de entradas: {e}")
+            total_entradas = 0
+
+        try:
+            response_saida = supabase.table("financeiro_saida").select("valor_saida").eq("id_empresa", id_empresa).execute()
+            total_saidas = sum(float(item.get('valor_saida', 0)) for item in (response_saida.data or []))
+        except Exception as e:
+            print(f"Erro ao calcular total de saídas: {e}")
+            total_saidas = 0
+
+        saldo = total_entradas - total_saidas
+
+        return jsonify({
+            "total_entradas": total_entradas,
+            "total_saidas": total_saidas,
+            "saldo": saldo
+        }), 200
+    except Exception as e:
+        print(f"Erro ao calcular totais: {e}")
+        return jsonify({
+            "error": "Erro ao calcular totais",
+            "total_entradas": 0,
+            "total_saidas": 0,
+            "saldo": 0
+        }), 500
+    

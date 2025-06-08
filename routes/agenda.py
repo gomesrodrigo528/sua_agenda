@@ -5,6 +5,7 @@ import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from datetime import datetime
 #ta em branco a linha que ta dando erro
 # Configuração do Supabase
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
@@ -346,26 +347,36 @@ def finalizar_agendamento(id):
         return verificar_login()
 
     dados = request.get_json()
+    print("JSON recebido:", dados)
     valor = dados.get("valor")
     meio_pagamento = dados.get("meio_pagamento")
     empresa_id = obter_id_empresa()
+    usuario = obter_id_usuario()
 
     if not empresa_id:
         return jsonify({"error": "Empresa não encontrada na sessão."}), 401
 
     try:
         # Verificar se o agendamento existe
-        agendamento = supabase.table("agenda").select("id").eq("id", id).eq("id_empresa", empresa_id).execute()
+        agendamento = supabase.table("agenda")\
+            .select("id", "cliente_id", "usuario_id", "servico_id")\
+            .eq("id", id).eq("id_empresa", empresa_id).execute()
+
+        print("agendamento dados", agendamento)
 
         if not agendamento.data:
             return jsonify({"error": "Agendamento não encontrado."}), 404
+
+        agendamento_data = agendamento.data[0]
+        cliente_id = agendamento_data["cliente_id"]
+        servico_id = agendamento_data["servico_id"]
 
         # Finalizar o agendamento
         supabase.table("finalizados").insert({
             "id_agenda": id,
             "meio_pagamento": meio_pagamento,
             "valor": valor,
-            "data_hora_finalizacao": "now()",  # Registra o momento da finalização
+            "data_hora_finalizacao": datetime.now().isoformat(),
             "id_empresa": empresa_id
         }).execute()
 
@@ -374,7 +385,24 @@ def finalizar_agendamento(id):
             "status": "finalizado"
         }).eq("id", id).eq("id_empresa", empresa_id).execute()
 
+        # Lançar no financeiro
+        supabase.table("financeiro_entrada").insert({
+            "id_agenda": id,
+            "valor_entrada": valor,
+            "data": datetime.now().isoformat(),
+            "id_usuario": usuario,
+            "meio_pagamento": meio_pagamento,
+            "motivo": "Agendamento finalizado",
+            "id_empresa": empresa_id,
+            "id_cliente": cliente_id,
+            "id_servico": servico_id
+        }).execute()
+
         return jsonify({"message": "Agendamento finalizado com sucesso!"}), 200
+
+    except Exception as e:
+        print(f"Erro ao finalizar agendamento: {e}")
+        return jsonify({"error": "Erro ao finalizar agendamento."}), 500
 
     except Exception as e:
         print(f"Erro ao finalizar agendamento: {e}")

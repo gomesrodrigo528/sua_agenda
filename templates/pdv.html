@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDV - Sua Agenda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <!-- Botão para Listar Vendas -->
+        <a href="/"
+            class="bg-blue-500 text-white px-2 py-2 rounded-lg hover:bg-blue-600 flex items-center gap-2 max-w-[90px]">
+            <i class="fas fa-arrow-left"></i>
+            <span class="truncate">Voltar</span>
+        </a>
+
+
+        <div class="mb-4 flex justify-end">
+            <button onclick="abrirModalVendas()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <i class="fas fa-list mr-2"></i>Listar Vendas
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- Painel de Produtos -->
+            <div class="lg:col-span-2 bg-white rounded-lg shadow p-4">
+                <div class="mb-4 relative">
+                    <div class="flex gap-2">
+                        <div class="flex-1 relative">
+                            <input type="text" id="pesquisaProduto" placeholder="Pesquisar produto..."
+                                class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                oninput="buscarProdutos(this.value)">
+                            <!-- Lista de Sugestões -->
+                            <div id="sugestoesProdutos"
+                                class="absolute w-full mt-1 bg-white border rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto hidden">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-2 text-left">Produto</th>
+                                <th class="p-2 text-right">Qtd</th>
+                                <th class="p-2 text-right">Valor Unit.</th>
+                                <th class="p-2 text-right">Subtotal</th>
+                                <th class="p-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="itensVenda">
+                            <!-- Itens serão inseridos aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Painel de Finalização -->
+            <div class="bg-white rounded-lg shadow p-4">
+                <h2 class="text-2xl font-bold mb-4">Resumo da Venda</h2>
+                <div class="space-y-4">
+                    <div class="text-3xl font-bold text-blue-600">
+                        Total: R$ <span id="totalVenda">0,00</span>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Plano de Contas</label>
+                        <select id="planoContas" class="mt-1 block w-full p-2 border rounded-lg">
+                            <option value="receita">Receita</option>
+                            <option value="despesa">Despesa</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Meio de Pagamento</label>
+                        <select id="meioPagamento" class="mt-1 block w-full p-2 border rounded-lg">
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="cartao_credito">Cartão de Crédito</option>
+                            <option value="cartao_debito">Cartão de Débito</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Observações</label>
+                        <textarea id="observacao" rows="3" class="mt-1 block w-full p-2 border rounded-lg"></textarea>
+                    </div>
+
+                    <button onclick="finalizarVenda()"
+                        class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 font-bold">
+                        Finalizar Venda
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Produto -->
+    <div id="modalProduto" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white p-4 rounded-lg w-full max-w-md">
+            <h3 class="text-lg font-bold mb-4">Adicionar Produto</h3>
+            <div class="space-y-4">
+                <input type="hidden" id="produtoId">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Nome do Produto</label>
+                    <input type="text" id="produtoNome" readonly
+                        class="mt-1 block w-full p-2 border rounded-lg bg-gray-100">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Quantidade</label>
+                    <input type="number" id="produtoQuantidade" min="1" value="1"
+                        class="mt-1 block w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Valor Unitário</label>
+                    <input type="number" id="produtoValor" step="0.01" class="mt-1 block w-full p-2 border rounded-lg">
+                </div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="fecharModal()"
+                        class="px-4 py-2 border rounded-lg hover:bg-gray-100">Cancelar</button>
+                    <button onclick="adicionarProduto()"
+                        class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Adicionar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Listagem de Vendas -->
+    <div id="modalVendas"
+        class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center overflow-y-auto">
+        <div class="bg-white p-4 rounded-lg w-full max-w-4xl m-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">Vendas Realizadas</h3>
+                <button onclick="fecharModalVendas()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Filtros -->
+            <div class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Data Início</label>
+                    <input type="date" id="dataInicio" class="mt-1 block w-full p-2 border rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Data Fim</label>
+                    <input type="date" id="dataFim" class="mt-1 block w-full p-2 border rounded-lg">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="buscarVendasComFiltro()"
+                        class="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-search mr-2"></i>Filtrar por Data
+                    </button>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="buscarTodasVendas()"
+                        class="w-full bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600">
+                        <i class="fas fa-list-ul mr-2"></i>Listar Todas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tabela de Vendas -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-2 text-left">Data</th>
+                            <th class="p-2 text-left">Plano de Contas</th>
+                            <th class="p-2 text-right">Valor</th>
+                            <th class="p-2 text-left">Meio de Pagamento</th>
+                            <th class="p-2 text-left">Observação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaVendas">
+                        <!-- Vendas serão inseridas aqui via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let produtos = [];
+        let timeoutId = null;
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        async function buscarProdutos(termo) {
+            const sugestoes = document.getElementById('sugestoesProdutos');
+
+            // Limpa o timeout anterior
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+
+            // Se o termo estiver vazio, esconde as sugestões
+            if (!termo.trim()) {
+                sugestoes.classList.add('hidden');
+                return;
+            }
+
+            // Espera 300ms após o último caractere digitado para fazer a busca
+            timeoutId = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}`);
+                    const produtos = await response.json();
+
+                    if (!Array.isArray(produtos)) {
+                        throw new Error('Resposta inválida do servidor');
+                    }
+
+                    // Limpa e preenche a lista de sugestões
+                    sugestoes.innerHTML = '';
+
+                    if (produtos.length > 0) {
+                        produtos.forEach(produto => {
+                            const div = document.createElement('div');
+                            div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
+                            div.innerHTML = `
+                                <div class="font-medium">${produto.nome}</div>
+                                <div class="text-sm text-gray-600">
+                                    Preço: R$ ${formatarMoeda(produto.preco)} | Estoque: ${produto.estoque}
+                                </div>
+                            `;
+                            div.onclick = () => selecionarProduto(produto);
+                            sugestoes.appendChild(div);
+                        });
+                        sugestoes.classList.remove('hidden');
+                    } else {
+                        sugestoes.classList.add('hidden');
+                    }
+                } catch (error) {
+                    console.error('Erro ao buscar produtos:', error);
+                }
+            }, 300);
+        }
+
+        function selecionarProduto(produto) {
+            document.getElementById('produtoId').value = produto.id;
+            document.getElementById('produtoNome').value = produto.nome;
+            document.getElementById('produtoValor').value = produto.preco;
+            document.getElementById('produtoQuantidade').value = "1";
+            document.getElementById('sugestoesProdutos').classList.add('hidden');
+            document.getElementById('pesquisaProduto').value = '';
+            document.getElementById('modalProduto').classList.remove('hidden');
+        }
+
+        function fecharModal() {
+            document.getElementById('modalProduto').classList.add('hidden');
+        }
+
+        function adicionarProduto() {
+            const id = document.getElementById('produtoId').value;
+            const nome = document.getElementById('produtoNome').value;
+            const quantidade = parseFloat(document.getElementById('produtoQuantidade').value);
+            const valor_unitario = parseFloat(document.getElementById('produtoValor').value);
+
+            if (!quantidade || !valor_unitario) {
+                alert('Preencha todos os campos');
+                return;
+            }
+
+            const produto = {
+                id: parseInt(id),
+                nome,
+                quantidade,
+                valor_unitario,
+                subtotal: quantidade * valor_unitario
+            };
+
+            produtos.push(produto);
+            atualizarTabelaProdutos();
+            fecharModal();
+        }
+
+        function removerProduto(index) {
+            produtos.splice(index, 1);
+            atualizarTabelaProdutos();
+        }
+
+        function atualizarTabelaProdutos() {
+            const tbody = document.getElementById('itensVenda');
+            tbody.innerHTML = '';
+
+            produtos.forEach((produto, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-2">${produto.nome}</td>
+                    <td class="p-2 text-right">${produto.quantidade}</td>
+                    <td class="p-2 text-right">R$ ${formatarMoeda(produto.valor_unitario)}</td>
+                    <td class="p-2 text-right">R$ ${formatarMoeda(produto.subtotal)}</td>
+                    <td class="p-2 text-right">
+                        <button onclick="removerProduto(${index})" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            const total = produtos.reduce((acc, produto) => acc + produto.subtotal, 0);
+            document.getElementById('totalVenda').textContent = formatarMoeda(total);
+        }
+
+        // Fecha as sugestões quando clicar fora
+        document.addEventListener('click', (e) => {
+            const sugestoes = document.getElementById('sugestoesProdutos');
+            const pesquisa = document.getElementById('pesquisaProduto');
+
+            if (!sugestoes.contains(e.target) && e.target !== pesquisa) {
+                sugestoes.classList.add('hidden');
+            }
+        });
+
+        async function finalizarVenda() {
+            if (produtos.length === 0) {
+                alert('Adicione pelo menos um produto');
+                return;
+            }
+
+            const venda = {
+                produtos: produtos,
+                observacao: document.getElementById('observacao').value,
+                plano_contas: document.getElementById('planoContas').value,
+                meio_pagamento: document.getElementById('meioPagamento').value
+            };
+
+            try {
+                const response = await fetch('/vender', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(venda)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Venda realizada com sucesso!');
+                    produtos = [];
+                    atualizarTabelaProdutos();
+                    document.getElementById('observacao').value = '';
+                } else {
+                    alert(result.error || 'Erro ao realizar venda');
+                }
+            } catch (error) {
+                alert('Erro ao realizar venda');
+            }
+        }
+
+        // Funções para o modal de vendas
+        function abrirModalVendas() {
+            document.getElementById('modalVendas').classList.remove('hidden');
+            // Define as datas padrão (último mês)
+            const hoje = new Date();
+            const mesPassado = new Date();
+            mesPassado.setMonth(hoje.getMonth() - 1);
+
+            document.getElementById('dataFim').value = hoje.toISOString().split('T')[0];
+            document.getElementById('dataInicio').value = mesPassado.toISOString().split('T')[0];
+
+            // Ao abrir o modal, busca todas as vendas por padrão
+            buscarTodasVendas();
+        }
+
+        function fecharModalVendas() {
+            document.getElementById('modalVendas').classList.add('hidden');
+        }
+
+        async function buscarTodasVendas() {
+            try {
+                const response = await fetch('/vendas/listar');
+                const vendas = await response.json();
+
+                if (!response.ok) {
+                    throw new Error('Erro ao buscar vendas');
+                }
+
+                atualizarTabelaVendas(vendas);
+            } catch (error) {
+                console.error('Erro ao buscar todas as vendas:', error);
+                alert('Erro ao buscar vendas');
+            }
+        }
+
+        async function buscarVendasComFiltro() {
+            try {
+                const dataInicio = document.getElementById('dataInicio').value;
+                const dataFim = document.getElementById('dataFim').value;
+
+                if (!dataInicio || !dataFim) {
+                    alert('Selecione as datas de início e fim');
+                    return;
+                }
+
+                // Ajusta as datas para o formato correto
+                const dataInicioObj = new Date(dataInicio);
+                dataInicioObj.setHours(0, 0, 0, 0);
+                const dataInicioStr = dataInicioObj.toISOString().split('.')[0];
+
+                const dataFimObj = new Date(dataFim);
+                dataFimObj.setHours(23, 59, 59, 0);
+                const dataFimStr = dataFimObj.toISOString().split('.')[0];
+
+                const response = await fetch(`/vendas/listar/filtro?data_inicio=${dataInicioStr}&data_fim=${dataFimStr}`);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Erro ao buscar vendas');
+                }
+
+                const vendas = result.vendas || [];
+                atualizarTabelaVendas(vendas);
+            } catch (error) {
+                console.error('Erro ao buscar vendas com filtro:', error);
+                alert(error.message || 'Erro ao buscar vendas');
+            }
+        }
+
+        function atualizarTabelaVendas(vendas) {
+            const tbody = document.getElementById('listaVendas');
+            tbody.innerHTML = '';
+
+            if (vendas && vendas.length > 0) {
+                vendas.forEach(venda => {
+                    // Formata a data considerando o timezone
+                    const dataVenda = new Date(venda.data);
+                    const dataFormatada = dataVenda.toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b hover:bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="p-2">${dataFormatada}</td>
+                        <td class="p-2">${venda.plano_contas || '-'}</td>
+                        <td class="p-2 text-right">R$ ${formatarMoeda(venda.valor)}</td>
+                        <td class="p-2">${venda.meio_pagamento || '-'}</td>
+                        <td class="p-2">${venda.observacao || '-'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } else {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="p-4 text-center text-gray-500">
+                            Nenhuma venda encontrada
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+    </script>
+</body>
+
+</html>
