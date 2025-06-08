@@ -78,8 +78,16 @@ def excluir(id):
         if verificar_login():
             return verificar_login()
         
+        # Verifica se o produto existe
+        produto = supabase.table("produtos").select("*").eq("id", id).execute()
+        if not produto.data:
+            return jsonify({"error": "Produto não encontrado"}), 404
+
+        # TODO: Aqui poderia verificar se o produto está em alguma venda antes de excluir
+        
+        # Exclui o produto
         supabase.table("produtos").delete().eq("id", id).execute()
-        return jsonify({"message": "Produto excluido com sucesso!"}), 200
+        return jsonify({"message": "Produto excluído com sucesso!"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -91,7 +99,29 @@ def editar(id):
             return verificar_login()
         
         data = request.get_json()
-        supabase.table("produtos").update(data).eq("id", id).execute()
+        
+        # Validação dos dados
+        if not data.get('nome_produto'):
+            return jsonify({"error": "Nome do produto é obrigatório"}), 400
+        
+        if not isinstance(data.get('preco'), (int, float)) or data['preco'] < 0:
+            return jsonify({"error": "Preço inválido"}), 400
+        
+        if not isinstance(data.get('estoque'), (int, float)) or data['estoque'] < 0:
+            return jsonify({"error": "Estoque inválido"}), 400
+
+        # Busca o produto atual
+        produto = supabase.table("produtos").select("*").eq("id", id).execute()
+        if not produto.data:
+            return jsonify({"error": "Produto não encontrado"}), 404
+
+        # Atualiza o produto
+        supabase.table("produtos").update({
+            "nome_produto": data['nome_produto'],
+            "preco": float(data['preco']),
+            "estoque": int(data['estoque'])
+        }).eq("id", id).execute()
+
         return jsonify({"message": "Produto alterado com sucesso!"}), 200
 
     except Exception as e:

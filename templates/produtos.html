@@ -109,6 +109,7 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
+                            <input type="hidden" id="detalhe-id">
                             <div class="mb-3">
                                 <h6 class="fw-bold">Nome do Produto</h6>
                                 <p id="detalhe-nome"></p>
@@ -128,6 +129,12 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            <button type="button" class="btn btn-warning" onclick="prepararEdicao()">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="excluirProduto()">
+                                <i class="bi bi-trash"></i> Excluir
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -139,14 +146,18 @@
 
                 // Função para salvar produto
                 function salvarProduto() {
+                    const produtoId = document.getElementById('produto_id').value;
                     const dados = {
                         nome_produto: document.getElementById('nome_produto').value,
                         preco: parseFloat(document.getElementById('preco').value),
                         estoque: parseInt(document.getElementById('estoque').value)
                     };
 
-                    fetch('/produtos/cadastro', {
-                        method: 'POST',
+                    const url = produtoId ? `/produtos/editar/${produtoId}` : '/produtos/cadastro';
+                    const method = produtoId ? 'PUT' : 'POST';
+
+                    fetch(url, {
+                        method: method,
                         headers: {
                             'Content-Type': 'application/json'
                         },
@@ -156,6 +167,8 @@
                     .then(response => {
                         $('#modalProduto').modal('hide');
                         document.getElementById('formProduto').reset();
+                        document.getElementById('produto_id').value = '';
+                        document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
                         carregarProdutos();
                         alert('Produto salvo com sucesso!');
                     })
@@ -167,6 +180,7 @@
 
                 // Função para mostrar detalhes do produto
                 function mostrarDetalhesProduto(produto) {
+                    document.getElementById('detalhe-id').value = produto.id;
                     document.getElementById('detalhe-nome').textContent = produto.nome_produto;
                     document.getElementById('detalhe-preco').textContent = produto.preco.toLocaleString('pt-BR', { 
                         style: 'currency', 
@@ -176,6 +190,46 @@
                     document.getElementById('detalhe-grupo').textContent = produto.grupo || 'Sem grupo';
 
                     $('#modalDetalhesProduto').modal('show');
+                }
+
+                // Função para preparar edição
+                function prepararEdicao() {
+                    const id = document.getElementById('detalhe-id').value;
+                    const nome = document.getElementById('detalhe-nome').textContent;
+                    const preco = document.getElementById('detalhe-preco').textContent.replace('R$', '').trim();
+                    const estoque = document.getElementById('detalhe-estoque').textContent;
+
+                    document.getElementById('produto_id').value = id;
+                    document.getElementById('nome_produto').value = nome;
+                    document.getElementById('preco').value = parseFloat(preco.replace(',', '.'));
+                    document.getElementById('estoque').value = estoque;
+                    document.getElementById('modalProdutoLabel').textContent = 'Editar Produto';
+
+                    $('#modalDetalhesProduto').modal('hide');
+                    $('#modalProduto').modal('show');
+                }
+
+                // Função para excluir produto
+                function excluirProduto() {
+                    const id = document.getElementById('detalhe-id').value;
+                    if (confirm('Tem certeza que deseja excluir este produto?')) {
+                        fetch(`/produtos/excluir/${id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(response => {
+                            $('#modalDetalhesProduto').modal('hide');
+                            carregarProdutos();
+                            alert('Produto excluído com sucesso!');
+                        })
+                        .catch(err => {
+                            console.error('ERRO:', err);
+                            alert('Erro ao excluir produto. Por favor, tente novamente.');
+                        });
+                    }
                 }
 
                 // Função para carregar produtos
@@ -194,14 +248,8 @@
                                     <td>${produto.estoque}</td>
                                     <td>${produto.grupo || 'Sem grupo'}</td>
                                     <td>
-                                        <button class="btn btn-info btn-sm me-2" onclick='mostrarDetalhesProduto(${JSON.stringify(produto).replace(/'/g, "&#39;")})'>
+                                        <button class="btn btn-info btn-sm" onclick='mostrarDetalhesProduto(${JSON.stringify(produto).replace(/'/g, "&#39;")})'>
                                             <i class="bi bi-eye"></i> Ver
-                                        </button>
-                                        <button class="btn btn-warning btn-sm me-2" onclick="editarProduto(${produto.id})">
-                                            <i class="bi bi-pencil"></i> Editar
-                                        </button>
-                                        <button class="btn btn-danger btn-sm" onclick="excluirProduto(${produto.id})">
-                                            <i class="bi bi-trash"></i> Excluir
                                         </button>
                                     </td>
                                 `;
