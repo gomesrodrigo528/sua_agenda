@@ -155,16 +155,30 @@ def excluir_cliente(id):
         print(f"Erro ao excluir cliente: {e}")
         return redirect(url_for('clientes_bp.clientes', error="Erro ao excluir cliente."))
     
-@clientes_bp.route('/clientes/listar', methods=['GET'])
+@clientes_bp.route('/clientes/listar')
 def listar_clientes():
     try:
+        # Verifica se o usuário está logado
+        redirecionar = verificar_login()
+        if redirecionar:
+            return redirecionar
+
+        # Filtra os clientes pela empresa associada no cookie
         empresa_id = request.cookies.get('empresa_id')
         response = (supabase.table('clientes')
                     .select('*')
                     .eq('id_empresa', empresa_id)
                     .execute())
-        clientes = response.data if response.data else []
-        return jsonify(clientes)
-    except Exception as e:
 
+        clientes = response.data if response.data else []
+        
+        # Formata os dados para o frontend
+        clientes_formatados = [{
+            'id': c['id'],
+            'nome': c['nome_cliente']
+        } for c in clientes]
+        
+        return jsonify(clientes_formatados)
+    except Exception as e:
+        print(f"Erro ao listar clientes: {e}")
         return jsonify([]), 500

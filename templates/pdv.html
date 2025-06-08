@@ -20,10 +20,11 @@
             </a>
 
             <div class="flex gap-2">
-                <button onclick="abrirModalVendas()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                <button onclick="abrirModalVendas()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
                     <i class="fas fa-list mr-2"></i>Listar Vendas
                 </button>
-                <button onclick="toggleFullScreen()" 
+                <button onclick="toggleFullScreen()"
                     class="bg-purple-500 text-white w-10 h-10 rounded-full hover:bg-purple-600 flex items-center justify-center transition-transform hover:scale-110"
                     title="Alternar tela cheia">
                     <i class="fas fa-expand text-xl"></i>
@@ -37,7 +38,7 @@
                 <div class="mb-4 relative">
                     <div class="flex gap-2">
                         <div class="flex-1 relative">
-                            <input type="text" id="pesquisaProduto" placeholder="Pesquisar produto..."
+                            <input type="text" id="pesquisaProduto" placeholder="Pesquisar produto...Digite * para listar todos"
                                 class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 oninput="buscarProdutos(this.value)">
                             <!-- Lista de Sugestões -->
@@ -81,10 +82,10 @@
                         </select>
                     </div>
 
-                    <div>
+                    <div style="display: none;">
                         <label class="block text-sm font-medium text-gray-700">Plano de Contas</label>
                         <select id="planoContas" class="mt-1 block w-full p-2 border rounded-lg">
-                            <option value="receita">Receita</option>
+                            <option value="receita">Venda de produtos</option>
                             <option value="despesa">Despesa</option>
                         </select>
                     </div>
@@ -206,24 +207,25 @@
         // Carregar lista de clientes quando a página carregar
         window.addEventListener('DOMContentLoaded', carregarClientes);
 
-        function carregarClientes() {
-            fetch('/clientes/listar')
-                .then(res => res.json())
-                .then(clientes => {
-                    const select = document.getElementById('cliente');
-                    select.innerHTML = '<option value="">Selecione um cliente (opcional)</option>';
-                    
-                    clientes.forEach(cliente => {
-                        const option = document.createElement('option');
-                        option.value = cliente.id;
-                        option.textContent = cliente.nome_cliente;
-                        select.appendChild(option);
-                    });
-                })
-                .catch(err => {
-                    console.error('Erro ao carregar clientes:', err);
-                });
-        }
+
+function carregarClientes() {
+    fetch('/clientes/listar')
+        .then(res => res.json())
+        .then(clientes => {
+            const select = document.getElementById('cliente');
+            select.innerHTML = '<option value="">Selecione um cliente (opcional)</option>';
+
+            clientes.forEach(cliente => {
+                const option = document.createElement('option');
+                option.value = cliente.id;
+                option.textContent = cliente.nome;  // <- AQUI TAVA O C* DO ERRO
+                select.appendChild(option);
+            });
+        })
+        .catch(err => {
+            console.error('Erro ao carregar clientes:', err);
+        });
+}
 
         function toggleFullScreen() {
             const doc = window.document;
@@ -280,6 +282,8 @@
             return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
+
+
         async function buscarProdutos(termo) {
             const sugestoes = document.getElementById('sugestoesProdutos');
 
@@ -291,20 +295,23 @@
             // Se o termo estiver vazio, esconde as sugestões
             if (!termo.trim()) {
                 sugestoes.classList.add('hidden');
+                sugestoes.innerHTML = '';
                 return;
             }
 
-            // Espera 300ms após o último caractere digitado para fazer a busca
+            // Espera 300ms após o último caractere digitado pra não estuprar a API com requisições
             timeoutId = setTimeout(async () => {
                 try {
-                    const response = await fetch(`/api/produtos/buscar?termo=${encodeURIComponent(termo)}`);
+                    // Faz a requisição passando o termo na URL
+                    const response = await fetch(`/produtos/buscar?termo=${encodeURIComponent(termo)}`);
                     const produtos = await response.json();
 
+                    // Se a resposta não for um array, manda pro inferno
                     if (!Array.isArray(produtos)) {
                         throw new Error('Resposta inválida do servidor');
                     }
 
-                    // Limpa e preenche a lista de sugestões
+                    // Limpa as sugestões anteriores
                     sugestoes.innerHTML = '';
 
                     if (produtos.length > 0) {
@@ -312,11 +319,11 @@
                             const div = document.createElement('div');
                             div.className = 'p-2 hover:bg-gray-100 cursor-pointer';
                             div.innerHTML = `
-                                <div class="font-medium">${produto.nome}</div>
-                                <div class="text-sm text-gray-600">
-                                    Preço: R$ ${formatarMoeda(produto.preco)} | Estoque: ${produto.estoque}
-                                </div>
-                            `;
+                        <div class="font-medium">${produto.nome}</div>
+                        <div class="text-sm text-gray-600">
+                            Preço: R$ ${formatarMoeda(produto.preco)} | Estoque: ${produto.estoque}
+                        </div>
+                    `;
                             div.onclick = () => selecionarProduto(produto);
                             sugestoes.appendChild(div);
                         });
@@ -326,6 +333,8 @@
                     }
                 } catch (error) {
                     console.error('Erro ao buscar produtos:', error);
+                    sugestoes.classList.add('hidden');
+                    sugestoes.innerHTML = '';
                 }
             }, 300);
         }
@@ -433,7 +442,7 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    window.location.reload();
+                    alert('Venda realizada com sucesso!');
                     produtos = [];
                     atualizarTabelaProdutos();
                     document.getElementById('observacao').value = '';

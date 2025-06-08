@@ -185,7 +185,7 @@ def consultar_produto():
         print(f"Erro ao consultar produto: {e}")
         return jsonify({"error": str(e)}), 500
 
-@produtos_bp.route('/api/produtos/buscar', methods=['GET'])
+@produtos_bp.route('/produtos/buscar', methods=['GET'])
 def buscar_produtos():
     try:
         if verificar_login():
@@ -194,15 +194,22 @@ def buscar_produtos():
         termo = request.args.get('termo', '').strip()
         id_empresa = request.cookies.get('empresa_id')
 
-        if not termo:
-            return jsonify([])
+        # Se o termo for '*', retorna todos os produtos
+        if termo == '*':
+            response = supabase.table("produtos") \
+                .select("id, nome_produto, preco, estoque") \
+                .eq("id_empresa", id_empresa) \
+                .execute()
+        else:
+            if not termo:
+                return jsonify([])
 
-        # Busca produtos que contenham o termo no nome
-        response = supabase.table("produtos") \
-            .select("id, nome_produto, preco, estoque") \
-            .eq("id_empresa", id_empresa) \
-            .ilike("nome_produto", f"%{termo}%") \
-            .execute()
+            # Busca produtos que contenham o termo no nome
+            response = supabase.table("produtos") \
+                .select("id, nome_produto, preco, estoque") \
+                .eq("id_empresa", id_empresa) \
+                .ilike("nome_produto", f"%{termo}%") \
+                .execute()
 
         produtos = response.data if response.data else []
         
@@ -213,6 +220,8 @@ def buscar_produtos():
             'preco': p['preco'],
             'estoque': p['estoque']
         } for p in produtos]
+
+        print(produtos_formatados)
 
         return jsonify(produtos_formatados)
 

@@ -41,7 +41,6 @@ def receber():
         if verificar_login():
             return verificar_login()
         
-
         data = request.get_json()
         print("Payload recebido:", data)
 
@@ -74,18 +73,32 @@ def receber():
             erros.append("Meio de pagamento é obrigatório.")
 
         try:
-            servico = int(servico)
+            servico = int(servico) if servico else None
         except (TypeError, ValueError):
             erros.append("Serviço inválido.")
 
         try:
-            cliente = int(cliente)
+            cliente = int(cliente) if cliente else None
         except (TypeError, ValueError):
             erros.append("Cliente inválido.")
 
         if erros:
             return jsonify({"error": erros}), 400
 
+        # Verifica se já existe uma entrada com os mesmos dados nos últimos 5 minutos
+        cinco_minutos_atras = (datetime.datetime.now() - datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
+        
+        response = supabase.table("financeiro_entrada") \
+            .select("*") \
+            .eq("id_empresa", id_empresa) \
+            .eq("valor_entrada", valor) \
+            .eq("motivo", motivo) \
+            .eq("meio_pagamento", meio_pagamento) \
+            .gte("data", cinco_minutos_atras) \
+            .execute()
+
+        if response.data:
+            return jsonify({"error": "Uma receita idêntica foi registrada nos últimos 5 minutos. Aguarde para evitar duplicidade."}), 400
 
         response = supabase.table("financeiro_entrada").insert({
             "data": dataatual,
@@ -98,17 +111,11 @@ def receber():
             "id_usuario": id_usuario
         }).execute()
 
-        return jsonify({"message": "Entrada registrada com sucesso!"}), 201
+        return jsonify({"message": "Receita registrada com sucesso!"}), 201
 
     except Exception as e:
-        print(f"Erro ao registrar entrada: {e}")
+        print(f"Erro ao registrar receita: {e}")
         return jsonify({"error": str(e)}), 500
-
-        return jsonify({"message": "Entrada registrada com sucesso!"}), 201
-
-    except Exception as e:
-        print(f"Erro ao registrar entrada: {e}")  # Loga o erro no console
-        return jsonify({"error": "Erro interno ao registrar entrada."}), 500
 
 @financeiro_bp.route('/financeiro/saida', methods=['POST'])
 def despesa():
@@ -125,12 +132,37 @@ def despesa():
         if not id_empresa or not id_usuario:
             return jsonify({"error": "Usuário não autenticado"}), 401
 
+        # Validação de campos obrigatórios
+        motivo = data.get('motivo')
+        valor = data.get('valor')
+
+        if not motivo or not valor:
+            return jsonify({"error": "Motivo e valor são obrigatórios"}), 400
+
+        try:
+            valor = float(valor)
+        except ValueError:
+            return jsonify({"error": "Valor deve ser numérico"}), 400
+
+        # Verifica se já existe uma saída com os mesmos dados nos últimos 5 minutos
+        cinco_minutos_atras = (datetime.datetime.now() - datetime.timedelta(minutes=5)).strftime('%Y-%m-%d %H:%M:%S')
+        
+        response = supabase.table("financeiro_saida") \
+            .select("*") \
+            .eq("id_empresa", id_empresa) \
+            .eq("valor_saida", valor) \
+            .eq("motivo", motivo) \
+            .gte("data", cinco_minutos_atras) \
+            .execute()
+
+        if response.data:
+            return jsonify({"error": "Uma despesa idêntica foi registrada nos últimos 5 minutos. Aguarde para evitar duplicidade."}), 400
 
         response = supabase.table("financeiro_saida").insert({
             "data": dataatual,
             "id_empresa": id_empresa,
-            "valor_saida": float(data.get('valor')),
-            "motivo": data.get('motivo'),
+            "valor_saida": valor,
+            "motivo": motivo,
             "id_usuario": id_usuario
         }).execute()
 
@@ -147,25 +179,53 @@ def excluir(id):
         if verificar_login():
             return verificar_login()
         
+        id_empresa = request.cookies.get('empresa_id')
+        
+        # Verifica se a entrada existe e pertence à empresa
+        entrada = supabase.table("financeiro_entrada") \
+            .select("*") \
+            .eq("id", id) \
+            .eq("id_empresa", id_empresa) \
+            .single() \
+            .execute()
 
-    
+        if not entrada.data:
+            return jsonify({"error": "Receita não encontrada ou sem permissão para excluir"}), 404
+
+        # Exclui a entrada
         supabase.table("financeiro_entrada").delete().eq("id", id).execute()
-        return jsonify({"message": "Entrada excluida com sucesso!"}), 200
+        return jsonify({"message": "Receita excluída com sucesso!"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
+        print(f"Erro ao excluir receita: {e}")
+        return jsonify({"error": f"Erro ao excluir receita: {str(e)}"}), 500
+
 @financeiro_bp.route('/financeiro/saida/excluir/<int:id>', methods=['DELETE'])
 def excluir_saida(id):
     try:
         if verificar_login():
             return verificar_login()
         
+        id_empresa = request.cookies.get('empresa_id')
+        
+        # Verifica se a saída existe e pertence à empresa
+        saida = supabase.table("financeiro_saida") \
+            .select("*") \
+            .eq("id", id) \
+            .eq("id_empresa", id_empresa) \
+            .single() \
+            .execute()
+
+        if not saida.data:
+            return jsonify({"error": "Despesa não encontrada ou sem permissão para excluir"}), 404
+
+        # Exclui a saída
         supabase.table("financeiro_saida").delete().eq("id", id).execute()
-        return jsonify({"message": "Despesa excluida com sucesso!"}), 200
+        return jsonify({"message": "Despesa excluída com sucesso!"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Erro ao excluir despesa: {e}")
+        return jsonify({"error": f"Erro ao excluir despesa: {str(e)}"}), 500
 
 
 @financeiro_bp.route('/financeiro/listar', methods=['GET'])
@@ -290,4 +350,109 @@ def total_entradas():
             "total_saidas": 0,
             "saldo": 0
         }), 500
+    
+
+@financeiro_bp.route('/financeiro/ultimas_entradas', methods=['GET'])
+def ultimas_entradas():
+    try:
+        if verificar_login():
+            return verificar_login()
+
+        id_empresa = request.cookies.get('empresa_id')
+
+        if not id_empresa:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        # Busca as últimas 10 entradas
+        response = supabase.table("financeiro_entrada") \
+            .select("*") \
+            .eq("id_empresa", id_empresa) \
+            .order("data", desc=True) \
+            .limit(3) \
+            .execute()
+
+        entradas = response.data if response.data else []
+        entradas_formatadas = []
+
+        for entrada in entradas:
+            try:
+                # Busca informações relacionadas
+                cliente_nome = "Não identificado"
+                usuario_nome = "Não identificado"
+                servico_nome = "Não identificado"
+
+                if entrada.get("id_cliente"):
+                    cliente = supabase.table("clientes").select("nome_cliente").eq("id", entrada["id_cliente"]).single().execute()
+                    if cliente.data:
+                        cliente_nome = cliente.data.get("nome_cliente", "Não identificado")
+
+                if entrada.get("id_usuario"):
+                    usuario = supabase.table("usuarios").select("nome_usuario").eq("id", entrada["id_usuario"]).single().execute()
+                    if usuario.data:
+                        usuario_nome = usuario.data.get("nome_usuario", "Não identificado")
+
+                if entrada.get("id_servico"):
+                    servico = supabase.table("servicos").select("nome_servico").eq("id", entrada["id_servico"]).single().execute()
+                    if servico.data:
+                        servico_nome = servico.data.get("nome_servico", "Não identificado")
+
+                entradas_formatadas.append({
+                    "id": entrada.get("id"),
+                    "data": entrada.get("data"),
+                    "meio_pagamento": entrada.get("meio_pagamento"),
+                    "motivo": entrada.get("motivo"),
+                    "valor_entrada": float(entrada.get("valor_entrada", 0)),
+                    "cliente": cliente_nome,
+                    "usuario": usuario_nome,
+                    "servico": servico_nome
+                })
+            except Exception as e:
+                print(f"Erro ao processar entrada {entrada.get('id')}: {str(e)}")
+                continue
+
+        return jsonify(entradas_formatadas)
+
+    except Exception as e:
+        print(f"Erro ao listar últimas entradas: {e}")
+        return jsonify([]), 500
+
+@financeiro_bp.route('/financeiro/ultimas_saidas', methods=['GET'])
+def ultimas_saidas():
+    try:
+        if verificar_login():
+            return verificar_login()
+
+        id_empresa = request.cookies.get('empresa_id')
+
+        if not id_empresa:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        # Busca as últimas 10 saídas
+        response = supabase.table("financeiro_saida") \
+            .select("*") \
+            .eq("id_empresa", id_empresa) \
+            .order("data", desc=True) \
+            .limit(3) \
+            .execute()
+
+        saidas = response.data if response.data else []
+        saidas_formatadas = []
+
+        for saida in saidas:
+            try:
+                saidas_formatadas.append({
+                    "id": saida.get("id"),
+                    "data": saida.get("data"),
+                    "motivo": saida.get("motivo"),
+                    "valor_saida": float(saida.get("valor_saida", 0))
+                })
+            except Exception as e:
+                print(f"Erro ao processar saída {saida.get('id')}: {str(e)}")
+                continue
+
+        return jsonify(saidas_formatadas)
+
+    except Exception as e:
+        print(f"Erro ao listar últimas saídas: {e}")
+        return jsonify([]), 500
     

@@ -93,25 +93,6 @@ def add_service():
 
 
 
-# Função para excluir um serviço
-@services_bp.route('/excluir_servico/<int:service_id>', methods=['GET'])
-def excluir_servico(service_id):
-    # Verifica se o usuário está logado
-    if verificar_login():
-        return verificar_login()
-
-    try:
-        # Exclui apenas se o serviço pertence à empresa logada
-        empresa_id = request.cookies.get('empresa_id')
-        supabase.table('servicos').delete().eq('id', service_id).eq('id_empresa', empresa_id).execute()
-    except Exception as e:
-        print(f"Erro ao excluir serviço: {e}")
-        flash('Erro ao excluir serviço. Tente novamente.', 'danger')
-    return redirect(url_for('services.index'))
-
-
-
-
 
 
 @services_bp.route('/api/usuarios', methods=['GET'])
@@ -142,3 +123,53 @@ def listar_servicos():
         return jsonify(servicos)
     except Exception as e:
         return jsonify([]), 500
+    
+
+
+@servicos_bp.route('/api/servicos/<int:id>', methods=['PUT', 'POST'])
+def api_editar_servico(id):
+    try:
+        # Verifica login
+        redirecionar = verificar_login()
+        if redirecionar:
+            return redirecionar
+
+        dados = request.get_json()
+        if not dados:
+            return jsonify({"error": "JSON inválido"}), 400
+
+        empresa_id = request.cookies.get('empresa_id')
+
+        # Monta o update dinamicamente, só com os campos enviados
+        update_data = {}
+
+        if 'nome_servico' in dados:
+            update_data['nome_servico'] = dados['nome_servico']
+
+        if 'preco' in dados:
+            update_data['preco'] = float(dados['preco'])
+
+        if 'tempo' in dados:
+            update_data['tempo'] = dados['tempo']
+
+        if 'disp_cliente' in dados:
+            update_data['disp_cliente'] = bool(dados['disp_cliente'])
+
+        if 'status' in dados:
+            update_data['status'] = bool(dados['status'])
+
+        if not update_data:
+            return jsonify({"error": "Nenhum dado para atualizar"}), 400
+
+        # Executa o update
+        supabase.table('servicos') \
+            .update(update_data) \
+            .eq('id', id) \
+            .eq('id_empresa', empresa_id) \
+            .execute()
+
+        return jsonify({"success": True, "message": "Serviço atualizado com sucesso"})
+
+    except Exception as e:
+        print(f"Erro ao editar serviço: {e}")
+        return jsonify({"error": str(e)}), 500

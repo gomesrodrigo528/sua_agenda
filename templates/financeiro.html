@@ -1,766 +1,636 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serviços</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- CSS Personalizado -->
-    <link rel="stylesheet" href="/static/styles/style.css">
-    <link rel="stylesheet" href="/static/styles/users.css">
-    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
-    <style>
-        @media screen and (max-width: 768px) {
-            #graficos {
-                display: none;
+{% block title %}Financeiro - Sua Agenda{% endblock %}
 
-            }
+{% block content %}
+<!-- Painel de Totais -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4>Total de Receitas</h4>
+                            <h2 class="text-success" id="total-entradas">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4>Total de Despesas</h4>
+                            <h2 class="text-danger" id="total-saidas">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <h4>Saldo</h4>
+                            <h2 id="saldo">R$ 0,00</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        }
-    </style>
-</head>
-
-<body>
-    <div>
-        <button id="toggle-menu" class="d-block d-md-none"
-            style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
-            ☰
+<!-- Botões de Ação -->
+<div class="row mb-4">
+    <div class="col-12">
+        <button class="btn btn-success me-2" onclick="$('#modalEntrada').modal('show')">
+            <i class="bi bi-plus-circle"></i> Nova Entrada
+        </button>
+        <button class="btn btn-danger" onclick="$('#modalSaida').modal('show')">
+            <i class="bi bi-dash-circle"></i> Nova Saída
         </button>
     </div>
-    <div class="d-flex">
+</div>
 
-        <!-- Menu Lateral -->
-        <div id="menu-container"></div>
-        <!-- Conteúdo Principal -->
-        <div class="container mt-4">
-            <div id="loading">Carregando...</div>
+<!-- Abas -->
+<ul class="nav nav-tabs mb-4" id="financeiroTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="resumo-tab" data-bs-toggle="tab" data-bs-target="#resumo" type="button" role="tab">
+            Resumo
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="entradas-tab" data-bs-toggle="tab" data-bs-target="#entradas" type="button" role="tab">
+            Todas as Receitas
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="saidas-tab" data-bs-toggle="tab" data-bs-target="#saidas" type="button" role="tab">
+            Todas as Despesas
+        </button>
+    </li>
+</ul>
 
-            <div class="nav nav-tabs nav-fill mb-4" id="abas">
-                <a class="nav-item nav-link active" href="javascript:void(0);"
-                    onclick="mostrarCaixa(); setActiveTab(this)">
-                    <i class="bi bi-wallet2"></i> Caixa
-                </a>
-                <a class="nav-item nav-link" href="javascript:void(0);"
-                    onclick="mostrarTabelaEntrada(); setActiveTab(this)">
-                    <i class="bi bi-graph-up-arrow"></i> Receitas
-                </a>
-                <a class="nav-item nav-link" href="javascript:void(0);"
-                    onclick="mostrarTabelaSaida(); setActiveTab(this)">
-                    <i class="bi bi-graph-down-arrow"></i> Despesas
-                </a>
-            </div>
-
-            <div class="d-flex justify-content-between mb-3">
-                <button class="btn btn-primary" id="add-saida" onclick="$('#modalSaida').modal('show')"
-                    style="display: none;">Adicionar Saída</button>
-                <button class="btn btn-success" id="add-entrada" onclick="$('#modalEntrada').modal('show')"
-                    style="display: none;">Adicionar
-                    Entrada</button>
-
-            </div>
-
-            <!-- Modal Saída -->
-            <div class="modal fade" id="modalSaida" tabindex="-1" aria-labelledby="modalSaidaLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalSaidaLabel">Adicionar Saída</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Conteúdo das Abas -->
+<div class="tab-content" id="financeiroTabsContent">
+    <!-- Aba de Resumo -->
+    <div class="tab-pane fade show active" id="resumo" role="tabpanel">
+        <div class="row">
+            <!-- Últimas Entradas -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="card-title">Últimas Receitas</h4>
+                            <button class="btn btn-sm btn-outline-primary" onclick="$('#entradas-tab').tab('show')">
+                                Ver Todas
+                            </button>
                         </div>
-                        <div class="modal-body">
-                            <form onsubmit="event.preventDefault(); inserirsaida();" id="form-saida">
-                                <div class="mb-3">
-                                    <label for="saida" class="form-label">Motivo da saída</label>
-                                    <input type="text" class="form-control" name="saida" id="saida" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="valor_saida" class="form-label">Valor</label>
-                                    <input type="number" class="form-control" name="valor_saida" id="valor_saida"
-                                        required>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary"
-                                        data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Entrada -->
-            <div class="modal fade" id="modalEntrada" tabindex="-1" aria-labelledby="modalEntradaLabel"
-                aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalEntradaLabel">Adicionar Entrada</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form onsubmit="event.preventDefault(); inserirentrada();" id="form-entrada">
-                                <div class="mb-3">
-                                    <label for="cliente" class="form-label">Cliente</label>
-                                    <select class="form-select" name="cliente" id="cliente" required>
-                                        <option value="">Selecione um cliente</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="servico" class="form-label">Serviço</label>
-                                    <select class="form-select" name="servico" id="servico" required>
-                                        <option value="">Selecione um serviço</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="entrada" class="form-label">Motivo da entrada</label>
-                                    <input type="text" class="form-control" name="entrada" id="entrada" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="valor_entrada" class="form-label">Valor</label>
-                                    <input type="number" class="form-control" name="valor_entrada" id="valor_entrada" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="meio_pagamento" class="form-label">Meio de Pagamento</label>
-                                    <select class="form-select" name="meio_pagamento" id="meio_pagamento" required>
-                                        <option value="">Selecione a forma de pagamento</option>
-                                        <option value="Dinheiro">Dinheiro</option>
-                                        <option value="Cartão de Crédito">Cartão de Crédito</option>
-                                        <option value="Cartão de Débito">Cartão de Débito</option>
-                                        <option value="PIX">PIX</option>
-                                        <option value="Transferência">Transferência</option>
-                                    </select>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-primary">Salvar</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Modal Detalhes da Entrada -->
-            <div class="modal fade" id="modalDetalhesEntrada" tabindex="-1" aria-labelledby="modalDetalhesEntradaLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalDetalhesEntradaLabel">Detalhes da Entrada</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Cliente</h6>
-                                <p id="detalhe-cliente"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Serviço</h6>
-                                <p id="detalhe-servico"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Motivo</h6>
-                                <p id="detalhe-motivo"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Valor</h6>
-                                <p id="detalhe-valor"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Meio de Pagamento</h6>
-                                <p id="detalhe-pagamento"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Data</h6>
-                                <p id="detalhe-data"></p>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="fw-bold">Atendente</h6>
-                                <p id="detalhe-usuario"></p>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="financeiro-table-entrada" style="display: none; max-width: 90%;" class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Tipo</th>
-                            <th>Motivo</th>
-                            <th>Valor</th>
-                            <th>pagamento</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="financeiro-body-entrada">
-                        <!-- Dados serão inseridos aqui -->
-                    </tbody>
-                </table>
-            </div>
-            <div id="financeiro-table-saida" style="display: none; max-width: 90%;" class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Tipo</th>
-                            <th>Motivo</th>
-                            <th>Valor</th>
-                            <th>Data</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="financeiro-body-saida">
-                        <!-- Dados serão inseridos aqui -->
-                    </tbody>
-                </table>
-
-
-            </div>
-
-            <div id="caixa" class="mt-4">
-                <div id="dashboard" class="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
-                    <!-- Cards vão ser injetados aqui -->
-                </div>
-
-                <div id="graficos" class="row">
-                    <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <h4 class="card-title mb-3">Últimas Despesas</h4>
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Motivo</th>
-                                                <th>Valor</th>
-                                                <th>Data</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="financeiro-body-ultimas-saidas">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card h-100">
-                            <div class="card-body">
-                                <h4 class="card-title mb-3">Últimas Receitas</h4>
-                                <div class="table-responsive">
-                                    <table class="table table-striped">
-                                        <thead>
-                                            <tr>
-                                                <th>Motivo</th>
-                                                <th>Valor</th>
-                                                <th>Data</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="financeiro-body-ultimas-entradas">
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-
-
-
-
-            <script src="static/scripts/menu.js"></script>
-            <script>
-                renderMenu('menu-container');
-            </script>
-            <!-- logica do post -->
-            <script>
-                function mostrar_form_saida() {
-                    document.getElementById('form-saida').style.display = 'block';
-                    document.getElementById('form-entrada').style.display = 'none';
-                }
-                function mostrar_form_entrada() {
-                    document.getElementById('form-entrada').style.display = 'block';
-                    document.getElementById('form-saida').style.display = 'none';
-                }
-            </script>
-            <!-- logica da listagem  -->
-            <script>
-                function inserirsaida() {
-                    fetch('/financeiro/saida', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            motivo: document.getElementById('saida').value,
-                            valor: document.getElementById('valor_saida').value
-                        })
-                    })
-                        .then(res => res.text())
-                        .then(response => {
-                            $('#modalSaida').modal('hide');
-                            window.location.reload();
-                        })
-                        .catch(err => console.error('ERRO:', err));
-                }
-
-
-                function inserirentrada() {
-                    const dados = {
-                        cliente: document.getElementById('cliente').value,
-                        servico: document.getElementById('servico').value,
-                        motivo: document.getElementById('entrada').value,
-                        valor: document.getElementById('valor_entrada').value,
-                        meio_pagamento: document.getElementById('meio_pagamento').value
-                    };
-
-                    fetch('/financeiro/entrada', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(dados)
-                    })
-                    .then(res => res.text())
-                    .then(response => {
-                        $('#modalEntrada').modal('hide');
-             
-                    })
-                    .catch(err => {
-                        console.error('ERRO:', err);
-                        alert('Erro ao registrar entrada. Por favor, tente novamente.');
-                    });
-                }
-
-
-                function listarentradas() {
-                    fetch('/financeiro/listar')
-                        .then(res => {
-                            if (!res.ok) {
-                                throw new Error(`Erro na resposta: ${res.status}`);
-                            }
-                            return res.json();
-                        })
-                        .then(data => {
-                            const tbody = document.getElementById('financeiro-body-entrada');
-                            tbody.innerHTML = ''; // Limpa o conteúdo anterior
-
-                            if (!data.entradas || data.entradas.length === 0) {
-                                tbody.innerHTML = `
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
                                     <tr>
-                                        <td colspan="6" class="text-center">Nenhuma entrada encontrada</td>
+                                        <th>Motivo</th>
+                                        <th>Valor</th>
+                                        <th>Data</th>
                                     </tr>
-                                `;
-                                return;
-                            }
+                                </thead>
+                                <tbody id="financeiro-body-ultimas-entradas">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            data.entradas.forEach(item => {
-                                try {
-                                    const dataObj = new Date(item.data || new Date());
-                                    const dataFormatada = `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR')}`;
-                                    const valorFormatado = typeof item.valor_entrada === 'number' ? 
-                                        item.valor_entrada.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 
-                                        '0,00';
-                                    
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>Entrada</td>
-                                        <td>${item.motivo || 'Não informado'}</td>
-                                        <td>R$ ${valorFormatado}</td>
-                                        <td>${item.meio_pagamento || 'Não informado'}</td>
-                                        <td>${dataFormatada}</td>
-                                        <td>
-                                            <button class="btn btn-info btn-sm me-2" onclick='mostrarDetalhesEntrada(${JSON.stringify(item).replace(/'/g, "&#39;")})'>
-                                                <i class="bi bi-eye"></i> Ver
-                                            </button>
-                                            <button class="btn btn-danger btn-sm" onclick="delete_entrada(${item.id_entrada})">
-                                                <i class="bi bi-trash"></i> Excluir
-                                            </button>
-                                        </td>
-                                    `;
-                                    tbody.appendChild(row);
-                                } catch (err) {
-                                    console.error('Erro ao processar entrada:', err, item);
-                                }
-                            });
-                        })
-                        .catch(err => {
-                            console.error('ERRO:', err);
-                            const tbody = document.getElementById('financeiro-body-entrada');
-                            tbody.innerHTML = `
-                                <tr>
-                                    <td colspan="6" class="text-center text-danger">
-                                        Erro ao carregar entradas. Por favor, tente novamente.
-                                    </td>
-                                </tr>
-                            `;
-                        });
-                }
-                function listarsaidas() {
-                    fetch('/financeiro/listar')
-                        .then(res => {
-                            if (!res.ok) {
-                                throw new Error(`Erro na resposta: ${res.status}`);
-                            }
-                            return res.json();
-                        })
-                        .then(data => {
-                            const tbody = document.getElementById('financeiro-body-saida');
-                            tbody.innerHTML = ''; // Limpa o conteúdo anterior
-
-                            if (!data.saidas || data.saidas.length === 0) {
-                                tbody.innerHTML = `
+            <!-- Últimas Saídas -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="card-title">Últimas Despesas</h4>
+                            <button class="btn btn-sm btn-outline-primary" onclick="$('#saidas-tab').tab('show')">
+                                Ver Todas
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
                                     <tr>
-                                        <td colspan="5" class="text-center">Nenhuma saída encontrada</td>
+                                        <th>Motivo</th>
+                                        <th>Valor</th>
+                                        <th>Data</th>
                                     </tr>
-                                `;
-                                return;
-                            }
-
-                            data.saidas.forEach(item => {
-                                try {
-                                    const dataObj = new Date(item.data || new Date());
-                                    const dataFormatada = `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR')}`;
-                                    const valorFormatado = typeof item.valor_saida === 'number' ? 
-                                        item.valor_saida.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 
-                                        '0,00';
-
-                                    const row = document.createElement('tr');
-                                    row.innerHTML = `
-                                        <td>Saída</td>
-                                        <td>${item.motivo || 'Não informado'}</td>
-                                        <td>R$ ${valorFormatado}</td>
-                                        <td>${dataFormatada}</td>
-                                        <td>
-                                            <button class="btn btn-danger btn-sm" onclick="delete_saida(${item.id})">
-                                                <i class="bi bi-trash"></i> Excluir
-                                            </button>
-                                        </td>
-                                    `;
-                                    tbody.appendChild(row);
-                                } catch (err) {
-                                    console.error('Erro ao processar saída:', err, item);
-                                }
-                            });
-                        })
-                        .catch(err => {
-                            console.error('ERRO:', err);
-                            const tbody = document.getElementById('financeiro-body-saida');
-                            tbody.innerHTML = `
-                                <tr>
-                                    <td colspan="5" class="text-center text-danger">
-                                        Erro ao carregar saídas. Por favor, tente novamente.
-                                    </td>
-                                </tr>
-                            `;
-                        });
-                }
-
-                listarentradas();
-                listarsaidas();
-
-            </script>
-
-
-            <!-- logica do caixa -->
-            <script>
-                async function carregarTotais() {
-                    try {
-                        const res = await fetch('/financeiro/totais');
-                        const data = await res.json();
-
-                        if (res.status !== 200) throw new Error(data.error || "Erro genérico");
-
-                        const { saldo, total_entradas, total_saidas } = data;
-
-                        // Formatador de moeda BR
-                        const formatar = (valor) =>
-                            valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-                        // Monta os 3 cards
-                        const dashboard = document.getElementById('dashboard');
-                        dashboard.innerHTML = `
-                        <div class="bg-green-100 text-green-800 rounded-xl shadow p-6" style="background-color:#3888F4; border-radius: 10px">
-                        <h2 class="text-xl font-bold" style="color:white">Saldo</h2>
-                        <p class="text-3xl mt-2">${formatar(saldo)}</p>
+                                </thead>
+                                <tbody id="financeiro-body-ultimas-saidas">
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="bg-blue-100 text-blue-800 rounded-xl shadow p-6" style="background-color:#157347; border-radius:10px">
-                        <h2 class="text-xl font-bold" style="color:white">Entradas</h2>
-                        <p class="text-2xl mt-2">${formatar(total_entradas)}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aba de Todas as Receitas -->
+    <div class="tab-pane fade" id="entradas" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <!-- Loading para Receitas -->
+                    <div id="loading-receitas" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
                         </div>
-                        <div class="bg-red-100 text-red-800 rounded-xl shadow p-6" style="background-color:#F13D3D; border-radius: 10px">
-                        <h2 class="text-xl font-bold" style="color:white">Saídas</h2>
-                        <p class="text-2xl mt-2">${formatar(total_saidas)}</p>
-                        </div>
-                    `;
-
-                        carregarUltimosFinanceiros();
-
-                    } catch (e) {
-                        console.error("Erro ao carregar dados:", e);
-                    }
-                }
-                // Função principal que busca os dados do backend
-                function carregarUltimosFinanceiros() {
-                    fetch('/financeiro/listar')
-                        .then(res => {
-                            if (!res.ok) throw new Error(`Erro na resposta: ${res.status}`);
-                            return res.json();
-                        })
-                        .then(data => {
-                            preencherTabela('financeiro-body-ultimas-entradas', data.entradas || [], 'valor_entrada');
-                            preencherTabela('financeiro-body-ultimas-saidas', data.saidas || [], 'valor_saida');
-                        })
-                        .catch(err => {
-                            console.error('ERRO:', err);
-                            const mensagemErro = `
-                                <tr>
-                                    <td colspan="3" class="text-center text-danger">
-                                        Erro ao carregar dados. Por favor, tente novamente.
-                                    </td>
-                                </tr>
-                            `;
-                            document.getElementById('financeiro-body-ultimas-entradas').innerHTML = mensagemErro;
-                            document.getElementById('financeiro-body-ultimas-saidas').innerHTML = mensagemErro;
-                        });
-                }
-
-                // Função que formata os dados e insere na tabela
-                function preencherTabela(elementId, dados, campoValor) {
-                    const tbody = document.getElementById(elementId);
-                    tbody.innerHTML = '';
-
-                    if (!dados || dados.length === 0) {
-                        tbody.innerHTML = `
+                        <p class="mt-2 text-primary">Carregando receitas...</p>
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
                             <tr>
-                                <td colspan="3" class="text-center">Nenhum registro encontrado</td>
+                                <th>Data</th>
+                                <th>Motivo</th>
+                                <th>Cliente</th>
+                                <th>Serviço</th>
+                                <th>Valor</th>
+                                <th>Meio de Pagamento</th>
+                                <th>Ações</th>
                             </tr>
-                        `;
-                        return;
-                    }
+                        </thead>
+                        <tbody id="todas-entradas-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                    dados.slice(-3).reverse().forEach(item => {
-                        try {
-                            const valor = parseFloat(item[campoValor] || 0);
-                            const valorFormatado = valor.toLocaleString('pt-BR', { 
-                                minimumFractionDigits: 2, 
-                                maximumFractionDigits: 2 
-                            });
+    <!-- Aba de Todas as Despesas -->
+    <div class="tab-pane fade" id="saidas" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <!-- Loading para Despesas -->
+                    <div id="loading-despesas" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2 text-primary">Carregando despesas...</p>
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Motivo</th>
+                                <th>Valor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="todas-saidas-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-                            const dataObj = new Date(item.data || new Date());
-                            const dataFormatada = `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR')}`;
+<!-- Modal Nova Entrada -->
+<div class="modal fade" id="modalEntrada" tabindex="-1" aria-labelledby="modalEntradaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEntradaLabel">Nova Entrada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEntrada">
+                    <div class="mb-3">
+                        <label for="valor_entrada" class="form-label">Valor</label>
+                        <input type="number" step="0.01" class="form-control" id="valor_entrada" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="motivo_entrada" class="form-label">Motivo</label>
+                        <input type="text" class="form-control" id="motivo_entrada" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meio_pagamento_entrada" class="form-label">Meio de Pagamento</label>
+                        <select class="form-control" id="meio_pagamento_entrada" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="credito">Cartão de Crédito</option>
+                            <option value="debito">Cartão de Débito</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td>${item.motivo || 'Não informado'}</td>
-                                <td>R$ ${valorFormatado}</td>
-                                <td>${dataFormatada}</td>
-                            `;
-                            tbody.appendChild(row);
-                        } catch (err) {
-                            console.error('Erro ao processar item:', err, item);
-                        }
-                    });
-                }
+<!-- Modal Nova Saída -->
+<div class="modal fade" id="modalSaida" tabindex="-1" aria-labelledby="modalSaidaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalSaidaLabel">Nova Saída</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formSaida">
+                    <div class="mb-3">
+                        <label for="valor_saida" class="form-label">Valor</label>
+                        <input type="number" step="0.01" class="form-control" id="valor_saida" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="motivo_saida" class="form-label">Motivo</label>
+                        <input type="text" class="form-control" id="motivo_saida" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="meio_pagamento_saida" class="form-label">Meio de Pagamento</label>
+                        <select class="form-control" id="meio_pagamento_saida" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="credito">Cartão de Crédito</option>
+                            <option value="debito">Cartão de Débito</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
+<!-- Modal Detalhes da Entrada -->
+<div class="modal fade" id="modalDetalhesEntrada" tabindex="-1" aria-labelledby="modalDetalhesEntradaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesEntradaLabel">Detalhes da Entrada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="detalhe-id">
+                <div class="mb-3">
+                    <h6 class="fw-bold">Cliente</h6>
+                    <p id="detalhe-cliente"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Serviço</h6>
+                    <p id="detalhe-servico"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Motivo</h6>
+                    <p id="detalhe-motivo"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Valor</h6>
+                    <p id="detalhe-valor"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Meio de Pagamento</h6>
+                    <p id="detalhe-pagamento"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data</h6>
+                    <p id="detalhe-data"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Usuário</h6>
+                    <p id="detalhe-usuario"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-danger" onclick="excluirEntrada()">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-
-
-
-                // Chama na carga da página
-                window.onload = carregarTotais;
-            </script>
-
-
-
-            <!-- logica das abas -->
-
-            <script>
-                function mostrarTabelaEntrada() {
-                    document.getElementById('financeiro-table-entrada').style.display = 'block';
-                    document.getElementById('financeiro-table-saida').style.display = 'none';
-                    document.getElementById('caixa').style.display = 'none';
-                    document.getElementById('add-entrada').style.display = 'block';
-                    document.getElementById('add-saida').style.display = 'none';
-                }
-
-                function mostrarTabelaSaida() {
-                    document.getElementById('financeiro-table-saida').style.display = 'block';
-                    document.getElementById('financeiro-table-entrada').style.display = 'none';
-                    document.getElementById('caixa').style.display = 'none';
-                    document.getElementById('add-saida').style.display = 'block';
-                    document.getElementById('add-entrada').style.display = 'none';
-                }
-                function mostrarCaixa() {
-                    document.getElementById('caixa').style.display = 'block';
-                    document.getElementById('financeiro-table-entrada').style.display = 'none';
-                    document.getElementById('financeiro-table-saida').style.display = 'none';
-                    document.getElementById('add-entrada').style.display = 'none';
-                    document.getElementById('add-saida').style.display = 'none';
-                }
-
-            </script>
-
-<!-- estilizacao das abas -->
-            <script>
-                function setActiveTab(clickedTab) {
-                    // Remove active class from all tabs
-                    document.querySelectorAll('#abas .nav-link').forEach(tab => {
-                        tab.classList.remove('active');
-                    });
-                    // Add active class to clicked tab
-                    clickedTab.classList.add('active');
-                }
-
-                // Adiciona estilos personalizados
-                const style = document.createElement('style');
-                style.textContent = `
-                    .nav-tabs .nav-link {
-                        color: #6c757d;
-                        font-weight: 500;
-                        padding: 1rem 2rem;
-                        transition: all 0.3s ease;
-                    }
-                    .nav-tabs .nav-link:hover {
-                        color: #495057;
-                        background-color: #f8f9fa;
-                        border-color: #dee2e6 #dee2e6 #fff;
-                    }
-                    .nav-tabs .nav-link.active {
-                        color: #0d6efd;
-                        background-color: #fff;
-                        border-color: #dee2e6 #dee2e6 #fff;
-                    }
-                    .nav-tabs .nav-link i {
-                        margin-right: 8px;
-                    }
-                `;
-                document.head.appendChild(style);
-            </script>
-
-
-<!--delete receitas e saidas -->
+{% block page_scripts %}
 <script>
-    function delete_entrada(id) {
-  fetch(`/financeiro/entrada/excluir/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-    .then(res => res.json())
-    .then(response => {
-      $('#modalEntrada').modal('hide');
-      window.location.reload();
-    })
-    .catch(err => console.error('ERRO:', err));
+// Função para formatar moeda
+function formatarMoeda(valor) {
+    return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function delete_saida(id) {
-  fetch(`/financeiro/saida/excluir/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json'
+// Função para carregar totais
+async function carregarTotais() {
+    try {
+        const response = await fetch('/financeiro/totais');
+        const data = await response.json();
+        
+        document.getElementById('total-entradas').textContent = formatarMoeda(data.total_entradas);
+        document.getElementById('total-saidas').textContent = formatarMoeda(data.total_saidas);
+        document.getElementById('saldo').textContent = formatarMoeda(data.total_entradas - data.total_saidas);
+        
+        // Aplica cor ao saldo
+        const saldoElement = document.getElementById('saldo');
+        if (data.total_entradas - data.total_saidas > 0) {
+            saldoElement.classList.add('text-success');
+            saldoElement.classList.remove('text-danger');
+        } else {
+            saldoElement.classList.add('text-danger');
+            saldoElement.classList.remove('text-success');
+        }
+    } catch (err) {
+        console.error('Erro ao carregar totais:', err);
     }
-  })
-    .then(res => res.json())
-    .then(response => {
-      $('#modalSaida').modal('hide');
-      window.location.reload();
-    })
-    .catch(err => console.error('ERRO:', err));
 }
 
-</script>
+// Função para carregar últimas entradas
+async function carregarUltimasEntradas() {
+    try {
+        const response = await fetch('/financeiro/ultimas_entradas');
+        const entradas = await response.json();
+        const tbody = document.getElementById('financeiro-body-ultimas-entradas');
+        tbody.innerHTML = '';
 
-<script>
-    function mostrarDetalhesEntrada(entrada) {
+        entradas.forEach(entrada => {
+            const data = new Date(entrada.data);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${entrada.motivo}</td>
+                <td>${formatarMoeda(entrada.valor_entrada)}</td>
+                <td>${data.toLocaleDateString('pt-BR')}</td>
+            `;
+            tr.style.cursor = 'pointer';
+            tr.onclick = () => {
+                // Armazena o ID da entrada para exclusão
+                document.getElementById('detalhe-id').value = entrada.id;
+                mostrarDetalhesEntrada(entrada);
+            };
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('Erro ao carregar últimas entradas:', err);
+    }
+}
+
+// Função para carregar últimas saídas
+async function carregarUltimasSaidas() {
+    try {
+        const response = await fetch('/financeiro/ultimas_saidas');
+        const saidas = await response.json();
+        const tbody = document.getElementById('financeiro-body-ultimas-saidas');
+        tbody.innerHTML = '';
+
+        saidas.forEach(saida => {
+            const data = new Date(saida.data);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${saida.motivo}</td>
+                <td>${formatarMoeda(saida.valor_saida)}</td>
+                <td>${data.toLocaleDateString('pt-BR')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('Erro ao carregar últimas saídas:', err);
+    }
+}
+
+// Função para excluir entrada
+async function excluirEntrada() {
+    const id = document.getElementById('detalhe-id').value;
+    if (!id) {
+        alert('ID da receita não encontrado');
+        return;
+    }
+
+    if (confirm('Tem certeza que deseja excluir esta receita?')) {
         try {
-            // Formata a data
-            const dataObj = new Date(entrada.data || new Date());
-            const dataFormatada = `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR')}`;
-            
-            // Formata o valor
-            const valorFormatado = typeof entrada.valor_entrada === 'number' ? 
-                entrada.valor_entrada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-                'R$ 0,00';
+            const response = await fetch(`/financeiro/entrada/excluir/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            // Preenche os campos do modal com tratamento para valores nulos
-            document.getElementById('detalhe-cliente').textContent = entrada.cliente || 'Não informado';
-            document.getElementById('detalhe-servico').textContent = entrada.servico || 'Não informado';
-            document.getElementById('detalhe-motivo').textContent = entrada.motivo || 'Não informado';
-            document.getElementById('detalhe-valor').textContent = valorFormatado;
-            document.getElementById('detalhe-pagamento').textContent = entrada.meio_pagamento || 'Não informado';
-            document.getElementById('detalhe-data').textContent = dataFormatada;
-            document.getElementById('detalhe-usuario').textContent = entrada.usuario || 'Não informado';
+            const result = await response.json();
 
-            // Abre o modal
-            $('#modalDetalhesEntrada').modal('show');
+            if (response.ok) {
+                $('#modalDetalhesEntrada').modal('hide');
+                carregarTotais();
+                carregarUltimasEntradas();
+                carregarTodasEntradas();
+                alert('Receita excluída com sucesso!');
+            } else {
+                alert(result.error || 'Erro ao excluir receita');
+            }
         } catch (err) {
-            console.error('Erro ao mostrar detalhes da entrada:', err);
-            alert('Erro ao exibir detalhes da entrada. Por favor, tente novamente.');
+            console.error('ERRO:', err);
+            alert('Erro ao excluir receita. Por favor, tente novamente.');
         }
     }
-</script>
+}
 
-<script>
-    // Função para carregar clientes
-    function carregarClientes() {
-        fetch('/clientes/listar')
-            .then(res => res.json())
-            .then(clientes => {
-                const select = document.getElementById('cliente');
-                select.innerHTML = '<option value="">Selecione um cliente</option>';
-                
-                clientes.forEach(cliente => {
-                    const option = document.createElement('option');
-                    option.value = cliente.id;
-                    option.textContent = cliente.nome_cliente;
-                    select.appendChild(option);
-                });
-            })
-            .catch(err => console.error('Erro ao carregar clientes:', err));
+// Função para mostrar detalhes da entrada
+function mostrarDetalhesEntrada(entrada) {
+    try {
+        // Armazena o ID para exclusão
+        document.getElementById('detalhe-id').value = entrada.id_entrada;
+        
+        // Formata a data
+        const dataObj = new Date(entrada.data || new Date());
+        const dataFormatada = `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR')}`;
+        
+        // Formata o valor
+        const valorFormatado = typeof entrada.valor_entrada === 'number' ? 
+            entrada.valor_entrada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
+            'R$ 0,00';
+
+        // Preenche os campos do modal com tratamento para valores nulos
+        document.getElementById('detalhe-cliente').textContent = entrada.cliente || 'Não informado';
+        document.getElementById('detalhe-servico').textContent = entrada.servico || 'Não informado';
+        document.getElementById('detalhe-motivo').textContent = entrada.motivo || 'Não informado';
+        document.getElementById('detalhe-valor').textContent = valorFormatado;
+        document.getElementById('detalhe-pagamento').textContent = entrada.meio_pagamento || 'Não informado';
+        document.getElementById('detalhe-data').textContent = dataFormatada;
+        document.getElementById('detalhe-usuario').textContent = entrada.usuario || 'Não informado';
+
+        // Abre o modal
+        $('#modalDetalhesEntrada').modal('show');
+    } catch (err) {
+        console.error('Erro ao mostrar detalhes da entrada:', err);
+        alert('Erro ao exibir detalhes da receita. Por favor, tente novamente.');
     }
+}
 
-    // Função para carregar serviços
-    function carregarServicos() {
-        fetch('/sevicos/listar')
-            .then(res => res.json())
-            .then(servicos => {
-                const select = document.getElementById('servico');
-                select.innerHTML = '<option value="">Selecione um serviço</option>';
-                
-                servicos.forEach(servico => {
-                    const option = document.createElement('option');
-                    option.value = servico.id;
-                    option.textContent = servico.nome_servico;
-                    select.appendChild(option);
-                });
-            })
-            .catch(err => console.error('Erro ao carregar serviços:', err));
+// Configuração dos formulários
+document.getElementById('formEntrada').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const dados = {
+        valor: parseFloat(document.getElementById('valor_entrada').value),
+        motivo: document.getElementById('motivo_entrada').value,
+        meio_pagamento: document.getElementById('meio_pagamento_entrada').value
+    };
+
+    try {
+        const response = await fetch('/financeiro/entrada', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            $('#modalEntrada').modal('hide');
+            document.getElementById('formEntrada').reset();
+            carregarTotais();
+            carregarUltimasEntradas();
+            alert('Receita registrada com sucesso!');
+        } else {
+            alert(Array.isArray(result.error) ? result.error.join('\n') : result.error);
+        }
+    } catch (err) {
+        console.error('Erro ao registrar receita:', err);
+        alert('Erro ao registrar receita.');
     }
+});
 
-    // Carregar dados quando o modal é aberto
-    $('#modalEntrada').on('show.bs.modal', function () {
-        carregarClientes();
-        carregarServicos();
+document.getElementById('formSaida').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const dados = {
+        valor: parseFloat(document.getElementById('valor_saida').value),
+        motivo: document.getElementById('motivo_saida').value,
+        meio_pagamento: document.getElementById('meio_pagamento_saida').value
+    };
+
+    try {
+        const response = await fetch('/financeiro/saida', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            $('#modalSaida').modal('hide');
+            document.getElementById('formSaida').reset();
+            carregarTotais();
+            carregarUltimasSaidas();
+            alert('Despesa registrada com sucesso!');
+        } else {
+            alert(Array.isArray(result.error) ? result.error.join('\n') : result.error);
+        }
+    } catch (err) {
+        console.error('Erro ao registrar despesa:', err);
+        alert('Erro ao registrar despesa.');
+    }
+});
+
+// Função para carregar todas as receitas
+async function carregarTodasEntradas() {
+    try {
+        // Mostra o loading
+        document.getElementById('loading-receitas').style.display = 'block';
+        document.getElementById('todas-entradas-body').innerHTML = '';
+
+        const response = await fetch('/financeiro/listar');
+        const data = await response.json();
+        const tbody = document.getElementById('todas-entradas-body');
+
+        data.entradas.forEach(entrada => {
+            const data = new Date(entrada.data);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${data.toLocaleDateString('pt-BR')}</td>
+                <td>${entrada.motivo}</td>
+                <td>${entrada.cliente}</td>
+                <td>${entrada.servico}</td>
+                <td>${formatarMoeda(entrada.valor_entrada)}</td>
+                <td>${entrada.meio_pagamento}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick='mostrarDetalhesEntrada(${JSON.stringify(entrada)})'>
+                        <i class="bi bi-eye"></i> Detalhes
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('Erro ao carregar todas as receitas:', err);
+        document.getElementById('todas-entradas-body').innerHTML = `
+            <tr>
+                <td colspan="7" class="text-center text-danger">
+                    Erro ao carregar receitas. Por favor, tente novamente.
+                </td>
+            </tr>
+        `;
+    } finally {
+        // Esconde o loading
+        document.getElementById('loading-receitas').style.display = 'none';
+    }
+}
+
+// Função para carregar todas as despesas
+async function carregarTodasSaidas() {
+    try {
+        // Mostra o loading
+        document.getElementById('loading-despesas').style.display = 'block';
+        document.getElementById('todas-saidas-body').innerHTML = '';
+
+        const response = await fetch('/financeiro/listar');
+        const data = await response.json();
+        const tbody = document.getElementById('todas-saidas-body');
+
+        data.saidas.forEach(saida => {
+            const data = new Date(saida.data);
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${data.toLocaleDateString('pt-BR')}</td>
+                <td>${saida.motivo}</td>
+                <td>${formatarMoeda(saida.valor_saida)}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="excluirSaida(${saida.id})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error('Erro ao carregar todas as despesas:', err);
+        document.getElementById('todas-saidas-body').innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center text-danger">
+                    Erro ao carregar despesas. Por favor, tente novamente.
+                </td>
+            </tr>
+        `;
+    } finally {
+        // Esconde o loading
+        document.getElementById('loading-despesas').style.display = 'none';
+    }
+}
+
+// Evento para carregar dados quando trocar de aba
+document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function (e) {
+        if (e.target.id === 'entradas-tab') {
+            carregarTodasEntradas();
+        } else if (e.target.id === 'saidas-tab') {
+            carregarTodasSaidas();
+        }
     });
+});
+
+// Carregar dados quando a página carregar
+document.addEventListener('DOMContentLoaded', () => {
+    carregarTotais();
+    carregarUltimasEntradas();
+    carregarUltimasSaidas();
+});
 </script>
-
-</body>
-
-</html>
+{% endblock %}
