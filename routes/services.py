@@ -42,11 +42,13 @@ def get_services(search_query=None):
                         .select('*')
                         .eq('id_empresa', empresa_id)
                         .ilike('nome_servico', f'%{search_query}%')
+                        .eq('status', True)
                         .execute())
         else:
             response = (supabase.table('servicos')
                         .select('*')
                         .eq('id_empresa', empresa_id)
+                        .eq('status', True)
                         .execute())
         return response.data if response.data else []
     except Exception as e:
@@ -118,6 +120,7 @@ def listar_servicos():
         response = (supabase.table('servicos')
                     .select('*')
                     .eq('id_empresa', empresa_id)
+                    .eq('status', True)
                     .execute())
         servicos = response.data if response.data else []
         return jsonify(servicos)
@@ -126,7 +129,7 @@ def listar_servicos():
     
 
 
-@servicos_bp.route('/api/servicos/<int:id>', methods=['PUT', 'POST'])
+@services_bp.route('/servicos/editar/<int:id>', methods=['PUT', 'POST'])
 def api_editar_servico(id):
     try:
         # Verifica login
