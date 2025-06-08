@@ -4,8 +4,13 @@
 
 {% block content %}
 <!-- Botão para adicionar produto -->
-<button class="btn btn-primary mb-4" onclick="$('#modalProduto').modal('show')">
+<button class="btn btn-primary mb-4 me-2" onclick="$('#modalProduto').modal('show')">
     <i class="bi bi-plus-circle"></i> Novo Produto
+</button>
+
+<!-- Botão para comprar produtos -->
+<button class="btn btn-success mb-4" onclick="$('#modalComprarProdutos').modal('show')">
+    <i class="bi bi-cart-plus"></i> Comprar Produtos
 </button>
 
 <!-- Pesquisa de Produtos -->
@@ -106,6 +111,42 @@
                 <button type="button" class="btn btn-danger" onclick="excluirProduto()">
                     <i class="bi bi-trash"></i> Excluir
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Comprar Produtos -->
+<div class="modal fade" id="modalComprarProdutos" tabindex="-1" aria-labelledby="modalComprarProdutosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalComprarProdutosLabel">Comprar Produtos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formComprarProdutos" onsubmit="event.preventDefault(); realizarCompra();">
+                    <div class="mb-3">
+                        <label class="form-label">Data de Vencimento</label>
+                        <input type="date" class="form-control" id="data_vencimento" required>
+                    </div>
+                    
+                    <div id="produtos-compra">
+                        <!-- Aqui serão adicionados os produtos -->
+                    </div>
+
+                    <button type="button" class="btn btn-info mb-3" onclick="adicionarProdutoCompra()">
+                        <i class="bi bi-plus"></i> Adicionar Produto
+                    </button>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5>Total: <span id="total-compra">R$ 0,00</span></h5>
+                        <div>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Finalizar Compra</button>
+                        </div>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -231,5 +272,139 @@ function carregarProdutos() {
 
 // Carregar produtos quando a página carregar
 document.addEventListener('DOMContentLoaded', carregarProdutos);
+
+// Template para linha de produto na compra
+function criarLinhaCompra() {
+    const div = document.createElement('div');
+    div.className = 'produto-compra mb-3 border p-3 position-relative';
+    
+    // Botão de remover no canto superior direito
+    const btnRemover = document.createElement('button');
+    btnRemover.type = 'button';
+    btnRemover.className = 'btn btn-danger btn-sm position-absolute top-0 end-0 m-2';
+    btnRemover.innerHTML = '<i class="bi bi-trash"></i>';
+    btnRemover.onclick = function() {
+        div.remove();
+        calcularTotal();
+    };
+    
+    div.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Produto</label>
+                <select class="form-select produto-select" required onchange="atualizarPrecoProduto(this)">
+                    <option value="">Selecione um produto</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Quantidade</label>
+                <input type="number" class="form-control quantidade-input" min="1" required onchange="calcularTotal()">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Preço de custo Unitário</label>
+                <input type="number" class="form-control preco-input" step="0.01" required onchange="calcularTotal()">
+            </div>
+        </div>
+    `;
+    
+    div.appendChild(btnRemover);
+    return div;
+}
+
+// Função para adicionar nova linha de produto
+function adicionarProdutoCompra() {
+    const produtosCompra = document.getElementById('produtos-compra');
+    const linha = criarLinhaCompra();
+    produtosCompra.appendChild(linha);
+    
+    // Carregar produtos no select
+    const select = linha.querySelector('.produto-select');
+    carregarProdutosSelect(select);
+}
+
+// Função para carregar produtos no select
+function carregarProdutosSelect(select) {
+    fetch('/produtos/listar')
+        .then(res => res.json())
+        .then(produtos => {
+            produtos.forEach(produto => {
+                const option = document.createElement('option');
+                option.value = produto.id;
+                option.textContent = produto.nome_produto;
+                option.dataset.preco = produto.preco;
+                select.appendChild(option);
+            });
+        });
+}
+
+// Função para atualizar preço quando produto é selecionado
+function atualizarPrecoProduto(select) {
+    const option = select.options[select.selectedIndex];
+    const precoInput = select.closest('.produto-compra').querySelector('.preco-input');
+    if (option.dataset.preco) {
+        precoInput.value = option.dataset.preco;
+    }
+    calcularTotal();
+}
+
+// Função para calcular total
+function calcularTotal() {
+    let total = 0;
+    document.querySelectorAll('.produto-compra').forEach(div => {
+        const quantidade = parseFloat(div.querySelector('.quantidade-input').value) || 0;
+        const preco = parseFloat(div.querySelector('.preco-input').value) || 0;
+        total += quantidade * preco;
+    });
+    document.getElementById('total-compra').textContent = `R$ ${total.toFixed(2)}`;
+}
+
+// Função para realizar a compra
+function realizarCompra() {
+    const produtos = [];
+    document.querySelectorAll('.produto-compra').forEach(div => {
+        const select = div.querySelector('.produto-select');
+        const quantidade = div.querySelector('.quantidade-input').value;
+        const preco = div.querySelector('.preco-input').value;
+        
+        if (select.value && quantidade && preco) {
+            produtos.push({
+                id: parseInt(select.value),
+                quantidade: parseInt(quantidade),
+                preco: parseFloat(preco)
+            });
+        }
+    });
+
+    const data = {
+        produtos: produtos,
+        data_vencimento: document.getElementById('data_vencimento').value
+    };
+
+    fetch('/produtos/compras', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(res => res.json())
+    .then(response => {
+        $('#modalComprarProdutos').modal('hide');
+        document.getElementById('formComprarProdutos').reset();
+        document.getElementById('produtos-compra').innerHTML = '';
+        carregarProdutos();
+        alert('Compra realizada com sucesso!');
+    })
+    .catch(err => {
+        console.error('ERRO:', err);
+        alert('Erro ao realizar compra. Por favor, tente novamente.');
+    });
+}
+
+// Inicializar primeira linha de produto quando abrir o modal
+document.getElementById('modalComprarProdutos').addEventListener('show.bs.modal', function() {
+    document.getElementById('produtos-compra').innerHTML = '';
+    adicionarProdutoCompra();
+});
 </script>
 {% endblock %} 

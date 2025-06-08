@@ -62,6 +62,16 @@
             Todas as Despesas
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="contas-receber-tab" data-bs-toggle="tab" data-bs-target="#contas-receber" type="button" role="tab">
+            Contas a Receber
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="contas-pagar-tab" data-bs-toggle="tab" data-bs-target="#contas-pagar" type="button" role="tab">
+            Contas a Pagar
+        </button>
+    </li>
 </ul>
 
 <!-- Conteúdo das Abas -->
@@ -179,6 +189,96 @@
                             </tr>
                         </thead>
                         <tbody id="todas-saidas-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aba de Contas a Receber -->
+    <div class="tab-pane fade" id="contas-receber" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <!-- Filtros de Status -->
+                <div class="mb-4">
+                    <label class="form-label">Filtrar por Status:</label>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="filtroStatusReceber" id="receberTodos" value="todos" checked>
+                        <label class="btn btn-outline-primary" for="receberTodos">Todos</label>
+
+                        <input type="radio" class="btn-check" name="filtroStatusReceber" id="receberPendentes" value="pendente">
+                        <label class="btn btn-outline-warning" for="receberPendentes">Pendentes</label>
+
+                        <input type="radio" class="btn-check" name="filtroStatusReceber" id="receberRecebidos" value="Recebido">
+                        <label class="btn btn-outline-success" for="receberRecebidos">Recebidos</label>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <!-- Loading para Contas a Receber -->
+                    <div id="loading-contas-receber" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2 text-primary">Carregando contas a receber...</p>
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data Vencimento</th>
+                                <th>Cliente</th>
+                                <th>Descrição</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contas-receber-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aba de Contas a Pagar -->
+    <div class="tab-pane fade" id="contas-pagar" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <!-- Filtros de Status -->
+                <div class="mb-4">
+                    <label class="form-label">Filtrar por Status:</label>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="filtroStatusPagar" id="pagarTodos" value="todos" checked>
+                        <label class="btn btn-outline-primary" for="pagarTodos">Todos</label>
+
+                        <input type="radio" class="btn-check" name="filtroStatusPagar" id="pagarPendentes" value="pendente">
+                        <label class="btn btn-outline-warning" for="pagarPendentes">Pendentes</label>
+
+                        <input type="radio" class="btn-check" name="filtroStatusPagar" id="pagarPagos" value="pago">
+                        <label class="btn btn-outline-success" for="pagarPagos">Pagos</label>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <!-- Loading para Contas a Pagar -->
+                    <div id="loading-contas-pagar" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                        <p class="mt-2 text-primary">Carregando contas a pagar...</p>
+                    </div>
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Data Vencimento</th>
+                                <th>Descrição</th>
+                                <th>Plano de Contas</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contas-pagar-body">
                         </tbody>
                     </table>
                 </div>
@@ -307,13 +407,238 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Baixar Conta -->
+<div class="modal fade" id="modalBaixarConta" tabindex="-1" aria-labelledby="modalBaixarContaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBaixarContaLabel">Baixar Conta</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formBaixarConta">
+                    <input type="hidden" id="conta_id">
+                    <div class="mb-3">
+                        <label for="meio_pagamento_baixa" class="form-label">Meio de Pagamento</label>
+                        <select class="form-control" id="meio_pagamento_baixa" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="credito">Cartão de Crédito</option>
+                            <option value="debito">Cartão de Débito</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Confirmar Baixa</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Baixar Conta a Pagar -->
+<div class="modal fade" id="modalBaixarContaPagar" tabindex="-1" aria-labelledby="modalBaixarContaPagarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalBaixarContaPagarLabel">Baixar Conta a Pagar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formBaixarContaPagar">
+                    <input type="hidden" id="conta_pagar_id">
+                    <div class="mb-3">
+                        <label for="meio_pagamento_baixa_pagar" class="form-label">Meio de Pagamento</label>
+                        <select class="form-control" id="meio_pagamento_baixa_pagar" required>
+                            <option value="dinheiro">Dinheiro</option>
+                            <option value="pix">PIX</option>
+                            <option value="credito">Cartão de Crédito</option>
+                            <option value="debito">Cartão de Débito</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes da Conta a Receber -->
+<div class="modal fade" id="modalDetalhesContaReceber" tabindex="-1" aria-labelledby="modalDetalhesContaReceberLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesContaReceberLabel">Detalhes da Conta a Receber</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold">Cliente</h6>
+                    <p id="detalhe-cliente-receber"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Descrição</h6>
+                    <p id="detalhe-descricao-receber"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Valor</h6>
+                    <p id="detalhe-valor-receber"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data de Emissão</h6>
+                    <p id="detalhe-data-emissao-receber"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data de Vencimento</h6>
+                    <p id="detalhe-data-vencimento-receber"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Status</h6>
+                    <p id="detalhe-status-receber"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-success" id="btnReceberConta">Receber</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes da Conta a Pagar -->
+<div class="modal fade" id="modalDetalhesContaPagar" tabindex="-1" aria-labelledby="modalDetalhesContaPagarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesContaPagarLabel">Detalhes da Conta a Pagar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold">Descrição</h6>
+                    <p id="detalhe-descricao-pagar"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Plano de Contas</h6>
+                    <p id="detalhe-plano-contas-pagar"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Valor</h6>
+                    <p id="detalhe-valor-pagar"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data de Emissão</h6>
+                    <p id="detalhe-data-emissao-pagar"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data de Vencimento</h6>
+                    <p id="detalhe-data-vencimento-pagar"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Status</h6>
+                    <p id="detalhe-status-pagar"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-success" id="btnPagarConta">Pagar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes da Saída -->
+<div class="modal fade" id="modalDetalhesSaida" tabindex="-1" aria-labelledby="modalDetalhesSaidaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesSaidaLabel">Detalhes da Saída</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold">Motivo</h6>
+                    <p id="detalhe-motivo-saida"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Valor</h6>
+                    <p id="detalhe-valor-saida"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data</h6>
+                    <p id="detalhe-data-saida"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Meio de Pagamento</h6>
+                    <p id="detalhe-meio-pagamento-saida"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Usuário</h6>
+                    <p id="detalhe-usuario-saida"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-danger" onclick="excluirSaida()">Excluir</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalhes da Despesa -->
+<div class="modal fade" id="modalDetalhesDespesa" tabindex="-1" aria-labelledby="modalDetalhesDespesaLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalDetalhesDespesaLabel">Detalhes da Despesa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="fw-bold">Motivo</h6>
+                    <p id="detalhe-despesa-motivo"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Valor</h6>
+                    <p id="detalhe-despesa-valor"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Data</h6>
+                    <p id="detalhe-despesa-data"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Meio de Pagamento</h6>
+                    <p id="detalhe-despesa-pagamento"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Usuário</h6>
+                    <p id="detalhe-despesa-usuario"></p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <button type="button" class="btn btn-danger" onclick="excluirDespesa()">
+                    <i class="bi bi-trash"></i> Excluir
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block page_scripts %}
 <script>
 // Função para formatar moeda
 function formatarMoeda(valor) {
-    return parseFloat(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    return new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valor);
 }
 
 // Função para carregar totais
@@ -324,11 +649,13 @@ async function carregarTotais() {
         
         document.getElementById('total-entradas').textContent = formatarMoeda(data.total_entradas);
         document.getElementById('total-saidas').textContent = formatarMoeda(data.total_saidas);
-        document.getElementById('saldo').textContent = formatarMoeda(data.total_entradas - data.total_saidas);
+        
+        const saldo = data.total_entradas - data.total_saidas;
+        const saldoElement = document.getElementById('saldo');
+        saldoElement.textContent = formatarMoeda(saldo);
         
         // Aplica cor ao saldo
-        const saldoElement = document.getElementById('saldo');
-        if (data.total_entradas - data.total_saidas > 0) {
+        if (saldo > 0) {
             saldoElement.classList.add('text-success');
             saldoElement.classList.remove('text-danger');
         } else {
@@ -337,6 +664,9 @@ async function carregarTotais() {
         }
     } catch (err) {
         console.error('Erro ao carregar totais:', err);
+        document.getElementById('total-entradas').textContent = 'Erro';
+        document.getElementById('total-saidas').textContent = 'Erro';
+        document.getElementById('saldo').textContent = 'Erro';
     }
 }
 
@@ -357,15 +687,18 @@ async function carregarUltimasEntradas() {
                 <td>${data.toLocaleDateString('pt-BR')}</td>
             `;
             tr.style.cursor = 'pointer';
-            tr.onclick = () => {
-                // Armazena o ID da entrada para exclusão
-                document.getElementById('detalhe-id').value = entrada.id;
-                mostrarDetalhesEntrada(entrada);
-            };
+            tr.onclick = () => mostrarDetalhesEntrada(entrada);
             tbody.appendChild(tr);
         });
     } catch (err) {
         console.error('Erro ao carregar últimas entradas:', err);
+        document.getElementById('financeiro-body-ultimas-entradas').innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center text-danger">
+                    Erro ao carregar últimas receitas.
+                </td>
+            </tr>
+        `;
     }
 }
 
@@ -385,10 +718,19 @@ async function carregarUltimasSaidas() {
                 <td>${formatarMoeda(saida.valor_saida)}</td>
                 <td>${data.toLocaleDateString('pt-BR')}</td>
             `;
+            tr.style.cursor = 'pointer';
+            tr.onclick = () => mostrarDetalhesDespesa(saida);
             tbody.appendChild(tr);
         });
     } catch (err) {
         console.error('Erro ao carregar últimas saídas:', err);
+        document.getElementById('financeiro-body-ultimas-saidas').innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center text-danger">
+                    Erro ao carregar últimas despesas.
+                </td>
+            </tr>
+        `;
     }
 }
 
@@ -400,30 +742,28 @@ async function excluirEntrada() {
         return;
     }
 
-    if (confirm('Tem certeza que deseja excluir esta receita?')) {
-        try {
-            const response = await fetch(`/financeiro/entrada/excluir/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+    if (!confirm('Tem certeza que deseja excluir esta receita?')) {
+        return;
+    }
 
-            const result = await response.json();
+    try {
+        const response = await fetch(`/financeiro/entrada/excluir/${id}`, {
+            method: 'DELETE'
+        });
 
-            if (response.ok) {
-                $('#modalDetalhesEntrada').modal('hide');
-                carregarTotais();
-                carregarUltimasEntradas();
-                carregarTodasEntradas();
-                alert('Receita excluída com sucesso!');
-            } else {
-                alert(result.error || 'Erro ao excluir receita');
-            }
-        } catch (err) {
-            console.error('ERRO:', err);
-            alert('Erro ao excluir receita. Por favor, tente novamente.');
+        if (response.ok) {
+            $('#modalDetalhesEntrada').modal('hide');
+            carregarTotais();
+            carregarUltimasEntradas();
+            carregarTodasEntradas();
+            alert('Receita excluída com sucesso!');
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Erro ao excluir receita');
         }
+    } catch (err) {
+        console.error('Erro ao excluir receita:', err);
+        alert('Erro ao excluir receita. Por favor, tente novamente.');
     }
 }
 
@@ -431,23 +771,18 @@ async function excluirEntrada() {
 function mostrarDetalhesEntrada(entrada) {
     try {
         // Armazena o ID para exclusão
-        document.getElementById('detalhe-id').value = entrada.id_entrada;
+        document.getElementById('detalhe-id').value = entrada.id;
         
         // Formata a data
-        const dataObj = new Date(entrada.data || new Date());
+        const dataObj = new Date(entrada.data);
         const dataFormatada = `${dataObj.toLocaleDateString('pt-BR')} às ${dataObj.toLocaleTimeString('pt-BR')}`;
         
-        // Formata o valor
-        const valorFormatado = typeof entrada.valor_entrada === 'number' ? 
-            entrada.valor_entrada.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 
-            'R$ 0,00';
-
-        // Preenche os campos do modal com tratamento para valores nulos
+        // Preenche os campos do modal
         document.getElementById('detalhe-cliente').textContent = entrada.cliente || 'Não informado';
         document.getElementById('detalhe-servico').textContent = entrada.servico || 'Não informado';
-        document.getElementById('detalhe-motivo').textContent = entrada.motivo || 'Não informado';
-        document.getElementById('detalhe-valor').textContent = valorFormatado;
-        document.getElementById('detalhe-pagamento').textContent = entrada.meio_pagamento || 'Não informado';
+        document.getElementById('detalhe-motivo').textContent = entrada.motivo;
+        document.getElementById('detalhe-valor').textContent = formatarMoeda(entrada.valor_entrada);
+        document.getElementById('detalhe-pagamento').textContent = entrada.meio_pagamento;
         document.getElementById('detalhe-data').textContent = dataFormatada;
         document.getElementById('detalhe-usuario').textContent = entrada.usuario || 'Não informado';
 
@@ -547,12 +882,12 @@ async function carregarTodasEntradas() {
             tr.innerHTML = `
                 <td>${data.toLocaleDateString('pt-BR')}</td>
                 <td>${entrada.motivo}</td>
-                <td>${entrada.cliente}</td>
-                <td>${entrada.servico}</td>
+                <td>${entrada.cliente || 'Não informado'}</td>
+                <td>${entrada.servico || 'Não informado'}</td>
                 <td>${formatarMoeda(entrada.valor_entrada)}</td>
                 <td>${entrada.meio_pagamento}</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick='mostrarDetalhesEntrada(${JSON.stringify(entrada)})'>
+                    <button class="btn btn-sm btn-info" onclick='mostrarDetalhesEntrada(${JSON.stringify(entrada).replace(/'/g, "&#39;")})'>
                         <i class="bi bi-eye"></i> Detalhes
                     </button>
                 </td>
@@ -577,7 +912,6 @@ async function carregarTodasEntradas() {
 // Função para carregar todas as despesas
 async function carregarTodasSaidas() {
     try {
-        // Mostra o loading
         document.getElementById('loading-despesas').style.display = 'block';
         document.getElementById('todas-saidas-body').innerHTML = '';
 
@@ -593,8 +927,8 @@ async function carregarTodasSaidas() {
                 <td>${saida.motivo}</td>
                 <td>${formatarMoeda(saida.valor_saida)}</td>
                 <td>
-                    <button class="btn btn-sm btn-danger" onclick="excluirSaida(${saida.id})">
-                        <i class="bi bi-trash"></i>
+                    <button class="btn btn-sm btn-info me-2" onclick='mostrarDetalhesDespesa(${JSON.stringify(saida).replace(/'/g, "&#39;")})'>
+                        <i class="bi bi-eye"></i> Detalhes
                     </button>
                 </td>
             `;
@@ -610,10 +944,169 @@ async function carregarTodasSaidas() {
             </tr>
         `;
     } finally {
-        // Esconde o loading
         document.getElementById('loading-despesas').style.display = 'none';
     }
 }
+
+// Variáveis para armazenar os dados completos
+let todasContasReceber = [];
+let todasContasPagar = [];
+
+// Função para filtrar contas a receber
+function filtrarContasReceber(status) {
+    const tbody = document.getElementById('contas-receber-body');
+    tbody.innerHTML = '';
+
+    const contasFiltradas = status === 'todos' 
+        ? todasContasReceber 
+        : todasContasReceber.filter(conta => conta.status === status);
+
+    contasFiltradas.forEach(conta => {
+        const dataVencimento = new Date(conta.data_vencimento);
+        const tr = document.createElement('tr');
+        
+        if (conta.status !== 'Recebido' && dataVencimento < new Date()) {
+            tr.classList.add('table-danger');
+        }
+        
+        tr.innerHTML = `
+            <td>${dataVencimento.toLocaleDateString('pt-BR')}</td>
+            <td>${conta.id_cliente}</td>
+            <td>${conta.descricao}</td>
+            <td>${formatarMoeda(conta.valor)}</td>
+            <td>
+                <span class="badge ${conta.status === 'Recebido' ? 'bg-success' : 'bg-warning'}">
+                    ${conta.status}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-info me-2" onclick='mostrarDetalhesContaReceber(${JSON.stringify(conta).replace(/'/g, "&#39;")})'>
+                    <i class="bi bi-eye"></i> Detalhes
+                </button>
+                ${conta.status !== 'Recebido' ? `
+                    <button class="btn btn-sm btn-success" onclick="abrirModalBaixa(${conta.id})">
+                        <i class="bi bi-check-circle"></i> Receber
+                    </button>
+                ` : ''}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Função para filtrar contas a pagar
+function filtrarContasPagar(status) {
+    const tbody = document.getElementById('contas-pagar-body');
+    tbody.innerHTML = '';
+
+    const contasFiltradas = status === 'todos' 
+        ? todasContasPagar 
+        : todasContasPagar.filter(conta => conta.status === status);
+
+    contasFiltradas.forEach(conta => {
+        const dataVencimento = new Date(conta.data_vencimento);
+        const tr = document.createElement('tr');
+        
+        if (conta.status === 'pendente' && dataVencimento < new Date()) {
+            tr.classList.add('table-danger');
+        }
+        
+        tr.innerHTML = `
+            <td>${dataVencimento.toLocaleDateString('pt-BR')}</td>
+            <td>${conta.descricao}</td>
+            <td>${conta.plano_contas || 'Não informado'}</td>
+            <td>${formatarMoeda(conta.valor)}</td>
+            <td>
+                <span class="badge ${conta.status === 'pago' ? 'bg-success' : 'bg-warning'}">
+                    ${conta.status === 'pago' ? 'Pago' : 'Pendente'}
+                </span>
+            </td>
+            <td>
+                <button class="btn btn-sm btn-info me-2" onclick='mostrarDetalhesContaPagar(${JSON.stringify(conta).replace(/'/g, "&#39;")})'>
+                    <i class="bi bi-eye"></i> Detalhes
+                </button>
+                ${conta.status === 'pendente' ? `
+                    <button class="btn btn-sm btn-success" onclick="abrirModalBaixaPagar(${conta.id})">
+                        <i class="bi bi-check-circle"></i> Pagar
+                    </button>
+                ` : ''}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Atualiza a função de carregar contas a receber
+async function carregarContasReceber() {
+    try {
+        document.getElementById('loading-contas-receber').style.display = 'block';
+        document.getElementById('contas-receber-body').innerHTML = '';
+
+        const response = await fetch('/contas_receber/listar');
+        todasContasReceber = await response.json();
+        
+        // Aplica o filtro atual
+        const filtroAtual = document.querySelector('input[name="filtroStatusReceber"]:checked').value;
+        filtrarContasReceber(filtroAtual);
+
+    } catch (err) {
+        console.error('Erro ao carregar contas a receber:', err);
+        document.getElementById('contas-receber-body').innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-danger">
+                    Erro ao carregar contas a receber. Por favor, tente novamente.
+                </td>
+            </tr>
+        `;
+    } finally {
+        document.getElementById('loading-contas-receber').style.display = 'none';
+    }
+}
+
+// Atualiza a função de carregar contas a pagar
+async function carregarContasPagar() {
+    try {
+        document.getElementById('loading-contas-pagar').style.display = 'block';
+        document.getElementById('contas-pagar-body').innerHTML = '';
+
+        const response = await fetch('/contas_pagar/listar');
+        todasContasPagar = await response.json();
+        
+        // Aplica o filtro atual
+        const filtroAtual = document.querySelector('input[name="filtroStatusPagar"]:checked').value;
+        filtrarContasPagar(filtroAtual);
+
+    } catch (err) {
+        console.error('Erro ao carregar contas a pagar:', err);
+        document.getElementById('contas-pagar-body').innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-danger">
+                    Erro ao carregar contas a pagar. Por favor, tente novamente.
+                </td>
+            </tr>
+        `;
+    } finally {
+        document.getElementById('loading-contas-pagar').style.display = 'none';
+    }
+}
+
+// Event listeners para os filtros e carregamento inicial
+document.addEventListener('DOMContentLoaded', function() {
+    // Event listeners para filtros de contas a receber
+    document.querySelectorAll('input[name="filtroStatusReceber"]').forEach(radio => {
+        radio.addEventListener('change', (e) => filtrarContasReceber(e.target.value));
+    });
+
+    // Event listeners para filtros de contas a pagar
+    document.querySelectorAll('input[name="filtroStatusPagar"]').forEach(radio => {
+        radio.addEventListener('change', (e) => filtrarContasPagar(e.target.value));
+    });
+
+    // Carrega dados iniciais
+    carregarTotais();
+    carregarUltimasEntradas();
+    carregarUltimasSaidas();
+});
 
 // Evento para carregar dados quando trocar de aba
 document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
@@ -622,15 +1115,243 @@ document.querySelectorAll('button[data-bs-toggle="tab"]').forEach(tab => {
             carregarTodasEntradas();
         } else if (e.target.id === 'saidas-tab') {
             carregarTodasSaidas();
+        } else if (e.target.id === 'contas-receber-tab') {
+            carregarContasReceber();
+        } else if (e.target.id === 'contas-pagar-tab') {
+            carregarContasPagar();
         }
     });
 });
 
-// Carregar dados quando a página carregar
-document.addEventListener('DOMContentLoaded', () => {
-    carregarTotais();
-    carregarUltimasEntradas();
-    carregarUltimasSaidas();
+// Função para mostrar detalhes da conta a pagar
+function mostrarDetalhesContaPagar(conta) {
+    try {
+        document.getElementById('detalhe-descricao-pagar').textContent = conta.descricao;
+        document.getElementById('detalhe-plano-contas-pagar').textContent = conta.plano_contas || 'Não informado';
+        document.getElementById('detalhe-valor-pagar').textContent = formatarMoeda(conta.valor);
+        document.getElementById('detalhe-data-emissao-pagar').textContent = new Date(conta.data_emissao).toLocaleDateString('pt-BR');
+        document.getElementById('detalhe-data-vencimento-pagar').textContent = new Date(conta.data_vencimento).toLocaleDateString('pt-BR');
+        document.getElementById('detalhe-status-pagar').textContent = conta.status === 'pago' ? 'Pago' : 'Pendente';
+
+        const btnPagar = document.getElementById('btnPagarConta');
+        if (conta.status === 'pago') {
+            btnPagar.style.display = 'none';
+        } else {
+            btnPagar.style.display = 'block';
+            btnPagar.onclick = () => {
+                $('#modalDetalhesContaPagar').modal('hide');
+                abrirModalBaixaPagar(conta.id);
+            };
+        }
+
+        $('#modalDetalhesContaPagar').modal('show');
+    } catch (err) {
+        console.error('Erro ao mostrar detalhes da conta a pagar:', err);
+        alert('Erro ao exibir detalhes da conta a pagar. Por favor, tente novamente.');
+    }
+}
+
+// Função para mostrar detalhes da conta a receber
+function mostrarDetalhesContaReceber(conta) {
+    try {
+        document.getElementById('detalhe-cliente-receber').textContent = conta.id_cliente;
+        document.getElementById('detalhe-descricao-receber').textContent = conta.descricao;
+        document.getElementById('detalhe-valor-receber').textContent = formatarMoeda(conta.valor);
+        document.getElementById('detalhe-data-emissao-receber').textContent = new Date(conta.data_emissao).toLocaleDateString('pt-BR');
+        document.getElementById('detalhe-data-vencimento-receber').textContent = new Date(conta.data_vencimento).toLocaleDateString('pt-BR');
+        document.getElementById('detalhe-status-receber').textContent = conta.status;
+
+        const btnReceber = document.getElementById('btnReceberConta');
+        if (conta.status === 'Recebido') {
+            btnReceber.style.display = 'none';
+        } else {
+            btnReceber.style.display = 'block';
+            btnReceber.onclick = () => {
+                $('#modalDetalhesContaReceber').modal('hide');
+                abrirModalBaixa(conta.id);
+            };
+        }
+
+        $('#modalDetalhesContaReceber').modal('show');
+    } catch (err) {
+        console.error('Erro ao mostrar detalhes da conta a receber:', err);
+        alert('Erro ao exibir detalhes da conta a receber. Por favor, tente novamente.');
+    }
+}
+
+// Função para mostrar detalhes da despesa
+function mostrarDetalhesDespesa(despesa) {
+    try {
+        // Formata a data
+        const data = new Date(despesa.data);
+        const dataFormatada = `${data.toLocaleDateString('pt-BR')} às ${data.toLocaleTimeString('pt-BR')}`;
+        
+        // Preenche os campos do modal
+        document.getElementById('detalhe-despesa-motivo').textContent = despesa.motivo;
+        document.getElementById('detalhe-despesa-valor').textContent = formatarMoeda(despesa.valor_saida);
+        document.getElementById('detalhe-despesa-data').textContent = dataFormatada;
+        document.getElementById('detalhe-despesa-pagamento').textContent = despesa.meio_pagamento;
+        document.getElementById('detalhe-despesa-usuario').textContent = despesa.usuario || 'Não informado';
+
+        // Armazena o ID para exclusão
+        window.despesaAtualId = despesa.id;
+
+        // Abre o modal
+        $('#modalDetalhesDespesa').modal('show');
+    } catch (err) {
+        console.error('Erro ao mostrar detalhes da despesa:', err);
+        alert('Erro ao exibir detalhes da despesa. Por favor, tente novamente.');
+    }
+}
+
+// Função para excluir despesa
+async function excluirDespesa() {
+    if (!window.despesaAtualId) {
+        alert('ID da despesa não encontrado');
+        return;
+    }
+
+    if (!confirm('Tem certeza que deseja excluir esta despesa?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/financeiro/saida/excluir/${window.despesaAtualId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            $('#modalDetalhesDespesa').modal('hide');
+            carregarTotais();
+            carregarUltimasSaidas();
+            carregarTodasSaidas();
+            alert('Despesa excluída com sucesso!');
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Erro ao excluir despesa');
+        }
+    } catch (err) {
+        console.error('Erro ao excluir despesa:', err);
+        alert('Erro ao excluir despesa. Por favor, tente novamente.');
+    }
+}
+
+// Função para mostrar detalhes da saída
+function mostrarDetalhesSaida(saida) {
+    document.getElementById('detalhe-motivo-saida').textContent = saida.motivo;
+    document.getElementById('detalhe-valor-saida').textContent = formatarMoeda(saida.valor);
+    document.getElementById('detalhe-data-saida').textContent = new Date(saida.data).toLocaleDateString('pt-BR');
+    document.getElementById('detalhe-meio-pagamento-saida').textContent = saida.meio_pagamento;
+    document.getElementById('detalhe-usuario-saida').textContent = saida.usuario;
+
+    // Armazena o ID da saída para possível exclusão
+    document.getElementById('modalDetalhesSaida').dataset.saidaId = saida.id;
+
+    $('#modalDetalhesSaida').modal('show');
+}
+
+// Função para excluir saída
+async function excluirSaida() {
+    const id = document.getElementById('modalDetalhesSaida').dataset.saidaId;
+    
+    if (!confirm('Tem certeza que deseja excluir esta saída?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/saidas/excluir/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            $('#modalDetalhesSaida').modal('hide');
+            carregarTodasSaidas();
+            carregarTotais();
+            alert('Saída excluída com sucesso!');
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Erro ao excluir saída');
+        }
+    } catch (err) {
+        console.error('Erro ao excluir saída:', err);
+        alert('Erro ao excluir saída. Por favor, tente novamente.');
+    }
+}
+
+// Função para abrir modal de baixa
+function abrirModalBaixa(id) {
+    document.getElementById('conta_id').value = id;
+    $('#modalBaixarConta').modal('show');
+}
+
+// Função para abrir modal de baixa de conta a pagar
+function abrirModalBaixaPagar(id) {
+    document.getElementById('conta_pagar_id').value = id;
+    $('#modalBaixarContaPagar').modal('show');
+}
+
+// Configuração do formulário de baixa
+document.getElementById('formBaixarConta').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('conta_id').value;
+    const pagamento = document.getElementById('meio_pagamento_baixa').value;
+
+    try {
+        const response = await fetch(`/contas_receber/baixar/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ pagamento })
+        });
+
+        if (response.ok) {
+            $('#modalBaixarConta').modal('hide');
+            document.getElementById('formBaixarConta').reset();
+            carregarContasReceber();
+            carregarTotais();
+            alert('Conta baixada com sucesso!');
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Erro ao baixar conta');
+        }
+    } catch (err) {
+        console.error('Erro ao baixar conta:', err);
+        alert('Erro ao baixar conta. Por favor, tente novamente.');
+    }
+});
+
+// Configuração do formulário de baixa de conta a pagar
+document.getElementById('formBaixarContaPagar').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('conta_pagar_id').value;
+    const meio_pagamento = document.getElementById('meio_pagamento_baixa_pagar').value;
+
+    try {
+        const response = await fetch(`/contas_pagar/baixar/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ meio_pagamento })
+        });
+
+        if (response.ok) {
+            $('#modalBaixarContaPagar').modal('hide');
+            document.getElementById('formBaixarContaPagar').reset();
+            carregarContasPagar();
+            carregarTotais();
+            alert('Conta paga com sucesso!');
+        } else {
+            const data = await response.json();
+            alert(data.error || 'Erro ao pagar conta');
+        }
+    } catch (err) {
+        console.error('Erro ao pagar conta:', err);
+        alert('Erro ao pagar conta. Por favor, tente novamente.');
+    }
 });
 </script>
 {% endblock %}

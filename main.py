@@ -16,7 +16,9 @@ from routes.renovacao import renovacao_bp
 from routes.financeiro import financeiro_bp
 from routes.check_health import check_health_bp
 from routes.produtos import produtos_bp
-from  routes.vendas import vendas_bp
+from routes.vendas import vendas_bp
+from routes.contas_receber import contas_receber_bp
+from routes.contas_pagar import contas_pagar_bp
 import os
 
 # Configuração do Flask
@@ -42,9 +44,8 @@ app.register_blueprint(financeiro_bp)
 app.register_blueprint(check_health_bp)
 app.register_blueprint(produtos_bp)
 app.register_blueprint(vendas_bp)
-# Configuração do agendador
-
-
+app.register_blueprint(contas_receber_bp)
+app.register_blueprint(contas_pagar_bp)
 
 @app.route("/")
 def inicio():
@@ -52,5 +53,4 @@ def inicio():
 
 # Iniciar o agendador
 if __name__ == '__main__':
-
-       app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)

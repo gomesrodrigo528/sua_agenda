@@ -8,10 +8,12 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from flask import current_app as app
 from datetime import datetime
+
+
 from supabase import create_client, Client
 
 import os
-import datetime
+
 
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
 supabase_key = os.getenv(
@@ -49,6 +51,7 @@ def vender():
         id_cliente = data.get('id_cliente') or 238
 
 
+
         if not produtos:
             return jsonify({"error": "Nenhum produto informado."}), 400
 
@@ -73,7 +76,7 @@ def vender():
 
         # Cria a venda
         response = supabase.table("vendas").insert({
-            "data": datetime.datetime.now().isoformat(),
+            "data": datetime.now().isoformat(),
             "id_usuario": id_usuario,
             "id_empresa": id_empresa,
             "valor": valor_total,
@@ -82,69 +85,80 @@ def vender():
             "id_cliente": id_cliente,
             "meio_pagamento": meio_pagamento
         }).execute()
+
+        supabase.table("venda_itens").insert([
+            {
+                "id_venda": response.data[0]['id'],
+                "id_produto": item['id'],
+                "quantidade": item['quantidade'],
+                "valor_unitario": item['valor_unitario'],
+                "subtotal": item['quantidade'] * item['valor_unitario']
+            } for item in produtos
+        ]).execute()
+
+        supabase.table("produtos").update({
+            "estoque": supabase.table("produtos").select("estoque").eq("id", item['id']).single().execute().data['estoque'] - item['quantidade']
+        }).eq("id", item['id']).execute()
+
+
         if not response.data or 'id' not in response.data[0]:
             raise Exception("Erro ao obter o ID da venda")
 
         id_venda = response.data[0]['id']
 
-        # Registra a entrada no financeiro
-        supabase.table("financeiro_entrada").insert({
-            "data": datetime.datetime.now().isoformat(),
-            "valor_entrada": valor_total,
-            "motivo": "Venda de Produtos",
-            "id_empresa": id_empresa,
-            "id_usuario": id_usuario,
-            "id_cliente": id_cliente,
-            "meio_pagamento": meio_pagamento,
-            "id_servico": None
-        }).execute()
+        if meio_pagamento == 'prazo':
+            # Chama a API vendaprazo
+            vencimento = data.get('data_vencimento')  # precisa vir do frontend
+            if not vencimento:
+                return jsonify({"error": "Data de vencimento obrigatória para venda a prazo"}), 400
 
-        # Registra os itens e atualiza o estoque
-        for item in produtos:
-            id_produto = item['id']
-            quantidade = item['quantidade']
-            valor_unitario = item['valor_unitario']
-            subtotal = quantidade * valor_unitario
+            response_prazo = requests.post(
+                f"{request.host_url}/contas_receber/vendaprazo",
+                json={
+                    "id_venda": id_venda,
+                    "data_vencimento": vencimento,
+                    "id_cliente": id_cliente,
+                    "id_usuario": id_usuario,
+                    "valor": valor_total
+                },
+                cookies=request.cookies
+            )
 
-            # Atualiza estoque
-            produto = supabase.table("produtos").select("estoque").eq("id", id_produto).single().execute()
-            estoque_atual = produto.data['estoque']
+            if response_prazo.status_code != 200:
+                return jsonify({"error": "Erro ao registrar contas a receber"}), 500
 
-            novo_estoque = estoque_atual - quantidade
-            supabase.table("produtos").update({
-                "estoque": novo_estoque
-            }).eq("id", id_produto).execute()
-
-            # Insere item da venda
-            supabase.table("venda_itens").insert({
-                "id_venda": id_venda,
-                "id_produto": id_produto,
-                "quantidade": quantidade,
-                "valor_unitario": valor_unitario,
-                "subtotal": subtotal
+        else:
+            # Registra a entrada no financeiro (somente se não for prazo)
+            supabase.table("financeiro_entrada").insert({
+                "data": datetime.now().isoformat(),
+                "valor_entrada": valor_total,
+                "motivo": "Venda de Produtos",
+                "id_empresa": id_empresa,
+                "id_usuario": id_usuario,
+                "id_cliente": id_cliente,
+                "meio_pagamento": meio_pagamento,
+                "id_servico": None
             }).execute()
-        
-        print("Venda registrada com sucesso!")
-        # 🚀 REDIRECIONA PRO CUPOM PDF
-                # No lugar do redirect:
+
+        # RETORNO FELIZÃO!
         return jsonify({
-            "success": True,
+            "message": "Venda registrada com sucesso!",
             "id_venda": id_venda,
             "cupom_url": url_for('vendas_bp.gerar_cupom_venda_pdf', id_venda=id_venda)
         })
 
-
-
     except Exception as e:
-        print("Erro ao registrar venda:", str(e))
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-    
 
 
 @vendas_bp.route('/venda/<int:id_venda>/cupom', methods=['GET'])
 def gerar_cupom_venda_pdf(id_venda):
     try:
         empresa_id = request.cookies.get('empresa_id')
+        data_venda =datetime.now().isoformat()
+        data_venda_formatada = datetime.strptime(data_venda, "%Y-%m-%dT%H:%M:%S.%f").strftime("%d/%m/%Y %H:%M:%S")
 
         # Busca dados da empresa
         empresa = supabase.table("empresa").select("*").eq("id", empresa_id).single().execute().data
@@ -163,8 +177,7 @@ def gerar_cupom_venda_pdf(id_venda):
         itens = supabase.table("venda_itens").select("*, produtos(nome_produto)").eq("id_venda", id_venda).execute().data
 
         # Formatar data bonitinho
-        data_venda = datetime.datetime.fromisoformat(venda['data'][:19])
-        data_str = data_venda.strftime("%d/%m/%Y %H:%M:%S")
+        
 
         buffer = BytesIO()
         largura = 250
@@ -193,7 +206,7 @@ def gerar_cupom_venda_pdf(id_venda):
         y -= 14
 
         p.setFont("Helvetica", 8)
-        p.drawString(10, y, f"Data: {data_str}")
+        p.drawString(10, y, f"Data: {data_venda_formatada}")
         y -= 12
         p.drawString(10, y, f"Venda Nº: {venda['id']}")
         y -= 12

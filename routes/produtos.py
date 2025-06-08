@@ -228,3 +228,70 @@ def buscar_produtos():
     except Exception as e:
         print("Erro ao buscar produtos:", str(e))
         return jsonify({"error": str(e)}), 500
+
+
+
+dataatual = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+@produtos_bp.route('/produtos/compras',methods=['POST'])
+def comprar_produtos():
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        data = request.get_json()
+        print("JSON recebido:", data)
+
+        id_empresa = request.cookies.get('empresa_id')
+        id_usuario = request.cookies.get('user_id')
+
+        if not id_empresa or not id_usuario:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+        
+        if not data.get('produtos') or not data.get('data_vencimento'):
+            return jsonify({"error": "Dados incompletos"}), 400
+
+        valor_total = 0
+        
+        # Processa cada produto
+        for produto in data['produtos']:
+            try:
+                id_produto = int(produto['id'])
+                quantidade = int(produto['quantidade'])
+                preco = float(produto['preco'])
+                
+                # Calcula o valor total
+                valor_total += quantidade * preco
+                
+                # Atualiza o estoque do produto
+                produto_atual = supabase.table("produtos").select("estoque").eq("id", id_produto).execute()
+                if not produto_atual.data:
+                    return jsonify({"error": f"Produto {id_produto} não encontrado"}), 404
+                
+                novo_estoque = produto_atual.data[0]["estoque"] + quantidade
+                supabase.table("produtos").update({
+                    "estoque": novo_estoque
+                }).eq("id", id_produto).execute()
+                
+            except ValueError as e:
+                return jsonify({"error": f"Dados inválidos para o produto {produto}"}), 400
+            except Exception as e:
+                return jsonify({"error": f"Erro ao processar produto {produto}: {str(e)}"}), 500
+
+        # Cria a conta a pagar
+        supabase.table('contas_pagar').insert({
+            "id_empresa": id_empresa,
+            "id_usuario": id_usuario,
+            "data_vencimento": data["data_vencimento"],
+            "valor": valor_total,
+            "descricao": "Compra de produtos",
+            "status": "pendente",
+            "plano_contas": "compra de produtos para revenda",
+            "data_emissao": dataatual,
+            "data_vencimento": data["data_vencimento"]
+        }).execute()
+
+        return jsonify({"message": "Compra realizada com sucesso", "valor_total": valor_total}), 200
+
+    except Exception as e:
+        print("Erro ao realizar compra:", str(e))
+        return jsonify({"error": str(e)}), 500

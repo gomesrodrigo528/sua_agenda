@@ -182,3 +182,52 @@ def listar_clientes():
     except Exception as e:
         print(f"Erro ao listar clientes: {e}")
         return jsonify([]), 500
+
+
+
+@clientes_bp.route('/clientes/buscar', methods=['GET'])
+def buscar_clientes():
+    try:
+        # Obtém o termo de busca da query string
+        termo = request.args.get('termo', '')
+        empresa_id = request.cookies.get('empresa_id')
+        
+        if not empresa_id:
+            return jsonify({'error': 'Empresa não identificada'}), 401
+        
+        # Se não houver termo, retorna todos os clientes
+        if not termo:
+            response = (supabase.table('clientes')
+                        .select('id, nome_cliente, telefone, email, endereco, num_endereco')
+                        .eq('id_empresa', empresa_id)
+                        .limit(50)
+                        .execute())
+        else:
+            # Busca com ILIKE em campos de texto e CAST para telefone
+            response = (supabase.table('clientes')
+                        .select('id, nome_cliente, telefone, email, endereco, num_endereco')
+                        .eq('id_empresa', empresa_id)
+                        .or_(
+                            f"nome_cliente.ilike.%{termo}%,"
+                            f"email.ilike.%{termo}%,"
+                            f"cast(telefone as text).ilike.%{termo}%"
+                        )
+                        .limit(50)
+                        .execute())
+
+        clientes = response.data if response.data else []
+        
+        # Formata os dados para o frontend
+        clientes_formatados = [{
+            'id': cliente['id'],
+            'nome': cliente['nome_cliente'],
+            'telefone': str(cliente['telefone']) if cliente['telefone'] else '-',
+            'email': cliente['email'] or '-',
+            'endereco': f"{cliente['endereco'] or ''}, {cliente['num_endereco'] or ''}".strip(', ') or '-'
+        } for cliente in clientes]
+
+        return jsonify(clientes_formatados)
+
+    except Exception as e:
+        print(f"Erro ao buscar clientes: {str(e)}")
+        return jsonify({'error': 'Erro ao buscar clientes'}), 500

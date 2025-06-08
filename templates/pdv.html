@@ -78,9 +78,16 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Cliente</label>
-                        <select id="cliente" class="mt-1 block w-full p-2 border rounded-lg">
-                            <option value="">Selecione um cliente (opcional)</option>
-                        </select>
+                        <div class="flex gap-2">
+                            <input type="hidden" id="cliente" name="cliente">
+                            <input type="text" id="clienteSelecionado" readonly
+                                class="mt-1 block w-full p-2 border rounded-lg bg-gray-50" 
+                                placeholder="Nenhum cliente selecionado">
+                            <button type="button" onclick="abrirModalClientes()"
+                                class="mt-1 bg-blue-500 text-white px-4 rounded-lg hover:bg-blue-600 flex items-center">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <div style="display: none;">
@@ -93,12 +100,17 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Meio de Pagamento</label>
-                        <select id="meioPagamento" class="mt-1 block w-full p-2 border rounded-lg">
+                        <select id="meioPagamento" class="mt-1 block w-full p-2 border rounded-lg" onchange="exibirDataVencimento()">
                             <option value="dinheiro">Dinheiro</option>
                             <option value="pix">PIX</option>
                             <option value="cartao_credito">Cartão de Crédito</option>
                             <option value="cartao_debito">Cartão de Débito</option>
+                            <option value="prazo">prazo</option>
                         </select>
+                    </div>
+                    <div id="dataVencimentoDiv" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700">Data de Vencimento</label>
+                        <input type="date" id="dataVencimento" class="mt-1 block w-full p-2 border rounded-lg">
                     </div>
 
                     <div>
@@ -217,7 +229,144 @@
         </div>
     </div>
 
+    <!-- Modal de Carregamento -->
+    <div id="modalCarregamento" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg flex flex-col items-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+            <p class="text-gray-700">Processando venda...</p>
+        </div>
+    </div>
+
+    <!-- Modal de Sucesso -->
+    <div id="modalSucesso" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg flex flex-col items-center max-w-md mx-4">
+            <div class="bg-green-100 rounded-full p-4 mb-4">
+                <i class="fas fa-check text-green-500 text-4xl"></i>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-2">Venda Realizada!</h3>
+            <p class="text-gray-600 text-center mb-4">A venda foi processada com sucesso.</p>
+            <button onclick="fecharModalSucesso()" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 transition-colors">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal de Seleção de Clientes -->
+    <div id="modalClientes" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl m-4">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Selecionar Cliente</h3>
+                <button onclick="fecharModalClientes()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-4">
+                <!-- Campo de Busca -->
+                <div class="mb-4">
+                    <div class="relative">
+                        <input type="text" id="buscaCliente" 
+                            class="w-full p-2 pr-10 border rounded-lg" 
+                            placeholder="Digite para buscar por nome, telefone ou email..."
+                            oninput="buscarClientes(this.value)">
+                        <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Tabela de Clientes -->
+                <div class="overflow-y-auto max-h-[calc(100vh-300px)]">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="p-2 text-left">Nome</th>
+                                <th class="p-2 text-left">Telefone</th>
+                                <th class="p-2 text-left">Email</th>
+                                <th class="p-2 text-left">Endereço</th>
+                                <th class="p-2 w-24"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaClientes">
+                            <!-- Clientes serão inseridos aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // Função para mostrar mensagem de erro
+        function mostrarErro(elementId, mensagem) {
+            // Remove mensagens de erro anteriores
+            const erroAnterior = document.getElementById(elementId + 'Erro');
+            if (erroAnterior) erroAnterior.remove();
+
+            // Cria novo elemento de erro
+            const erro = document.createElement('div');
+            erro.id = elementId + 'Erro';
+            erro.className = 'text-red-500 text-sm mt-1';
+            erro.innerHTML = `<i class="fas fa-exclamation-circle mr-1"></i>${mensagem}`;
+
+            // Insere após o elemento
+            const elemento = document.getElementById(elementId);
+            elemento.parentNode.insertBefore(erro, elemento.nextSibling);
+            
+            // Adiciona borda vermelha ao elemento
+            elemento.classList.add('border-red-500');
+            
+            // Remove a mensagem após 5 segundos
+            setTimeout(() => {
+                if (erro.parentNode) {
+                    erro.remove();
+                    elemento.classList.remove('border-red-500');
+                }
+            }, 5000);
+        }
+
+        // Função para mostrar/esconder o modal de sucesso
+        function toggleModalSucesso(mostrar) {
+            const modal = document.getElementById('modalSucesso');
+            if (mostrar) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function fecharModalSucesso() {
+            toggleModalSucesso(false);
+        }
+
+        // exibe campo data de vencimento
+        function exibirDataVencimento() {
+            const meioPagamento = document.getElementById('meioPagamento').value;
+            const dataVencimentoDiv = document.getElementById('dataVencimentoDiv');
+            const clienteId = document.getElementById('cliente').value;
+
+            if (meioPagamento === 'prazo') {
+                dataVencimentoDiv.style.display = 'block';
+                if (!clienteId) {
+                    mostrarErro('clienteSelecionado', 'Selecione um cliente para venda a prazo');
+                    meioPagamento.value = 'dinheiro';
+                    dataVencimentoDiv.style.display = 'none';
+                    abrirModalClientes();
+                    return;
+                }
+            } else {
+                dataVencimentoDiv.style.display = 'none';
+            }
+        }
+
+        // Função para mostrar/esconder o modal de carregamento
+        function toggleCarregamento(mostrar) {
+            const modal = document.getElementById('modalCarregamento');
+            if (mostrar) {
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
         let produtos = [];
         let timeoutId = null;
         let isFullScreen = false;
@@ -458,8 +607,22 @@
         });
 
         async function finalizarVenda() {
+            // Remove qualquer mensagem de erro anterior
+            const erros = document.querySelectorAll('[id$="Erro"]');
+            erros.forEach(erro => erro.remove());
+
             if (produtos.length === 0) {
-                alert('Adicione pelo menos um produto');
+                mostrarErro('pesquisaProduto', 'Adicione pelo menos um produto');
+                return;
+            }
+
+            const meioPagamento = document.getElementById('meioPagamento').value;
+            const idCliente = document.getElementById('cliente').value || null;
+
+            // Verifica novamente se é venda a prazo e tem cliente selecionado
+            if (meioPagamento === 'prazo' && !idCliente) {
+                mostrarErro('clienteSelecionado', 'Selecione um cliente para venda a prazo');
+                abrirModalClientes();
                 return;
             }
 
@@ -467,11 +630,23 @@
                 produtos: produtos,
                 observacao: document.getElementById('observacao').value,
                 plano_contas: document.getElementById('planoContas').value,
-                meio_pagamento: document.getElementById('meioPagamento').value,
-                id_cliente: document.getElementById('cliente').value || null
+                meio_pagamento: meioPagamento,
+                id_cliente: idCliente
             };
 
+            if (meioPagamento === 'prazo') {
+                const dataVencimento = document.getElementById('dataVencimento').value;
+                if (!dataVencimento) {
+                    mostrarErro('dataVencimento', 'Informe a data de vencimento');
+                    document.getElementById('dataVencimento').focus();
+                    return;
+                }
+                venda.data_vencimento = dataVencimento;
+            }
+
             try {
+                toggleCarregamento(true);
+
                 const response = await fetch('/vender', {
                     method: 'POST',
                     headers: {
@@ -482,20 +657,29 @@
 
                 const result = await response.json();
 
-
                 if (response.ok) {
-                    alert('Venda realizada com sucesso!');
-                    abrirModalCupom(result.cupom_url);
-
+                    // Limpa o estado
                     produtos = [];
                     atualizarTabelaProdutos();
                     document.getElementById('observacao').value = '';
-                } else {
-                    alert(result.error || 'Erro ao realizar venda');
-                }
+                    document.getElementById('dataVencimento').value = '';
+                    document.getElementById('meioPagamento').value = 'dinheiro';
+                    document.getElementById('cliente').value = '';
+                    exibirDataVencimento();
 
+                    // Mostra mensagem de sucesso e abre o cupom
+                    toggleModalSucesso(true);
+                    setTimeout(() => {
+                        abrirModalCupom(result.cupom_url);
+                    }, 1500);
+                } else {
+                    mostrarErro('pesquisaProduto', result.error || 'Erro ao realizar venda');
+                }
             } catch (error) {
-                alert('Erro ao realizar venda');
+                mostrarErro('pesquisaProduto', 'Erro ao processar a venda');
+                console.error(error);
+            } finally {
+                toggleCarregamento(false);
             }
         }
 
@@ -604,6 +788,90 @@
                     </tr>
                 `;
             }
+        }
+
+        // Funções para o modal de clientes
+        function abrirModalClientes() {
+            document.getElementById('modalClientes').classList.remove('hidden');
+            document.getElementById('buscaCliente').value = '';
+            document.getElementById('buscaCliente').focus();
+            buscarClientes('');  // Carrega todos os clientes inicialmente
+        }
+
+        function fecharModalClientes() {
+            document.getElementById('modalClientes').classList.add('hidden');
+        }
+
+        let timeoutBuscaClientes;
+        async function buscarClientes(termo) {
+            try {
+                // Cancela a busca anterior se ainda estiver em andamento
+                if (timeoutBuscaClientes) {
+                    clearTimeout(timeoutBuscaClientes);
+                }
+
+                // Aguarda 300ms após a última digitação para fazer a busca
+                timeoutBuscaClientes = setTimeout(async () => {
+                    const tbody = document.getElementById('listaClientes');
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4">Buscando...</td></tr>';
+
+                    const response = await fetch(`/clientes/buscar?termo=${encodeURIComponent(termo)}`);
+                    if (!response.ok) {
+                        throw new Error('Erro ao buscar clientes');
+                    }
+
+                    const clientes = await response.json();
+                    tbody.innerHTML = '';
+
+                    if (clientes.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="p-4 text-center text-gray-500">
+                                    Nenhum cliente encontrado
+                                </td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    clientes.forEach(cliente => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'border-b hover:bg-gray-50 transition-colors';
+                        tr.innerHTML = `
+                            <td class="p-2">${cliente.nome || '-'}</td>
+                            <td class="p-2">${cliente.telefone || '-'}</td>
+                            <td class="p-2">${cliente.email || '-'}</td>
+                            <td class="p-2">${cliente.endereco || '-'}</td>
+                            <td class="p-2 text-right">
+                                <button onclick='selecionarCliente(${JSON.stringify(cliente)})'
+                                    class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors w-full">
+                                    Selecionar
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }, 300);
+            } catch (error) {
+                console.error('Erro ao buscar clientes:', error);
+                document.getElementById('listaClientes').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-4 text-center text-red-500">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Erro ao buscar clientes
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function selecionarCliente(cliente) {
+            document.getElementById('cliente').value = cliente.id;
+            document.getElementById('clienteSelecionado').value = cliente.nome;
+            fecharModalClientes();
+
+            // Se estiver com pagamento a prazo selecionado, atualiza a visibilidade do campo de vencimento
+            exibirDataVencimento();
         }
     </script>
 </body>
