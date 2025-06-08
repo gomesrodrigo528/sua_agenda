@@ -40,6 +40,7 @@ def vender():
         observacao = data.get('observacao')
         plano_contas = data.get('plano_contas')
         meio_pagamento = data.get('meio_pagamento')
+        id_cliente = data.get('id_cliente')
 
         if not produtos:
             return jsonify({"error": "Nenhum produto informado."}), 400
@@ -83,7 +84,7 @@ def vender():
             "motivo": "Venda de Produtos",
             "id_empresa": id_empresa,
             "id_usuario": id_usuario,
-            "id_cliente": None,  # Cliente não identificado
+            "id_cliente": id_cliente,
             "meio_pagamento": meio_pagamento,
             "id_servico": None  # Não é um serviço
         }).execute()
