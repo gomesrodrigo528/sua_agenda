@@ -1,5 +1,11 @@
-from flask import Flask, Blueprint, render_template, request, redirect, url_for, jsonify
-from flask import flash, session
+from flask import Flask, Blueprint, render_template, request, redirect, url_for, jsonify, send_file
+from io import BytesIO
+from PIL import Image
+import requests
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 from flask import current_app as app
 from datetime import datetime
 from supabase import create_client, Client
@@ -40,7 +46,8 @@ def vender():
         observacao = data.get('observacao')
         plano_contas = data.get('plano_contas')
         meio_pagamento = data.get('meio_pagamento')
-        id_cliente = data.get('id_cliente')
+        id_cliente = data.get('id_cliente') or 238
+
 
         if not produtos:
             return jsonify({"error": "Nenhum produto informado."}), 400
@@ -72,8 +79,11 @@ def vender():
             "valor": valor_total,
             "observacao": observacao,
             "plano_contas": plano_contas,
+            "id_cliente": id_cliente,
             "meio_pagamento": meio_pagamento
         }).execute()
+        if not response.data or 'id' not in response.data[0]:
+            raise Exception("Erro ao obter o ID da venda")
 
         id_venda = response.data[0]['id']
 
@@ -86,7 +96,7 @@ def vender():
             "id_usuario": id_usuario,
             "id_cliente": id_cliente,
             "meio_pagamento": meio_pagamento,
-            "id_servico": None  # Não é um serviço
+            "id_servico": None
         }).execute()
 
         # Registra os itens e atualiza o estoque
@@ -113,13 +123,153 @@ def vender():
                 "valor_unitario": valor_unitario,
                 "subtotal": subtotal
             }).execute()
+        
+        print("Venda registrada com sucesso!")
+        # 🚀 REDIRECIONA PRO CUPOM PDF
+                # No lugar do redirect:
+        return jsonify({
+            "success": True,
+            "id_venda": id_venda,
+            "cupom_url": url_for('vendas_bp.gerar_cupom_venda_pdf', id_venda=id_venda)
+        })
 
-        return jsonify({"message": "Venda registrada com sucesso!"}), 201
+
 
     except Exception as e:
         print("Erro ao registrar venda:", str(e))
         return jsonify({"error": str(e)}), 500
     
+
+
+@vendas_bp.route('/venda/<int:id_venda>/cupom', methods=['GET'])
+def gerar_cupom_venda_pdf(id_venda):
+    try:
+        empresa_id = request.cookies.get('empresa_id')
+
+        # Busca dados da empresa
+        empresa = supabase.table("empresa").select("*").eq("id", empresa_id).single().execute().data
+        if not empresa:
+            return jsonify({"error": "Empresa não encontrada"}), 404
+
+        # Busca dados da venda
+        venda = supabase.table("vendas").select("*").eq("id", id_venda).eq("id_empresa", empresa_id).single().execute().data
+        if not venda:
+            return jsonify({"error": "Venda não encontrada"}), 404
+
+        # Busca cliente
+        cliente = supabase.table("clientes").select("*").eq("id", venda['id_cliente']).single().execute().data
+
+        # Busca itens da venda
+        itens = supabase.table("venda_itens").select("*, produtos(nome_produto)").eq("id_venda", id_venda).execute().data
+
+        # Formatar data bonitinho
+        data_venda = datetime.datetime.fromisoformat(venda['data'][:19])
+        data_str = data_venda.strftime("%d/%m/%Y %H:%M:%S")
+
+        buffer = BytesIO()
+        largura = 250
+        altura = 600
+        p = canvas.Canvas(buffer, pagesize=(largura, altura))
+
+        y = altura - 20
+
+
+
+        # Cabeçalho empresa
+        p.setFont("Helvetica-Bold", 12)
+
+        p.drawCentredString(largura/2, y, empresa['nome_empresa'] or empresa['razao_social'])
+        y -= 18
+
+        p.setFont("Helvetica", 7)
+        p.drawCentredString(largura/2, y, empresa.get('endereco', 'Endereço não cadastrado'))
+        y -= 12
+        p.drawCentredString(largura/2, y, f"CNPJ: {empresa.get('cnpj', '---')}")
+        y -= 20
+
+        # Dados da venda
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(10, y, "CUPOM NÃO FISCAL")
+        y -= 14
+
+        p.setFont("Helvetica", 8)
+        p.drawString(10, y, f"Data: {data_str}")
+        y -= 12
+        p.drawString(10, y, f"Venda Nº: {venda['id']}")
+        y -= 12
+
+        if cliente:
+            p.drawString(10, y, f"Cliente: {cliente.get('nome_cliente', 'Cliente não identificado')}")
+            y -= 12
+
+        # Meio de pagamento
+        meio_pagamento = venda.get('meio_pagamento', 'Não informado')
+        p.drawString(10, y, f"Pagamento: {meio_pagamento}")
+        y -= 18
+
+        p.drawString(10, y, "Itens:")
+        y -= 14
+
+        total = 0
+        p.setFont("Helvetica", 7)
+        for item in itens:
+            nome = item['produtos']['nome_produto'][:25]
+            qtd = item['quantidade']
+            unit = item['valor_unitario']
+            subtotal = item['subtotal']
+            total += subtotal
+
+            p.drawString(10, y, f"{nome}")
+            y -= 10
+            p.drawString(12, y, f"{qtd} x R$ {unit:.2f} = R$ {subtotal:.2f}")
+            y -= 12
+
+        y -= 10
+        p.line(10, y, largura - 10, y)
+        y -= 14
+
+        p.setFont("Helvetica-Bold", 9)
+        p.drawString(10, y, f"TOTAL: R$ {total:.2f}")
+        y -= 20
+
+        p.setFont("Helvetica", 8)
+        p.drawCentredString(largura/2, y, "Obrigado pela preferência! Volte sempre :)")
+        y -= 45
+        logo_url = empresa.get('logo') 
+        if logo_url:
+            try:
+                response_logo = requests.get(logo_url)
+                logo_img = ImageReader(BytesIO(response_logo.content))
+                
+                largura_logo = 100
+                altura_logo = 60
+                x_logo = (largura - largura_logo) / 2  # aqui o segredo da centralização
+                
+                p.drawImage(logo_img, x_logo, y - 40, width=largura_logo, height=altura_logo, preserveAspectRatio=True)
+            except Exception as e:
+                print("Erro ao carregar logo:", e)
+        y -= 50
+        p.setFont("Helvetica", 8)
+        p.drawCentredString(largura/2, y, "Acesse suaagenda.fun ")
+        y -= 10
+        p.drawCentredString(largura/2, y, "A melhor solução de agendamentos e vendas online")
+        p.showPage()
+        p.save()
+
+        buffer.seek(0)
+        print("Cupom PDF gerado com sucesso!")
+        return send_file(
+            buffer,
+            as_attachment=False,
+            download_name=f'cupom_venda_{id_venda}.pdf',
+            mimetype='application/pdf'
+        )
+
+    except Exception as e:
+        print(f"Erro ao gerar cupom: {e}")
+        return jsonify({"error": "Erro interno ao gerar cupom"}), 500
+    
+
 
 @vendas_bp.route('/vendas/listar', methods=['GET'])
 def listar_vendas():

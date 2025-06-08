@@ -38,7 +38,8 @@
                 <div class="mb-4 relative">
                     <div class="flex gap-2">
                         <div class="flex-1 relative">
-                            <input type="text" id="pesquisaProduto" placeholder="Pesquisar produto...Digite * para listar todos"
+                            <input type="text" id="pesquisaProduto"
+                                placeholder="Pesquisar produto...Digite * para listar todos"
                                 class="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 oninput="buscarProdutos(this.value)">
                             <!-- Lista de Sugestões -->
@@ -198,6 +199,23 @@
             </div>
         </div>
     </div>
+    <div id="modalCupom" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md relative">
+            <button onclick="fecharModalCupom()" class="absolute top-2 right-2 text-gray-700">✖</button>
+            <div class="p-4 border-b">
+                <h2 class="text-lg font-semibold">Cupom de Venda</h2>
+            </div>
+            <div class="p-4">
+                <iframe id="iframeCupom" src="" class="w-full h-96"></iframe>
+            </div>
+            <div class="flex justify-end gap-2 p-4 border-t">
+                <button onclick="document.getElementById('iframeCupom').contentWindow.print()"
+                    class="bg-blue-500 text-white px-4 py-2 rounded">Imprimir</button>
+                <button onclick="compartilharCupom()"
+                    class="bg-green-500 text-white px-4 py-2 rounded">Compartilhar</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         let produtos = [];
@@ -208,24 +226,24 @@
         window.addEventListener('DOMContentLoaded', carregarClientes);
 
 
-function carregarClientes() {
-    fetch('/clientes/listar')
-        .then(res => res.json())
-        .then(clientes => {
-            const select = document.getElementById('cliente');
-            select.innerHTML = '<option value="">Selecione um cliente (opcional)</option>';
+        function carregarClientes() {
+            fetch('/clientes/listar')
+                .then(res => res.json())
+                .then(clientes => {
+                    const select = document.getElementById('cliente');
+                    select.innerHTML = '<option value="">Selecione um cliente (opcional)</option>';
 
-            clientes.forEach(cliente => {
-                const option = document.createElement('option');
-                option.value = cliente.id;
-                option.textContent = cliente.nome;  // <- AQUI TAVA O C* DO ERRO
-                select.appendChild(option);
-            });
-        })
-        .catch(err => {
-            console.error('Erro ao carregar clientes:', err);
-        });
-}
+                    clientes.forEach(cliente => {
+                        const option = document.createElement('option');
+                        option.value = cliente.id;
+                        option.textContent = cliente.nome;  // <- AQUI TAVA O C* DO ERRO
+                        select.appendChild(option);
+                    });
+                })
+                .catch(err => {
+                    console.error('Erro ao carregar clientes:', err);
+                });
+        }
 
         function toggleFullScreen() {
             const doc = window.document;
@@ -353,6 +371,29 @@ function carregarClientes() {
             document.getElementById('modalProduto').classList.add('hidden');
         }
 
+
+        function abrirModalCupom(cupomUrl) {
+            document.getElementById('iframeCupom').src = cupomUrl;
+            document.getElementById('modalCupom').classList.remove('hidden');
+        }
+
+        function fecharModalCupom() {
+            document.getElementById('modalCupom').classList.add('hidden');
+            document.getElementById('iframeCupom').src = '';
+        }
+
+        function compartilharCupom() {
+            const url = document.getElementById('iframeCupom').src;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Cupom de Venda',
+                    url: url
+                }).catch((error) => console.error('Erro ao compartilhar:', error));
+            } else {
+                alert('Navegador não suporta compartilhamento');
+            }
+        }
+
         function adicionarProduto() {
             const id = document.getElementById('produtoId').value;
             const nome = document.getElementById('produtoNome').value;
@@ -441,14 +482,18 @@ function carregarClientes() {
 
                 const result = await response.json();
 
+
                 if (response.ok) {
                     alert('Venda realizada com sucesso!');
+                    abrirModalCupom(result.cupom_url);
+
                     produtos = [];
                     atualizarTabelaProdutos();
                     document.getElementById('observacao').value = '';
                 } else {
                     alert(result.error || 'Erro ao realizar venda');
                 }
+
             } catch (error) {
                 alert('Erro ao realizar venda');
             }
