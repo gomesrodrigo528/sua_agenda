@@ -28,10 +28,13 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Identificador</th>
                         <th>Nome do Produto</th>
                         <th>Preço</th>
                         <th>Estoque</th>
                         <th>Grupo</th>
+                        <th>Código de Barra</th>
+                        <th>Preço de Custo</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -63,9 +66,25 @@
                         <input type="number" class="form-control" id="preco" step="0.01" required>
                     </div>
                     <div class="mb-3">
+                        <label for="preco_custo" class="form-label">Preço de Custo</label>
+                        <input type="number" class="form-control" id="preco_custo" step="0.01">
+                    </div>
+                    <div class="mb-3">
+                        <label for="cod_barra" class="form-label">Código de Barra</label>
+                        <input type="text" class="form-control" id="cod_barra">
+                    </div>
+                    <div class="mb-3">
                         <label for="estoque" class="form-label">Estoque</label>
                         <input type="number" class="form-control" id="estoque" required>
                     </div>
+                    <div class="mb-3">
+                        <label for="grupo" class="form-label">Grupo</label>
+                        <select class="form-select" id="grupo">
+                            <option value="">Selecione um grupo</option>
+                            <option value="uso e consumo">uso e consumo</option>
+                            <option value="produto para revenda">produto para revenda</option>
+                            <option value="outros">outros</option>
+                        </select>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="submit" class="btn btn-primary">Salvar</button>
@@ -161,7 +180,10 @@ function salvarProduto() {
     const dados = {
         nome_produto: document.getElementById('nome_produto').value,
         preco: parseFloat(document.getElementById('preco').value),
-        estoque: parseInt(document.getElementById('estoque').value)
+        estoque: parseInt(document.getElementById('estoque').value),
+        cod_barra: document.getElementById('cod_barra').value || null,
+        preco_custo: parseFloat(document.getElementById('preco_custo').value) || null,
+        grupo: document.getElementById('grupo').value || null
     };
 
     const url = produtoId ? `/produtos/editar/${produtoId}` : '/produtos/cadastro';
@@ -209,11 +231,15 @@ function prepararEdicao() {
     const nome = document.getElementById('detalhe-nome').textContent;
     const preco = document.getElementById('detalhe-preco').textContent.replace('R$', '').trim();
     const estoque = document.getElementById('detalhe-estoque').textContent;
+    const cod_barras = document.getElementById('detalhe-cod-barras').textContent;
+    const preco_custo = document.getElementById('detalhe-preco-custo').textContent.replace('R$', '').trim();
 
     document.getElementById('produto_id').value = id;
     document.getElementById('nome_produto').value = nome;
     document.getElementById('preco').value = parseFloat(preco.replace(',', '.'));
     document.getElementById('estoque').value = estoque;
+    document.getElementById('cod_barras').value = cod_barras;
+    document.getElementById('preco_custo').value = parseFloat(preco_custo.replace(',', '.'));
     document.getElementById('modalProdutoLabel').textContent = 'Editar Produto';
 
     $('#modalDetalhesProduto').modal('hide');
@@ -254,10 +280,13 @@ function carregarProdutos() {
             produtos.forEach(produto => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
+                    <td>${produto.identificador_empresa}</td>
                     <td>${produto.nome_produto}</td>
                     <td>R$ ${produto.preco.toFixed(2)}</td>
                     <td>${produto.estoque}</td>
                     <td>${produto.grupo || 'Sem grupo'}</td>
+                    <td>${produto.cod_barras || 'N/A'}</td>
+                    <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
                     <td>
                         <button class="btn btn-info btn-sm" onclick='mostrarDetalhesProduto(${JSON.stringify(produto).replace(/'/g, "&#39;")})'>
                             <i class="bi bi-eye"></i> Ver

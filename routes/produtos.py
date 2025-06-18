@@ -47,7 +47,9 @@ def iserir_produtos():
         "preco": data.get('preco'),
         "estoque": data.get('estoque'),
         "id_empresa": id_empresa,
-        "grupo":"sem grupo definido"
+        "preco_custo": data.get('preco_custo', 0.0),  # Preço de custo opcional
+        "cod_barras": data.get('cod_barra', None),  # Código de barra opcional
+        "grupo":data.get('grupo', None),  # Grupo opcional
         }).execute()
 
         return jsonify({"message": "Produto cadastrado com sucesso!"}), 201
@@ -107,6 +109,12 @@ def editar(id):
         if not isinstance(data.get('preco'), (int, float)) or data['preco'] < 0:
             return jsonify({"error": "Preço inválido"}), 400
         
+        if not data.get('cod_barra'):
+            return jsonify({"error": "Código de barra é obrigatório"}), 400
+        
+        if not data.get('preco_custo'):
+            return jsonify({"error": "Preço de custo é obrigatório"}), 400
+        
         if not isinstance(data.get('estoque'), (int, float)) or data['estoque'] < 0:
             return jsonify({"error": "Estoque inválido"}), 400
 
@@ -119,6 +127,8 @@ def editar(id):
         supabase.table("produtos").update({
             "nome_produto": data['nome_produto'],
             "preco": float(data['preco']),
+            "cod_barras": data['cod_barra'],
+            "preco_custo": float(data['preco_custo']),
             "estoque": int(data['estoque'])
         }).eq("id", id).execute()
 
@@ -137,7 +147,7 @@ def venda(id,quantidade):
         
         data = request.get_json()
         supabase.table("produtos").update(data).eq("id", id).execute()
-        return jsonify({"message": "Produto alterado com sucesso!"}), 200
+        return jsonify({"message": "True"}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -197,7 +207,7 @@ def buscar_produtos():
         # Se o termo for '*', retorna todos os produtos
         if termo == '*':
             response = supabase.table("produtos") \
-                .select("id, nome_produto, preco, estoque") \
+                .select("*") \
                 .eq("id_empresa", id_empresa) \
                 .execute()
         else:
@@ -206,7 +216,7 @@ def buscar_produtos():
 
             # Busca produtos que contenham o termo no nome
             response = supabase.table("produtos") \
-                .select("id, nome_produto, preco, estoque") \
+                .select("*") \
                 .eq("id_empresa", id_empresa) \
                 .ilike("nome_produto", f"%{termo}%") \
                 .execute()
@@ -216,6 +226,8 @@ def buscar_produtos():
         # Formata os dados para o frontend
         produtos_formatados = [{
             'id': p['id'],
+            'cod_barras': p['cod_barras'],
+            'identificador_empresa': p['identificador_empresa'],
             'nome': p['nome_produto'],
             'preco': p['preco'],
             'estoque': p['estoque']
