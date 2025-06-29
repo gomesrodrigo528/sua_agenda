@@ -1,4 +1,3 @@
-
 {
     "name": "Sua agenda",
     "short_name": "Sua agenda",
@@ -18,5 +17,5 @@
     "display": "standalone",
     "background_color": "#121212",
     "theme_color": "#121212"
-  }
+}
   

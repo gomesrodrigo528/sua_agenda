@@ -4,6 +4,9 @@ from pywebpush import webpush, WebPushException
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from utils.vapid_keys import get_vapid_keys
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+import base64
 
 push_bp = Blueprint('push_bp', __name__)
 subscriptions = {}  # Em produção, use banco de dados
@@ -52,12 +55,17 @@ def agendar_notificacao_push(user_id, agendamento_id, agendamento_data, agendame
 @push_bp.route('/api/push/vapid_public', methods=['GET'])
 def get_vapid_public():
     _, public_key = get_vapid_keys()
-    # Converter PEM para base64 (remover cabeçalho e quebras de linha)
     if public_key.startswith('-----BEGIN PUBLIC KEY-----'):
-        # Remove cabeçalho, rodapé e quebras de linha
-        lines = public_key.split('\n')
-        base64_key = ''.join([line for line in lines if line and not line.startswith('-----')])
-        return jsonify({'publicKey': base64_key})
+        public_key_obj = serialization.load_pem_public_key(
+            public_key.encode(),
+            backend=default_backend()
+        )
+        raw = public_key_obj.public_bytes(
+            encoding=serialization.Encoding.X962,
+            format=serialization.PublicFormat.UncompressedPoint
+        )
+        base64url_key = base64.urlsafe_b64encode(raw).decode('utf-8').rstrip('=')
+        return jsonify({'publicKey': base64url_key})
     return jsonify({'publicKey': public_key})
 
 @push_bp.route('/api/push/teste', methods=['POST', 'GET'])
