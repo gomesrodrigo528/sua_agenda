@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, request, render_template
 from supabase import create_client
 import os
@@ -244,88 +243,81 @@ def pagina_agendamento():
 
 @agendamento_bp.route('/api/agenda/data', methods=['GET'])
 def listar_horarios_disponiveis():
-    usuario_id = request.args.get('usuario_id')
-    data = request.args.get('data')
-
-    if not usuario_id or not data:
-        return jsonify({"error": "Os parâmetros 'usuario_id' e 'data' são obrigatórios."}), 400
-
-    # Obtendo a data e o horário atual com fuso horário
-    agora = datetime.now(ZoneInfo("America/Sao_Paulo"))
-    data_atual = agora.strftime("%Y-%m-%d")
-
-    if data == data_atual:
-        horario_atual = agora.strftime("%H:%M")
-        print(f"Horário atual: {horario_atual}")
-    else:
-        horario_atual = None
-
-    # Definindo horários de funcionamento
-    horarios_funcionamento = [
-        f"{hora:02}:{minuto:02}" for hora in range(8, 18) for minuto in (0, 30)
-    ]
-
-    # Buscar agendamentos já ocupados
-    response_agenda = supabase.table("agenda").select(
-        "horario, servico_id"
-    ).eq("usuario_id", usuario_id).eq("data", data).neq("status", "finalizado").execute()
-
-    if not response_agenda.data:
-        response_agenda.data = []
-
-    # Buscar tempos de duração dos serviços
-    response_servicos = supabase.table("servicos").select("id, tempo").execute()
-    servicos = {item["id"]: int(item["tempo"]) for item in response_servicos.data}
-
-    # Processar horários ocupados
-    horarios_ocupados = set()
-    for agendamento in response_agenda.data:
-        horario_inicio = agendamento["horario"]
-        servico_id = agendamento["servico_id"]
-        duracao_minutos = servicos.get(servico_id, 60)
-
-        # Ajustar para aceitar formatos HH:mm e HH:mm:ss
-        try:
-            hora, minuto = map(int, horario_inicio.split(":")[:2])  # Ignora os segundos, se existirem
-        except ValueError:
-            print(f"Erro ao processar horário: {horario_inicio}")
-            continue
-
-        minutos_totais = hora * 60 + minuto
-        for i in range(0, duracao_minutos, 30):
-            minutos_ocupados = minutos_totais + i
-            hora_ocupada = minutos_ocupados // 60
-            minuto_ocupado = minutos_ocupados % 60
-            horarios_ocupados.add(f"{hora_ocupada:02}:{minuto_ocupado:02}")
-
-    # Calcular horários disponíveis
-    horarios_disponiveis = [
-        horario for horario in horarios_funcionamento
-        if horario not in horarios_ocupados and (not horario_atual or horario >= horario_atual)
-    ]
-
-    return jsonify({"horarios_disponiveis": horarios_disponiveis}), 200
-
-# Função para enviar e-mails
-def enviar_email(destinatario, assunto, mensagem, email_remetente, senha_remetente):
     try:
-        servidor_smtp = 'smtp.gmail.com'
-        porta_smtp = 587
+        usuario_id = request.args.get('usuario_id')
+        data = request.args.get('data')
 
-        msg = MIMEMultipart()
-        msg['From'] = email_remetente
-        msg['To'] = destinatario
-        msg['Subject'] = assunto
-        msg.attach(MIMEText(mensagem, 'plain'))
+        if not usuario_id or not data:
+            return jsonify({"error": "Os parâmetros 'usuario_id' e 'data' são obrigatórios."}), 400
 
-        servidor = smtplib.SMTP(servidor_smtp, porta_smtp)
-        servidor.starttls()
-        servidor.login(email_remetente, senha_remetente)
-        servidor.sendmail(email_remetente, destinatario, msg.as_string())
-        servidor.quit()
+        # Obtendo a data e o horário atual com fuso horário
+        agora = datetime.now(ZoneInfo("America/Sao_Paulo"))
+        data_atual = agora.strftime("%Y-%m-%d")
 
-        print("E-mail enviado com sucesso!")
+        if data == data_atual:
+            horario_atual = agora.strftime("%H:%M")
+        else:
+            horario_atual = None
+
+        # Definindo horários de funcionamento
+        horarios_funcionamento = [
+            f"{hora:02}:{minuto:02}" for hora in range(8, 18) for minuto in (0, 30)
+        ]
+
+        # Buscar agendamentos já ocupados
+        response_agenda = supabase.table("agenda").select(
+            "horario, servico_id"
+        ).eq("usuario_id", usuario_id).eq("data", data).neq("status", "finalizado").execute()
+
+        if not response_agenda.data:
+            response_agenda.data = []
+
+        # Buscar tempos de duração dos serviços
+        response_servicos = supabase.table("servicos").select("id, tempo").execute()
+        servicos = {}
+        for item in response_servicos.data:
+            tempo = item.get("tempo")
+            if tempo is not None:
+                try:
+                    servicos[item["id"]] = int(tempo)
+                except (ValueError, TypeError):
+                    servicos[item["id"]] = 60  # Valor padrão se não conseguir converter
+            else:
+                servicos[item["id"]] = 60  # Valor padrão se tempo for NULL
+
+        # Processar horários ocupados
+        horarios_ocupados = set()
+        for agendamento in response_agenda.data:
+            horario_inicio = agendamento["horario"]
+            servico_id = agendamento["servico_id"]
+            duracao_minutos = servicos.get(servico_id, 60)
+
+            # Ajustar para aceitar formatos HH:mm e HH:mm:ss
+            try:
+                hora, minuto = map(int, horario_inicio.split(":")[:2])  # Ignora os segundos, se existirem
+            except ValueError:
+                print(f"Erro ao processar horário: {horario_inicio}")
+                continue
+
+            minutos_totais = hora * 60 + minuto
+            for i in range(0, duracao_minutos, 30):
+                minutos_ocupados = minutos_totais + i
+                hora_ocupada = minutos_ocupados // 60
+                minuto_ocupado = minutos_ocupados % 60
+                horarios_ocupados.add(f"{hora_ocupada:02}:{minuto_ocupado:02}")
+
+        # Calcular horários disponíveis
+        horarios_disponiveis = [
+            horario for horario in horarios_funcionamento
+            if horario not in horarios_ocupados and (not horario_atual or horario >= horario_atual)
+        ]
+
+        return jsonify({"horarios_disponiveis": horarios_disponiveis}), 200
+
     except Exception as e:
-        print(f"Erro ao enviar e-mail: {e}")
+        print(f"[ERRO] Erro na função listar_horarios_disponiveis: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
 
 

@@ -1,3 +1,6 @@
+// Variável global para armazenar o ID da empresa atual
+let empresaIdAtual = null;
+
 document.getElementById('fechar-modal').addEventListener('click', function () {
     window.location.reload();
 });
@@ -179,22 +182,29 @@ async function carregarUsuarioResponsavel() {
 
     try {
         // Faz uma chamada para buscar o serviço específico pelo ID
-        const response = await axios.get(`/api/servicos/detalhes/${servicoId}`);
+        const response = await axios.get(`/api/servicos/detalhes/${servicoId}?empresa_id=${empresaIdAtual}`);
         const servico = response.data;
 
         const selectUsuarios = document.getElementById('profissional-select');
         selectUsuarios.innerHTML = '<option value="">Selecione o Profissional</option>';
 
-        if (!servico || !servico.id_usuario || !servico.usuarios) {
+        if (servico.id_usuario) {
+            // Se o serviço tem um usuário específico
+            const option = document.createElement('option');
+            option.value = servico.id_usuario;
+            option.textContent = servico.usuarios.nome_usuario;
+            selectUsuarios.appendChild(option);
+        } else if (servico.usuarios && Array.isArray(servico.usuarios)) {
+            // Se o serviço não tem usuário específico, mostra todos os usuários da empresa
+            servico.usuarios.forEach(usuario => {
+                const option = document.createElement('option');
+                option.value = usuario.id;
+                option.textContent = usuario.nome_usuario;
+                selectUsuarios.appendChild(option);
+            });
+        } else {
             selectUsuarios.innerHTML = '<option value="">Nenhum Profissional encontrado</option>';
-            return;
         }
-
-        // Adiciona o usuário responsável ao select
-        const option = document.createElement('option');
-        option.value = servico.id_usuario;
-        option.textContent = servico.usuarios.nome_usuario; // Acessa o nome do profissional corretamente
-        selectUsuarios.appendChild(option);
     } catch (error) {
         console.error('Erro ao carregar o usuário responsável:', error);
         alert('Erro ao carregar o profissional responsável. Tente novamente mais tarde.');
@@ -228,8 +238,8 @@ async function carregarServicos(empresaId) {
 }
 
 async function carregarHorariosDisponiveis(event) {
-    const usuarioId = document.querySelector('select[name="usuario_id"]').value;
-    const data = document.querySelector('input[name="data"]').value;
+    const usuarioId = document.getElementById('profissional-select').value;
+    const data = document.getElementById('data-input').value;
 
     if (!usuarioId || !data) {
         return;
@@ -260,8 +270,9 @@ async function carregarHorariosDisponiveis(event) {
     }
 }
 
-document.querySelector('input[name="data"]').addEventListener('change', carregarHorariosDisponiveis);
-document.querySelector('select[name="usuario_id"]').addEventListener('change', carregarHorariosDisponiveis);
+// Event listeners duplicados - comentados para evitar conflitos
+// document.querySelector('input[name="data"]').addEventListener('change', carregarHorariosDisponiveis);
+// document.querySelector('select[name="usuario_id"]').addEventListener('change', carregarHorariosDisponiveis);
 
 function selecionarHorario(horario) {
     const horarioSelecionado = document.getElementById('horario-selecionado');
@@ -289,6 +300,7 @@ function selecionarHorario(horario) {
 }
 
 function abrirModalAgendamento(empresaId) {
+    empresaIdAtual = empresaId; // Define a empresa atual
     carregarFuncionarios(empresaId);
     carregarServicos(empresaId);
     carregarDetalhesEmpresa(empresaId); // Chama a nova função
@@ -320,6 +332,7 @@ document.getElementById('form-agendamento').onsubmit = async function (e) {
     }
 };
 
+// Remover os event listeners duplicados e manter apenas estes
 document.getElementById('data-input').addEventListener('change', carregarHorariosDisponiveis);
 document.getElementById('profissional-select').addEventListener('change', carregarHorariosDisponiveis);
 
