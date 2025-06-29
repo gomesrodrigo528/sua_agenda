@@ -5,6 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
+from routes.push import agendar_notificacao_push
 #ta em branco a linha que ta dando erro
 # Configuração do Supabase
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
@@ -150,6 +151,15 @@ def agendar():
         # Enviar os e-mails
         enviar_email(cliente['email'], assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
         enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
+
+        # Após inserir o agendamento com sucesso, chame:
+        agendar_notificacao_push(
+            user_id=dados["usuario_id"],
+            agendamento_id=response.data[0]["id"],
+            agendamento_data=dados["data"],
+            agendamento_hora=dados["horario"],
+            servico_nome=servico["nome_servico"]
+        )
 
         return jsonify({"message": "Agendamento realizado com sucesso e e-mails enviados!"}), 201
     else:

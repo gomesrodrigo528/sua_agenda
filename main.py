@@ -19,6 +19,7 @@ from routes.produtos import produtos_bp
 from routes.vendas import vendas_bp
 from routes.contas_receber import contas_receber_bp
 from routes.contas_pagar import contas_pagar_bp
+from routes.push import push_bp
 import os
 
 # Configuração do Flask
@@ -46,6 +47,7 @@ app.register_blueprint(produtos_bp)
 app.register_blueprint(vendas_bp)
 app.register_blueprint(contas_receber_bp)
 app.register_blueprint(contas_pagar_bp)
+app.register_blueprint(push_bp)
 
 @app.route("/")
 def inicio():
