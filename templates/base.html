@@ -59,6 +59,82 @@
 
     <!-- Scripts Específicos da Página -->
     {% block page_scripts %}{% endblock %}
+
+    <!-- Modal de Mensagem Global -->
+    <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalMensagemLabel">Mensagem</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body" id="modalMensagemBody">
+            <!-- Mensagem será inserida aqui -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Confirmação Global -->
+    <div class="modal fade" id="modalConfirmacao" tabindex="-1" aria-labelledby="modalConfirmacaoLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modalConfirmacaoLabel">Confirmação</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+          </div>
+          <div class="modal-body" id="modalConfirmacaoBody">
+            <!-- Mensagem de confirmação -->
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="btnConfirmarInativar">Inativar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botão flutuante de vendas -->
+    {% set pagina = request.endpoint %}
+    {% if 'pdv' not in pagina and 'agenda' not in pagina %}
+    <style>
+    #btn-vendas-flutuante {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        z-index: 9999;
+        background: linear-gradient(135deg, #2ecc40 80%, #27ae60 100%);
+        border: none;
+        outline: none;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        border-radius: 50%;
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    #btn-vendas-flutuante:hover {
+        box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+        transform: scale(1.08);
+    }
+    #btn-vendas-flutuante .cifrao {
+        color: #fff;
+        font-size: 2.2rem;
+        font-weight: bold;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        line-height: 1;
+    }
+    </style>
+    <a id="btn-vendas-flutuante" href="/vendas" title="Ir para vendas">
+        <span class="cifrao">&#36;</span>
+    </a>
+    {% endif %}
 </body>
 
 </html>

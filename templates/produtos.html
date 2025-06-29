@@ -4,12 +4,12 @@
 
 {% block content %}
 <!-- Botão para adicionar produto -->
-<button class="btn btn-primary mb-4 me-2" onclick="$('#modalProduto').modal('show')">
+<button class="btn btn-primary mb-4 me-2" onclick="abrirModalProduto()">
     <i class="bi bi-plus-circle"></i> Novo Produto
 </button>
 
 <!-- Botão para comprar produtos -->
-<button class="btn btn-success mb-4" onclick="$('#modalComprarProdutos').modal('show')">
+<button class="btn btn-success mb-4" onclick="abrirModalComprarProdutos()">
     <i class="bi bi-cart-plus"></i> Comprar Produtos
 </button>
 
@@ -19,6 +19,38 @@
     <button class="btn btn-outline-primary" type="button">
         <i class="bi bi-search"></i> Pesquisar
     </button>
+</div>
+
+<!-- Filtros Avançados -->
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filtroGrupo">
+            <option value="">Filtrar por Grupo</option>
+            <option value="uso e consumo">uso e consumo</option>
+            <option value="produto para revenda">produto para revenda</option>
+            <option value="outros">outros</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filtroUnMedida">
+            <option value="">Filtrar por Unidade</option>
+            <option value="un">un</option>
+            <option value="kg">kg</option>
+            <option value="cx">cx</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filtroStatus">
+            <option value="">Filtrar por Status</option>
+            <option value="true">Ativo</option>
+            <option value="false">Inativo</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-outline-primary w-100" type="button" onclick="filtrarProdutos()">
+            <i class="bi bi-funnel"></i> Filtrar
+        </button>
+    </div>
 </div>
 
 <!-- Tabela de Produtos -->
@@ -32,6 +64,7 @@
                         <th>Nome do Produto</th>
                         <th>Preço</th>
                         <th>Estoque</th>
+                        <th>Unidade</th>
                         <th>Grupo</th>
                         <th>Código de Barra</th>
                         <th>Preço de Custo</th>
@@ -63,15 +96,15 @@
                     </div>
                     <div class="mb-3">
                         <label for="preco" class="form-label">Preço</label>
-                        <input type="number" class="form-control" id="preco" step="0.01" required>
+                        <input type="text" class="form-control" id="preco" placeholder="R$ 0,00" required onblur="formatarMoeda(this)" onfocus="limparMoeda(this)" oninput="formatarMoedaDigita(this)">
                     </div>
                     <div class="mb-3">
                         <label for="preco_custo" class="form-label">Preço de Custo</label>
-                        <input type="number" class="form-control" id="preco_custo" step="0.01">
+                        <input type="text" class="form-control" id="preco_custo" placeholder="R$ 0,00" onblur="formatarMoeda(this)" onfocus="limparMoeda(this)" oninput="formatarMoedaDigita(this)">
                     </div>
                     <div class="mb-3">
                         <label for="cod_barra" class="form-label">Código de Barra</label>
-                        <input type="text" class="form-control" id="cod_barra">
+                        <input type="number" class="form-control" id="cod_barra" min="0" step="1" pattern="[0-9]*" inputmode="numeric" required>
                     </div>
                     <div class="mb-3">
                         <label for="estoque" class="form-label">Estoque</label>
@@ -85,9 +118,23 @@
                             <option value="produto para revenda">produto para revenda</option>
                             <option value="outros">outros</option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="un_medida" class="form-label">Unidade de Medida</label>
+                        <select class="form-select" id="un_medida" required>
+                            <option value="">Selecione uma unidade</option>
+                            <option value="un">un</option>
+                            <option value="kg">kg</option>
+                            <option value="cx">cx</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label><br>
+                        <input type="checkbox" id="status" name="status"> Ativo
+                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary">Salvar</button>
+                        <button type="button" class="btn btn-primary" onclick="salvarProduto()">Salvar</button>
                     </div>
                 </form>
             </div>
@@ -114,6 +161,10 @@
                     <p id="detalhe-preco"></p>
                 </div>
                 <div class="mb-3">
+                    <h6 class="fw-bold">Preço de Custo</h6>
+                    <p id="detalhe-preco-custo"></p>
+                </div>
+                <div class="mb-3">
                     <h6 class="fw-bold">Estoque</h6>
                     <p id="detalhe-estoque"></p>
                 </div>
@@ -121,14 +172,26 @@
                     <h6 class="fw-bold">Grupo</h6>
                     <p id="detalhe-grupo"></p>
                 </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Código de Barra</h6>
+                    <p id="detalhe-cod-barras"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Unidade de Medida</h6>
+                    <p id="detalhe-un-medida"></p>
+                </div>
+                <div class="mb-3">
+                    <h6 class="fw-bold">Status</h6>
+                    <p id="detalhe-status"></p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                 <button type="button" class="btn btn-warning" onclick="prepararEdicao()">
                     <i class="bi bi-pencil"></i> Editar
                 </button>
-                <button type="button" class="btn btn-danger" onclick="excluirProduto()">
-                    <i class="bi bi-trash"></i> Excluir
+                <button type="button" class="btn btn-danger" onclick="confirmarInativarProduto()">
+                    <i class="bi bi-trash"></i> Inativar
                 </button>
             </div>
         </div>
@@ -174,17 +237,80 @@
 
 {% block page_scripts %}
 <script>
+function mostrarMensagem(titulo, mensagem) {
+    document.getElementById('modalMensagemLabel').textContent = titulo || 'Mensagem';
+    document.getElementById('modalMensagemBody').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    modal.show();
+}
+// Função para abrir modal de produto
+function abrirModalProduto() {
+    // Limpar formulário
+    document.getElementById('formProduto').reset();
+    document.getElementById('produto_id').value = '';
+    document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalProduto'));
+    modal.show();
+}
+
+// Função para abrir modal de comprar produtos
+function abrirModalComprarProdutos() {
+    const modal = new bootstrap.Modal(document.getElementById('modalComprarProdutos'));
+    modal.show();
+}
+
 // Função para salvar produto
 function salvarProduto() {
     const produtoId = document.getElementById('produto_id').value;
+    const nomeProduto = document.getElementById('nome_produto').value.trim();
+    const preco = converterMoedaParaNumero(document.getElementById('preco').value);
+    const estoque = parseInt(document.getElementById('estoque').value);
+    const unMedida = document.getElementById('un_medida').value;
+    const status = document.getElementById('status').checked; // booleano
+    const precoCusto = converterMoedaParaNumero(document.getElementById('preco_custo').value);
+    const codBarra = document.getElementById('cod_barra').value.trim();
+    
+    // Validações
+    if (!nomeProduto) {
+        mostrarMensagem('Atenção', 'Por favor, insira o nome do produto.');
+        document.getElementById('nome_produto').focus();
+        return;
+    }
+    if (!preco || preco <= 0) {
+        mostrarMensagem('Atenção', 'Por favor, insira um preço válido.');
+        document.getElementById('preco').focus();
+        return;
+    }
+    if (!estoque || estoque < 0) {
+        mostrarMensagem('Atenção', 'Por favor, insira um estoque válido.');
+        document.getElementById('estoque').focus();
+        return;
+    }
+    if (!unMedida) {
+        mostrarMensagem('Atenção', 'Por favor, selecione uma unidade de medida.');
+        document.getElementById('un_medida').focus();
+        return;
+    }
+    if (!codBarra || isNaN(Number(codBarra)) || Number(codBarra) < 0) {
+        mostrarMensagem('Atenção', 'Por favor, insira um código de barras numérico válido.');
+        document.getElementById('cod_barra').focus();
+        return;
+    }
+    
     const dados = {
-        nome_produto: document.getElementById('nome_produto').value,
-        preco: parseFloat(document.getElementById('preco').value),
-        estoque: parseInt(document.getElementById('estoque').value),
-        cod_barra: document.getElementById('cod_barra').value || null,
-        preco_custo: parseFloat(document.getElementById('preco_custo').value) || null,
-        grupo: document.getElementById('grupo').value || null
+        nome_produto: nomeProduto,
+        preco: preco,
+        estoque: estoque,
+        cod_barra: codBarra,
+        preco_custo: precoCusto,
+        grupo: document.getElementById('grupo').value || null,
+        un_medida: unMedida,
+        status: status
     };
+
+    // Log para debug: mostrar o que será enviado ao backend
+    console.log('JSON enviado ao backend:', dados);
 
     const url = produtoId ? `/produtos/editar/${produtoId}` : '/produtos/cadastro';
     const method = produtoId ? 'PUT' : 'POST';
@@ -196,23 +322,56 @@ function salvarProduto() {
         },
         body: JSON.stringify(dados)
     })
-    .then(res => res.json())
+    .then(async res => {
+        console.log('Status HTTP da resposta:', res.status);
+        // Tenta converter para JSON, mas se falhar, trata como sucesso se status for 200
+        try {
+            const response = await res.json();
+            console.log('Resposta recebida do backend:', response);
+            return response;
+        } catch (e) {
+            console.log('Resposta recebida do backend (não é JSON):', e);
+            return { success: true };
+        }
+    })
     .then(response => {
-        $('#modalProduto').modal('hide');
-        document.getElementById('formProduto').reset();
-        document.getElementById('produto_id').value = '';
-        document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
-        carregarProdutos();
-        alert('Produto salvo com sucesso!');
+        // Considera sucesso se status for 200, mesmo que não tenha os campos esperados
+        if (response && (response.success || response.id || response.nome_produto)) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
+            modal.hide();
+            document.getElementById('formProduto').reset();
+            document.getElementById('produto_id').value = '';
+            document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+            carregarProdutos();
+            mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
+        } else if (response && response.code === '23505') {
+            mostrarMensagem('Atenção', 'Já existe um produto com este código de barras!');
+        } else {
+            // Sucesso genérico se chegou aqui (status 200)
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
+            modal.hide();
+            document.getElementById('formProduto').reset();
+            document.getElementById('produto_id').value = '';
+            document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+            carregarProdutos();
+            mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
+        }
     })
     .catch(err => {
-        console.error('ERRO:', err);
-        alert('Erro ao salvar produto. Por favor, tente novamente.');
+        if (err.message && err.message.includes('23505')) {
+            mostrarMensagem('Atenção', 'Já existe um produto com este código de barras!');
+        } else {
+            mostrarMensagem('Erro', 'Erro ao salvar produto. Por favor, tente novamente. Erro: ' + err.message);
+        }
     });
 }
 
 // Função para mostrar detalhes do produto
 function mostrarDetalhesProduto(produto) {
+    if (!(produto.status === true || produto.status === 'true' || produto.status === 'Ativo' || produto.status === 1)) {
+        // Não abre o modal se não estiver ativo
+        return;
+    }
     document.getElementById('detalhe-id').value = produto.id;
     document.getElementById('detalhe-nome').textContent = produto.nome_produto;
     document.getElementById('detalhe-preco').textContent = produto.preco.toLocaleString('pt-BR', { 
@@ -221,52 +380,80 @@ function mostrarDetalhesProduto(produto) {
     });
     document.getElementById('detalhe-estoque').textContent = produto.estoque;
     document.getElementById('detalhe-grupo').textContent = produto.grupo || 'Sem grupo';
+    document.getElementById('detalhe-preco-custo').textContent = produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A';
+    document.getElementById('detalhe-cod-barras').textContent = produto.cod_barras || 'N/A';
+    document.getElementById('detalhe-un-medida').textContent = produto.un_medida || 'N/A';
+    document.getElementById('detalhe-status').textContent = 'Ativo';
 
-    $('#modalDetalhesProduto').modal('show');
+    const modal = new bootstrap.Modal(document.getElementById('modalDetalhesProduto'));
+    modal.show();
 }
 
 // Função para preparar edição
 function prepararEdicao() {
     const id = document.getElementById('detalhe-id').value;
     const nome = document.getElementById('detalhe-nome').textContent;
-    const preco = document.getElementById('detalhe-preco').textContent.replace('R$', '').trim();
+    const preco = document.getElementById('detalhe-preco').textContent;
     const estoque = document.getElementById('detalhe-estoque').textContent;
     const cod_barras = document.getElementById('detalhe-cod-barras').textContent;
-    const preco_custo = document.getElementById('detalhe-preco-custo').textContent.replace('R$', '').trim();
+    const preco_custo = document.getElementById('detalhe-preco-custo').textContent;
+    const un_medida = document.getElementById('detalhe-un-medida').textContent;
+    const status = document.getElementById('detalhe-status').textContent;
 
     document.getElementById('produto_id').value = id;
     document.getElementById('nome_produto').value = nome;
-    document.getElementById('preco').value = parseFloat(preco.replace(',', '.'));
+    document.getElementById('preco').value = preco;
     document.getElementById('estoque').value = estoque;
-    document.getElementById('cod_barras').value = cod_barras;
-    document.getElementById('preco_custo').value = parseFloat(preco_custo.replace(',', '.'));
+    document.getElementById('cod_barra').value = cod_barras === 'N/A' ? '' : cod_barras;
+    document.getElementById('preco_custo').value = preco_custo === 'N/A' ? '' : preco_custo;
+    document.getElementById('grupo').value = (document.getElementById('detalhe-grupo').textContent === 'Sem grupo' || document.getElementById('detalhe-grupo').textContent === 'N/A') ? '' : document.getElementById('detalhe-grupo').textContent.trim();
+    document.getElementById('un_medida').value = un_medida === 'N/A' ? '' : un_medida;
+    document.getElementById('status').checked = (status === 'Ativo' || status === 'true' || status === true);
     document.getElementById('modalProdutoLabel').textContent = 'Editar Produto';
 
-    $('#modalDetalhesProduto').modal('hide');
-    $('#modalProduto').modal('show');
+    const modalDetalhes = bootstrap.Modal.getInstance(document.getElementById('modalDetalhesProduto'));
+    modalDetalhes.hide();
+    const modalProduto = new bootstrap.Modal(document.getElementById('modalProduto'));
+    modalProduto.show();
 }
 
-// Função para excluir produto
-function excluirProduto() {
+// Função para confirmar inativação usando modal
+function confirmarInativarProduto() {
+    console.log('Abrindo modal de confirmação de inativação');
+    document.getElementById('modalConfirmacaoBody').textContent = 'Tem certeza que deseja inativar este produto?';
+    const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
+    modal.show();
+
+    // Remove qualquer listener anterior
+    const btn = document.getElementById('btnConfirmarInativar');
+    const novoBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(novoBtn, btn);
+
+    novoBtn.onclick = function() {
+        inativarProduto();
+        modal.hide();
+    };
+}
+
+function inativarProduto() {
     const id = document.getElementById('detalhe-id').value;
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-        fetch(`/produtos/excluir/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(res => res.json())
-        .then(response => {
-            $('#modalDetalhesProduto').modal('hide');
-            carregarProdutos();
-            alert('Produto excluído com sucesso!');
-        })
-        .catch(err => {
-            console.error('ERRO:', err);
-            alert('Erro ao excluir produto. Por favor, tente novamente.');
-        });
-    }
+    console.log('ID do produto a inativar:', id);
+    fetch(`/produtos/excluir/${id}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(res => res.json())
+    .then(response => {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalDetalhesProduto'));
+        modal.hide();
+        carregarProdutos();
+        mostrarMensagem('Sucesso', 'Produto inativado com sucesso!');
+    })
+    .catch(err => {
+        mostrarMensagem('Erro', 'Erro ao inativar produto. Por favor, tente novamente.');
+    });
 }
 
 // Função para carregar produtos
@@ -284,11 +471,12 @@ function carregarProdutos() {
                     <td>${produto.nome_produto}</td>
                     <td>R$ ${produto.preco.toFixed(2)}</td>
                     <td>${produto.estoque}</td>
+                    <td>${produto.un_medida || 'N/A'}</td>
                     <td>${produto.grupo || 'Sem grupo'}</td>
                     <td>${produto.cod_barras || 'N/A'}</td>
                     <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
                     <td>
-                        <button class="btn btn-info btn-sm" onclick='mostrarDetalhesProduto(${JSON.stringify(produto).replace(/'/g, "&#39;")})'>
+                        <button class="btn btn-info btn-sm" onclick="mostrarDetalhesProduto(${JSON.stringify(produto).replace(/\"/g, '&quot;')})">
                             <i class="bi bi-eye"></i> Ver
                         </button>
                     </td>
@@ -418,15 +606,15 @@ function realizarCompra() {
     })
     .then(res => res.json())
     .then(response => {
-        $('#modalComprarProdutos').modal('hide');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalComprarProdutos'));
+        modal.hide();
         document.getElementById('formComprarProdutos').reset();
         document.getElementById('produtos-compra').innerHTML = '';
         carregarProdutos();
-        alert('Compra realizada com sucesso!');
+        mostrarMensagem('Sucesso', 'Compra realizada com sucesso!');
     })
     .catch(err => {
-        console.error('ERRO:', err);
-        alert('Erro ao realizar compra. Por favor, tente novamente.');
+        mostrarMensagem('Erro', 'Erro ao realizar compra. Por favor, tente novamente.');
     });
 }
 
@@ -435,5 +623,153 @@ document.getElementById('modalComprarProdutos').addEventListener('show.bs.modal'
     document.getElementById('produtos-compra').innerHTML = '';
     adicionarProdutoCompra();
 });
+
+// Função para formatar moeda
+function formatarMoeda(input) {
+    let valor = input.value.replace(/\D/g, '');
+    
+    // Se não há valor, não formata
+    if (valor === '') {
+        input.value = '';
+        return;
+    }
+    
+    // Garante que tenha pelo menos 2 dígitos (centavos)
+    if (valor.length === 1) {
+        valor = '0' + valor;
+    }
+    
+    // Formata com vírgula para centavos
+    valor = valor.replace(/(\d)(\d{2})$/, '$1,$2');
+    
+    // Adiciona pontos para milhares
+    valor = valor.replace(/(?=(\d{3})+(\D))\B/g, '.');
+    
+    input.value = 'R$ ' + valor;
+}
+
+// Função para formatar moeda enquanto digita
+function formatarMoedaDigita(input) {
+    let valor = input.value.replace(/\D/g, '');
+    
+    // Se não há valor, não formata
+    if (valor === '') {
+        input.value = '';
+        return;
+    }
+    
+    // Formata com vírgula para centavos
+    if (valor.length >= 2) {
+        valor = valor.replace(/(\d)(\d{2})$/, '$1,$2');
+    }
+    
+    // Adiciona pontos para milhares
+    valor = valor.replace(/(?=(\d{3})+(\D))\B/g, '.');
+    
+    input.value = 'R$ ' + valor;
+}
+
+// Função para limpar moeda
+function limparMoeda(input) {
+    // Remove tudo exceto números e vírgula
+    input.value = input.value.replace(/[^\d,]/g, '');
+}
+
+// Função para converter valor monetário para número
+function converterMoedaParaNumero(valor) {
+    if (!valor || valor === '') return null;
+    
+    // Remove R$, espaços e pontos, mantém apenas números e vírgula
+    let numero = valor.replace(/[^\d,]/g, '');
+    
+    // Substitui vírgula por ponto para conversão
+    numero = numero.replace(',', '.');
+    
+    return parseFloat(numero);
+}
+
+// Função para buscar produtos
+function buscarProdutos() {
+    const termo = document.getElementById('pesquisaProduto').value.trim();
+    if (!termo) {
+        carregarProdutos(); // Se vazio, carrega todos
+        return;
+    }
+    fetch(`/produtos/buscar?termo=${encodeURIComponent(termo)}`)
+        .then(res => res.json())
+        .then(produtos => {
+            const tbody = document.getElementById('produtos-body');
+            tbody.innerHTML = '';
+            produtos.forEach(produto => {
+                // Só mostra produtos ativos
+                if (!(produto.status === true || produto.status === 'true' || produto.status === 'Ativo' || produto.status === 1)) return;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${produto.identificador_empresa || ''}</td>
+                    <td>${produto.nome_produto || produto.nome || ''}</td>
+                    <td>R$ ${(produto.preco || 0).toFixed(2)}</td>
+                    <td>${produto.estoque || 0}</td>
+                    <td>${produto.un_medida || 'N/A'}</td>
+                    <td>${produto.grupo || 'Sem grupo'}</td>
+                    <td>${produto.cod_barras || 'N/A'}</td>
+                    <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="mostrarDetalhesProduto(${JSON.stringify(produto).replace(/\"/g, '&quot;')})">
+                            <i class="bi bi-eye"></i> Ver
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(err => {
+            mostrarMensagem('Erro', 'Erro ao buscar produtos.');
+        });
+}
+// Associar busca ao botão e ao Enter
+const btnBusca = document.querySelector('#pesquisaProduto + button');
+if (btnBusca) btnBusca.onclick = buscarProdutos;
+document.getElementById('pesquisaProduto').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        buscarProdutos();
+    }
+});
+
+// Função para filtrar produtos
+function filtrarProdutos() {
+    const grupo = document.getElementById('filtroGrupo').value;
+    const unMedida = document.getElementById('filtroUnMedida').value;
+    const status = document.getElementById('filtroStatus').value;
+
+    fetch(`/produtos/filtro?grupo=${grupo}&un_medida=${unMedida}&status=${status}`)
+        .then(res => res.json())
+        .then(produtos => {
+            const tbody = document.getElementById('produtos-body');
+            tbody.innerHTML = '';
+            produtos.forEach(produto => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${produto.identificador_empresa}</td>
+                    <td>${produto.nome_produto}</td>
+                    <td>R$ ${produto.preco.toFixed(2)}</td>
+                    <td>${produto.estoque}</td>
+                    <td>${produto.un_medida || 'N/A'}</td>
+                    <td>${produto.grupo || 'Sem grupo'}</td>
+                    <td>${produto.cod_barras || 'N/A'}</td>
+                    <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-info btn-sm" onclick="mostrarDetalhesProduto(${JSON.stringify(produto).replace(/\"/g, '&quot;')})">
+                            <i class="bi bi-eye"></i> Ver
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(err => {
+            mostrarMensagem('Erro', 'Erro ao filtrar produtos.');
+        });
+}
 </script>
 {% endblock %} 

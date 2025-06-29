@@ -200,16 +200,18 @@
     <div class="tab-pane fade" id="contas-receber" role="tabpanel">
         <div class="card">
             <div class="card-body">
+                <!-- Botão Nova Conta a Receber -->
+                <button class="btn btn-success mb-3" onclick="$('#modalNovaContaReceber').modal('show')">
+                    <i class="bi bi-plus-circle"></i> Nova Conta a Receber
+                </button>
                 <!-- Filtros de Status -->
                 <div class="mb-4">
                     <label class="form-label">Filtrar por Status:</label>
                     <div class="btn-group" role="group">
                         <input type="radio" class="btn-check" name="filtroStatusReceber" id="receberTodos" value="todos" checked>
                         <label class="btn btn-outline-primary" for="receberTodos">Todos</label>
-
                         <input type="radio" class="btn-check" name="filtroStatusReceber" id="receberPendentes" value="pendente">
                         <label class="btn btn-outline-warning" for="receberPendentes">Pendentes</label>
-
                         <input type="radio" class="btn-check" name="filtroStatusReceber" id="receberRecebidos" value="Recebido">
                         <label class="btn btn-outline-success" for="receberRecebidos">Recebidos</label>
                     </div>
@@ -245,16 +247,18 @@
     <div class="tab-pane fade" id="contas-pagar" role="tabpanel">
         <div class="card">
             <div class="card-body">
+                <!-- Botão Nova Conta a Pagar -->
+                <button class="btn btn-danger mb-3" onclick="$('#modalNovaContaPagar').modal('show')">
+                    <i class="bi bi-plus-circle"></i> Nova Conta a Pagar
+                </button>
                 <!-- Filtros de Status -->
                 <div class="mb-4">
                     <label class="form-label">Filtrar por Status:</label>
                     <div class="btn-group" role="group">
                         <input type="radio" class="btn-check" name="filtroStatusPagar" id="pagarTodos" value="todos" checked>
                         <label class="btn btn-outline-primary" for="pagarTodos">Todos</label>
-
                         <input type="radio" class="btn-check" name="filtroStatusPagar" id="pagarPendentes" value="pendente">
                         <label class="btn btn-outline-warning" for="pagarPendentes">Pendentes</label>
-
                         <input type="radio" class="btn-check" name="filtroStatusPagar" id="pagarPagos" value="pago">
                         <label class="btn btn-outline-success" for="pagarPagos">Pagos</label>
                     </div>
@@ -629,6 +633,133 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Nova Conta a Receber -->
+<div class="modal fade" id="modalNovaContaReceber" tabindex="-1" aria-labelledby="modalNovaContaReceberLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNovaContaReceberLabel">Nova Conta a Receber</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovaContaReceber">
+                    <div class="mb-3">
+                        <label for="cr_data_vencimento" class="form-label">Data de Vencimento</label>
+                        <input type="date" class="form-control" id="cr_data_vencimento" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cr_id_cliente" class="form-label">Cliente</label>
+                        <select class="form-control" id="cr_id_cliente">
+                            <option value="">Selecione (opcional)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cr_descricao" class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="cr_descricao" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cr_valor" class="form-label">Valor</label>
+                        <input type="number" step="0.01" class="form-control" id="cr_valor" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cr_plano_contas" class="form-label">Plano de Contas</label>
+                        <select class="form-control" id="cr_plano_contas" required>
+                            <option value="">Selecione</option>
+                            <option value="Serviços">Serviços</option>
+                            <option value="Produtos">Produtos</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cr_data_emissao" class="form-label">Data de Emissão</label>
+                        <input type="date" class="form-control" id="cr_data_emissao" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cr_status" class="form-label">Status</label>
+                        <select class="form-control" id="cr_status" required>
+                            <option value="pendente">Pendente</option>
+                            <option value="Recebido">Recebido</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-success">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Nova Conta a Pagar -->
+<div class="modal fade" id="modalNovaContaPagar" tabindex="-1" aria-labelledby="modalNovaContaPagarLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNovaContaPagarLabel">Nova Conta a Pagar</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovaContaPagar">
+                    <div class="mb-3">
+                        <label for="cp_data_vencimento" class="form-label">Data de Vencimento</label>
+                        <input type="date" class="form-control" id="cp_data_vencimento" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp_descricao" class="form-label">Descrição</label>
+                        <input type="text" class="form-control" id="cp_descricao" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp_valor" class="form-label">Valor</label>
+                        <input type="number" step="0.01" class="form-control" id="cp_valor" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp_plano_contas" class="form-label">Plano de Contas</label>
+                        <select class="form-control" id="cp_plano_contas" required>
+                            <option value="">Selecione</option>
+                            <option value="Serviços">Serviços</option>
+                            <option value="Produtos">Produtos</option>
+                            <option value="Outros">Outros</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp_data_emissao" class="form-label">Data de Emissão</label>
+                        <input type="date" class="form-control" id="cp_data_emissao" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="cp_status" class="form-label">Status</label>
+                        <select class="form-control" id="cp_status" required>
+                            <option value="pendente">Pendente</option>
+                            <option value="pago">Pago</option>
+                        </select>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-danger">Salvar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Global de Mensagem -->
+<div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMensagemLabel">Mensagem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modalMensagemBody">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block page_scripts %}
@@ -738,7 +869,7 @@ async function carregarUltimasSaidas() {
 async function excluirEntrada() {
     const id = document.getElementById('detalhe-id').value;
     if (!id) {
-        alert('ID da receita não encontrado');
+        mostrarMensagem('ID da receita não encontrado');
         return;
     }
 
@@ -756,14 +887,14 @@ async function excluirEntrada() {
             carregarTotais();
             carregarUltimasEntradas();
             carregarTodasEntradas();
-            alert('Receita excluída com sucesso!');
+            mostrarMensagem('Receita excluída com sucesso!');
         } else {
             const data = await response.json();
-            alert(data.error || 'Erro ao excluir receita');
+            mostrarMensagem(data.error || 'Erro ao excluir receita');
         }
     } catch (err) {
         console.error('Erro ao excluir receita:', err);
-        alert('Erro ao excluir receita. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao excluir receita. Por favor, tente novamente.');
     }
 }
 
@@ -790,7 +921,7 @@ function mostrarDetalhesEntrada(entrada) {
         $('#modalDetalhesEntrada').modal('show');
     } catch (err) {
         console.error('Erro ao mostrar detalhes da entrada:', err);
-        alert('Erro ao exibir detalhes da receita. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao exibir detalhes da receita. Por favor, tente novamente.');
     }
 }
 
@@ -820,13 +951,13 @@ document.getElementById('formEntrada').addEventListener('submit', async (e) => {
             document.getElementById('formEntrada').reset();
             carregarTotais();
             carregarUltimasEntradas();
-            alert('Receita registrada com sucesso!');
+            mostrarMensagem('Receita registrada com sucesso!');
         } else {
-            alert(Array.isArray(result.error) ? result.error.join('\n') : result.error);
+            mostrarMensagem(Array.isArray(result.error) ? result.error.join('\n') : result.error, 'Erro');
         }
     } catch (err) {
         console.error('Erro ao registrar receita:', err);
-        alert('Erro ao registrar receita.');
+        mostrarMensagem('Erro ao registrar receita.');
     }
 });
 
@@ -855,13 +986,13 @@ document.getElementById('formSaida').addEventListener('submit', async (e) => {
             document.getElementById('formSaida').reset();
             carregarTotais();
             carregarUltimasSaidas();
-            alert('Despesa registrada com sucesso!');
+            mostrarMensagem('Despesa registrada com sucesso!');
         } else {
-            alert(Array.isArray(result.error) ? result.error.join('\n') : result.error);
+            mostrarMensagem(Array.isArray(result.error) ? result.error.join('\n') : result.error, 'Erro');
         }
     } catch (err) {
         console.error('Erro ao registrar despesa:', err);
-        alert('Erro ao registrar despesa.');
+        mostrarMensagem('Erro ao registrar despesa.');
     }
 });
 
@@ -1147,7 +1278,7 @@ function mostrarDetalhesContaPagar(conta) {
         $('#modalDetalhesContaPagar').modal('show');
     } catch (err) {
         console.error('Erro ao mostrar detalhes da conta a pagar:', err);
-        alert('Erro ao exibir detalhes da conta a pagar. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao exibir detalhes da conta a pagar. Por favor, tente novamente.');
     }
 }
 
@@ -1175,7 +1306,7 @@ function mostrarDetalhesContaReceber(conta) {
         $('#modalDetalhesContaReceber').modal('show');
     } catch (err) {
         console.error('Erro ao mostrar detalhes da conta a receber:', err);
-        alert('Erro ao exibir detalhes da conta a receber. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao exibir detalhes da conta a receber. Por favor, tente novamente.');
     }
 }
 
@@ -1200,14 +1331,14 @@ function mostrarDetalhesDespesa(despesa) {
         $('#modalDetalhesDespesa').modal('show');
     } catch (err) {
         console.error('Erro ao mostrar detalhes da despesa:', err);
-        alert('Erro ao exibir detalhes da despesa. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao exibir detalhes da despesa. Por favor, tente novamente.');
     }
 }
 
 // Função para excluir despesa
 async function excluirDespesa() {
     if (!window.despesaAtualId) {
-        alert('ID da despesa não encontrado');
+        mostrarMensagem('ID da despesa não encontrado');
         return;
     }
 
@@ -1225,14 +1356,14 @@ async function excluirDespesa() {
             carregarTotais();
             carregarUltimasSaidas();
             carregarTodasSaidas();
-            alert('Despesa excluída com sucesso!');
+            mostrarMensagem('Despesa excluída com sucesso!');
         } else {
             const data = await response.json();
-            alert(data.error || 'Erro ao excluir despesa');
+            mostrarMensagem(data.error || 'Erro ao excluir despesa');
         }
     } catch (err) {
         console.error('Erro ao excluir despesa:', err);
-        alert('Erro ao excluir despesa. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao excluir despesa. Por favor, tente novamente.');
     }
 }
 
@@ -1267,14 +1398,14 @@ async function excluirSaida() {
             $('#modalDetalhesSaida').modal('hide');
             carregarTodasSaidas();
             carregarTotais();
-            alert('Saída excluída com sucesso!');
+            mostrarMensagem('Saída excluída com sucesso!');
         } else {
             const data = await response.json();
-            alert(data.error || 'Erro ao excluir saída');
+            mostrarMensagem(data.error || 'Erro ao excluir saída');
         }
     } catch (err) {
         console.error('Erro ao excluir saída:', err);
-        alert('Erro ao excluir saída. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao excluir saída. Por favor, tente novamente.');
     }
 }
 
@@ -1311,14 +1442,14 @@ document.getElementById('formBaixarConta').addEventListener('submit', async (e) 
             document.getElementById('formBaixarConta').reset();
             carregarContasReceber();
             carregarTotais();
-            alert('Conta baixada com sucesso!');
+            mostrarMensagem('Conta baixada com sucesso!');
         } else {
             const data = await response.json();
-            alert(data.error || 'Erro ao baixar conta');
+            mostrarMensagem(data.error || 'Erro ao baixar conta');
         }
     } catch (err) {
         console.error('Erro ao baixar conta:', err);
-        alert('Erro ao baixar conta. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao baixar conta. Por favor, tente novamente.');
     }
 });
 
@@ -1343,15 +1474,118 @@ document.getElementById('formBaixarContaPagar').addEventListener('submit', async
             document.getElementById('formBaixarContaPagar').reset();
             carregarContasPagar();
             carregarTotais();
-            alert('Conta paga com sucesso!');
+            mostrarMensagem('Conta paga com sucesso!');
         } else {
             const data = await response.json();
-            alert(data.error || 'Erro ao pagar conta');
+            mostrarMensagem(data.error || 'Erro ao pagar conta');
         }
     } catch (err) {
         console.error('Erro ao pagar conta:', err);
-        alert('Erro ao pagar conta. Por favor, tente novamente.');
+        mostrarMensagem('Erro ao pagar conta. Por favor, tente novamente.');
     }
 });
+
+// Função para mostrar pop-up de mensagem
+function mostrarMensagem(msg, titulo = 'Mensagem') {
+    document.getElementById('modalMensagemLabel').textContent = titulo;
+    document.getElementById('modalMensagemBody').textContent = msg;
+    var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    modal.show();
+}
+
+// Função para buscar clientes e popular o select
+async function popularSelectClientes() {
+    try {
+        const response = await fetch('/clientes/listar');
+        const clientes = await response.json();
+        const select = document.getElementById('cr_id_cliente');
+        if (!select) return;
+        select.innerHTML = '<option value="">Selecione (opcional)</option>';
+        clientes.forEach(cliente => {
+            const opt = document.createElement('option');
+            opt.value = cliente.id;
+            opt.textContent = cliente.nome;
+            select.appendChild(opt);
+        });
+    } catch (err) {
+        // Se der erro, deixa o select vazio
+        document.getElementById('cr_id_cliente').innerHTML = '<option value="">Selecione (opcional)</option>';
+    }
+}
+
+// Popular clientes ao abrir o modal de contas a receber
+$('#modalNovaContaReceber').on('show.bs.modal', function () {
+    popularSelectClientes();
+});
+
+// Ajustar envio do formulário para cliente opcional
+const formNovaContaReceber = document.getElementById('formNovaContaReceber');
+if (formNovaContaReceber) {
+    formNovaContaReceber.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const clienteValue = document.getElementById('cr_id_cliente').value;
+        const dados = {
+            data_vencimento: document.getElementById('cr_data_vencimento').value,
+            id_cliente: clienteValue ? parseInt(clienteValue) : null,
+            descricao: document.getElementById('cr_descricao').value,
+            valor: parseFloat(document.getElementById('cr_valor').value),
+            plano_contas: document.getElementById('cr_plano_contas').value,
+            data_emissao: document.getElementById('cr_data_emissao').value,
+            status: document.getElementById('cr_status').value
+        };
+        try {
+            const response = await fetch('/contas_receber/incluir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                $('#modalNovaContaReceber').modal('hide');
+                formNovaContaReceber.reset();
+                carregarContasReceber();
+                mostrarMensagem('Conta a receber cadastrada com sucesso!');
+            } else {
+                mostrarMensagem(Array.isArray(result.error) ? result.error.join('\n') : result.error, 'Erro');
+            }
+        } catch (err) {
+            mostrarMensagem('Erro ao cadastrar conta a receber.', 'Erro');
+        }
+    });
+}
+
+// Envio do formulário Nova Conta a Pagar
+const formNovaContaPagar = document.getElementById('formNovaContaPagar');
+if (formNovaContaPagar) {
+    formNovaContaPagar.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const dados = {
+            data_vencimento: document.getElementById('cp_data_vencimento').value,
+            descricao: document.getElementById('cp_descricao').value,
+            valor: parseFloat(document.getElementById('cp_valor').value),
+            plano_contas: document.getElementById('cp_plano_contas').value,
+            data_emissao: document.getElementById('cp_data_emissao').value,
+            status: document.getElementById('cp_status').value
+        };
+        try {
+            const response = await fetch('/contas_pagar/incluir', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dados)
+            });
+            const result = await response.json();
+            if (response.ok) {
+                $('#modalNovaContaPagar').modal('hide');
+                formNovaContaPagar.reset();
+                carregarContasPagar();
+                mostrarMensagem('Conta a pagar cadastrada com sucesso!');
+            } else {
+                mostrarMensagem(Array.isArray(result.error) ? result.error.join('\n') : result.error, 'Erro');
+            }
+        } catch (err) {
+            mostrarMensagem('Erro ao cadastrar conta a pagar.', 'Erro');
+        }
+    });
+}
 </script>
 {% endblock %}

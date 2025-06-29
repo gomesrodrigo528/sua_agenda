@@ -45,6 +45,23 @@
         </div>
     </div>
 
+    <!-- Modal Global de Mensagens -->
+    <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalMensagemLabel">Mensagem</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalMensagemBody">
+                    <!-- Conteúdo da mensagem será inserido aqui -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Pop-up de Notificação Simples -->
     <div id="popup" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive"
@@ -199,6 +216,12 @@
             </div>
 
 
+            <!-- Botão para alternar filtro de agendamentos -->
+            <div class="mb-3 d-flex gap-2 justify-content-center">
+                <button id="btnMeusAgendamentos" class="btn btn-outline-primary active" type="button">Meus agendamentos</button>
+                <button id="btnTodosAgendamentos" class="btn btn-outline-secondary" type="button">Todos</button>
+            </div>
+
             <div id="calendar-container">
                 <div id="calendar"></div>
             </div>
@@ -333,15 +356,15 @@
                 event.target.reset();
 
                 // Exibe uma mensagem de sucesso
-                alert(data.message);
+                mostrarMensagem(data.message, "Sucesso");
             } else {
                 console.error("Erro:", data.error);
-                alert("Erro ao cadastrar cliente: " + data.error);
+                mostrarMensagem("Erro ao cadastrar cliente: " + data.error, "Erro");
             }
         })
         .catch(error => {
             console.error("Erro na requisição:", error);
-            alert("Erro ao cadastrar cliente");
+            mostrarMensagem("Erro ao cadastrar cliente", "Erro");
         });
     });
 });
@@ -369,18 +392,26 @@ document.addEventListener("DOMContentLoaded", function () {
                 event.target.reset();
 
                 // Exibe uma mensagem de sucesso
-                alert(data.message);  // Exibe a mensagem de sucesso
+                mostrarMensagem(data.message, "Sucesso");
             } else if (data.error) {
                 console.error("Erro:", data.error);
-                alert(data.error);  // Exibe a mensagem de erro
+                mostrarMensagem(data.error, "Erro");
             }
         })
         .catch(error => {
             console.error("Erro na requisição:", error);
-            alert("Erro ao cadastrar serviço");
+            mostrarMensagem("Erro ao cadastrar serviço", "Erro");
         });
     });
 });
+
+// Função para mostrar pop-up de mensagem
+function mostrarMensagem(msg, titulo = 'Mensagem') {
+    document.getElementById('modalMensagemLabel').textContent = titulo;
+    document.getElementById('modalMensagemBody').textContent = msg;
+    var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    modal.show();
+}
 
    
 
@@ -489,6 +520,42 @@ document.addEventListener("DOMContentLoaded", function () {
             });
 
     </script>
+
+    <!-- Botão flutuante de vendas -->
+    <style>
+    #btn-vendas-flutuante {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        z-index: 9999;
+        background: linear-gradient(135deg, #2ecc40 80%, #27ae60 100%);
+        border: none;
+        outline: none;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+        border-radius: 50%;
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: box-shadow 0.2s, transform 0.2s;
+    }
+    #btn-vendas-flutuante:hover {
+        box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+        transform: scale(1.08);
+    }
+    #btn-vendas-flutuante .cifrao {
+        color: #fff;
+        font-size: 2.2rem;
+        font-weight: bold;
+        text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+        line-height: 1;
+    }
+    </style>
+    <a id="btn-vendas-flutuante" href="/vendas" title="Ir para vendas">
+        <span class="cifrao">&#36;</span>
+    </a>
 
 </body>
 

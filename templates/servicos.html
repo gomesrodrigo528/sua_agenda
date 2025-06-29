@@ -1,281 +1,251 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Serviços</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- CSS Personalizado -->
-    <link rel="stylesheet" href="/static/styles/style.css">
-    <link rel="stylesheet" href="/static/styles/users.css">
-    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
-</head>
+{% block title %}Serviços{% endblock %}
 
-<body>
-    <div>
-    <button id="toggle-menu" class="d-block d-md-none"
-        style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
-        ☰
-    </button>
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/users.css">
+{% endblock %}
+
+{% block content %}
+<!-- Botão para exibir o formulário -->
+<button id="btnCriarServico" class="btn btn-primary mb-4" onclick="exibirFormulario()">CRIAR SERVIÇO</button>
+
+<!-- Formulário de Cadastro de Serviços -->
+<div id="formularioCadastro" style="display: none;">
+    <h3>Cadastro de Serviços</h3>
+    <form method="POST" action="/add_service">
+        <div class="mb-3">
+            <label for="nome_servico" class="form-label">Nome do Serviço</label>
+            <input type="text" class="form-control" id="nome_servico" name="nome_servico" required>
+        </div>
+        <div class="mb-3">
+            <label for="preco" class="form-label">Preço (R$)</label>
+            <input type="number" step="0.01" class="form-control" id="preco" name="preco" required>
+        </div>
+        <div class="mb-3">
+            <label for="tempo" class="form-label">Tempo Estimado (minutos)</label>
+            <input type="number" class="form-control" id="tempo" name="tempo" required>
+        </div>
+        <div class="mb-3">
+        <label for="responsavel" class="form-label"> responsavel pelo serviço</label>
+        <select name="responsavel" id="responsavel" class="form-control"> selecione o responsavel</select>   
+        </div>
+        <div class="mb-3">
+            <input type="checkbox" class="form-check-input" id="disp_cliente" name="disp_cliente" value="1" required checked >
+            <label class="form-check-label" for="disp_cliente">Disponivel para os clientes</label>
+           
+            </div>                   
+            <button type="submit" class="btn btn-success">Cadastrar</button>
+            <button type="button" onclick="cancelarCadastro()" class="btn btn-danger">Cancelar</button>
+    </form>
+    <hr>
 </div>
-    <div class="d-flex">
-        
-        <!-- Menu Lateral -->
-        <div id="menu-container"></div>
-        <!-- Conteúdo Principal -->
-        <div class="container mt-4">
-            <div id="loading">Carregando...</div>
-         
-            <!-- Botão para exibir o formulário -->
-            <button id="btnCriarServico" class="btn btn-primary mb-4" onclick="exibirFormulario()">CRIAR SERVIÇO</button>
 
-            <!-- Formulário de Cadastro de Serviços -->
-            <div id="formularioCadastro" style="display: none;">
-                <h3>Cadastro de Serviços</h3>
-                <form method="POST" action="/add_service">
-                    <div class="mb-3">
-                        <label for="nome_servico" class="form-label">Nome do Serviço</label>
-                        <input type="text" class="form-control" id="nome_servico" name="nome_servico" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="preco" class="form-label">Preço (R$)</label>
-                        <input type="number" step="0.01" class="form-control" id="preco" name="preco" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="tempo" class="form-label">Tempo Estimado (minutos)</label>
-                        <input type="number" class="form-control" id="tempo" name="tempo" required>
-                    </div>
-                    <div class="mb-3">
-                    <label for="responsavel" class="form-label"> responsavel pelo serviço</label>
-                    <select name="responsavel" id="responsavel" class="form-control"> selecione o responsavel</select>   
-                    </div>
-                    <div class="mb-3">
-                        <input type="checkbox" class="form-check-input" id="disp_cliente" name="disp_cliente" value="1" required checked >
-                        <label class="form-check-label" for="disp_cliente">Disponivel para os clientes</label>
-                       
-                        </div>                   
-                        <button type="submit" class="btn btn-success">Cadastrar</button>
-                        <button type="button" onclick="cancelarCadastro()" class="btn btn-danger">Cancelar</button>
-                </form>
-                <hr>
-            </div>
+<!-- Formulário de Pesquisa -->
+<form method="POST" action="/servicos" class="mb-4">
+    <div class="input-group">
+    <input type="text" class="form-control" name="search_query" placeholder="Pesquisar serviços">
+        <button class="btn btn-outline-primary" type="submit">
+            <i class="bi bi-search"></i> Pesquisar
+        </button>
+        </div>
+</form>
 
-            <!-- Formulário de Pesquisa -->
-            <form method="POST" action="/servicos" class="mb-4">
-                <div class="input-group">
-                <input type="text" class="form-control" name="search_query" placeholder="Pesquisar serviços">
-                    <button class="btn btn-outline-primary" type="submit">
-                        <i class="bi bi-search"></i> Pesquisar
+<!-- Listagem de Serviços -->
+
+{% if services %}
+<div class="tab_serv-scroll">
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Nome</th>
+                <th>Preço</th>
+                <th>Tempo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for service in services %}
+            <tr>
+                <td>{{ service.nome_servico }}</td>
+                <td>R$ {{ service.preco | round(2) }}</td>
+                <td>{{ service.tempo  }}min</td>
+                <td>
+                    <button class="btn btn-primary btn-sm" onclick='abrirModalEdicao({{ service | tojson | safe }})'>
+                        <i class="bi bi-pencil"></i> Editar
                     </button>
-                    </div>
-            </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted">Nenhum serviço cadastrado.</p>
+{% endif %}
 
-            <!-- Listagem de Serviços -->
-          
-            {% if services %}
-            <div class="tab_serv-scroll">
-                <table class="table table-striped">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Nome</th>
-                            <th>Preço</th>
-                            <th>Tempo</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for service in services %}
-                        <tr>
-                            <td>{{ service.nome_servico }}</td>
-                            <td>R$ {{ service.preco | round(2) }}</td>
-                            <td>{{ service.tempo  }}min</td>
-                            <td>
-                                <button class="btn btn-primary btn-sm" onclick='abrirModalEdicao({{ service | tojson | safe }})'>
-                                    <i class="bi bi-pencil"></i> Editar
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+<!-- Modal de Edição -->
+<div class="modal fade" id="modalEdicao" tabindex="-1" aria-labelledby="modalEdicaoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEdicaoLabel">Editar Serviço</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            {% else %}
-            <p class="text-muted">Nenhum serviço cadastrado.</p>
-            {% endif %}
-
-            <!-- Modal de Edição -->
-            <div class="modal fade" id="modalEdicao" tabindex="-1" aria-labelledby="modalEdicaoLabel" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalEdicaoLabel">Editar Serviço</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <form id="formEdicao">
-                                <input type="hidden" id="editId">
-                                <div class="mb-3">
-                                    <label for="editNomeServico" class="form-label">Nome do Serviço</label>
-                                    <input type="text" class="form-control" id="editNomeServico" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editPreco" class="form-label">Preço (R$)</label>
-                                    <input type="number" step="0.01" class="form-control" id="editPreco" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="editTempo" class="form-label">Tempo Estimado (minutos)</label>
-                                    <input type="number" class="form-control" id="editTempo" required>
-                                </div>
-                                <div class="mb-3">
-                                    <input type="checkbox" class="form-check-input" id="editDispCliente">
-                                    <label class="form-check-label" for="editDispCliente">Disponível para os clientes</label>
-                                </div>
-                                <div class="mb-3">
-                                    <input type="checkbox" class="form-check-input" id="editStatus">
-                                    <label class="form-check-label" for="editStatus">Serviço Ativo</label>
-                                </div>
-                            </form>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                            <button type="button" class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
-                        </div>
+            <div class="modal-body">
+                <form id="formEdicao">
+                    <input type="hidden" id="editId">
+                    <div class="mb-3">
+                        <label for="editNomeServico" class="form-label">Nome do Serviço</label>
+                        <input type="text" class="form-control" id="editNomeServico" required>
                     </div>
-                </div>
+                    <div class="mb-3">
+                        <label for="editPreco" class="form-label">Preço (R$)</label>
+                        <input type="number" step="0.01" class="form-control" id="editPreco" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editTempo" class="form-label">Tempo Estimado (minutos)</label>
+                        <input type="number" class="form-control" id="editTempo" required>
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" id="editDispCliente">
+                        <label class="form-check-label" for="editDispCliente">Disponível para os clientes</label>
+                    </div>
+                    <div class="mb-3">
+                        <input type="checkbox" class="form-check-input" id="editStatus">
+                        <label class="form-check-label" for="editStatus">Serviço Ativo</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
             </div>
         </div>
     </div>
-    <!-- Bootstrap JS e dependências -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="static/scripts/menu.js"></script>
-    <script>
-        renderMenu('menu-container');
-        function cancelarCadastro() {
+</div>
+{% endblock %}
+
+{% block page_scripts %}
+<script>
+function cancelarCadastro() {
+    document.getElementById('formularioCadastro').style.display = 'none';
+    document.getElementById('btnCriarServico').style.display = 'block';
+}
+
+function mostrarMensagem(titulo, mensagem) {
+    document.getElementById('modalMensagemLabel').textContent = titulo || 'Mensagem';
+    document.getElementById('modalMensagemBody').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    modal.show();
+}
+
+// Função para exibir o formulário de cadastro
+function exibirFormulario() {
+    document.getElementById('formularioCadastro').style.display = 'block';
+    document.getElementById('btnCriarServico').style.display = 'none';
+}
+
+// Função para lidar com o envio do formulário de cadastro
+document.querySelector("#formularioCadastro form").addEventListener("submit", function(event) {
+    event.preventDefault(); // Evita o recarregamento da página ao submeter o formulário
+
+    const formData = new FormData(this); // Coleta os dados do formulário
+
+    // Envia os dados via AJAX (fetch)
+    fetch("/add_service", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json()) // Espera a resposta como JSON
+    .then(data => {
+        // Se a resposta contiver uma mensagem de sucesso
+        if (data.message) {
+            mostrarMensagem('Sucesso', data.message);
             document.getElementById('formularioCadastro').style.display = 'none';
-            document.getElementById('btnCriarCliente').style.display = 'block';
+            document.getElementById('btnCriarServico').style.display = 'block';
+            document.querySelector("#formularioCadastro form").reset();
+            setTimeout(() => location.reload(), 1500);
+        } 
+        // Se a resposta contiver uma mensagem de erro
+        else if (data.error) {
+            mostrarMensagem('Erro', data.error);
         }
-    </script>
-    <script>
-        // Função para exibir o formulário de cadastro
-        function exibirFormulario() {
-            document.getElementById('formularioCadastro').style.display = 'block';
-            document.getElementById('btnCriarServico').style.display = 'none';
+    })
+    .catch(error => {
+        console.error("Erro ao cadastrar serviço:", error);
+        mostrarMensagem('Erro', 'Erro ao cadastrar serviço. Tente novamente.');
+    });
+});
+
+// Função para preencher o select de responsáveis com os dados da API
+fetch('/api/usuarios')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
         }
-    
-        // Função para lidar com o envio do formulário de cadastro
-        document.querySelector("#formularioCadastro form").addEventListener("submit", function(event) {
-            event.preventDefault(); // Evita o recarregamento da página ao submeter o formulário
-    
-            const formData = new FormData(this); // Coleta os dados do formulário
-    
-            // Envia os dados via AJAX (fetch)
-            fetch("/add_service", {
-                method: "POST",
-                body: formData
-            })
-            .then(response => response.json()) // Espera a resposta como JSON
-            .then(data => {
-                // Se a resposta contiver uma mensagem de sucesso
-                if (data.message) {
-                    alert(data.message); // Exibe a mensagem de sucesso
-                    // Fecha o formulário de cadastro e exibe o botão novamente
-                    document.getElementById('formularioCadastro').style.display = 'none';
-                    document.getElementById('btnCriarServico').style.display = 'block';
-                    // Limpa o formulário após sucesso
-                    document.querySelector("#formularioCadastro form").reset();
-                    // Atualiza a listagem de serviços
-                    location.reload();
-                } 
-                // Se a resposta contiver uma mensagem de erro
-                else if (data.error) {
-                    alert(data.error); // Exibe a mensagem de erro
-                }
-            })
-            .catch(error => {
-                console.error("Erro ao cadastrar serviço:", error);
-                alert("Erro ao cadastrar serviço. Tente novamente.");
+        return response.json();
+    })
+    .then(data => {
+        const usuarioSelect = document.getElementById('responsavel');
+        if (usuarioSelect) {
+            data.forEach(usuario => {
+                const option = document.createElement('option');
+                option.value = usuario.id;
+                option.textContent = usuario.nome_usuario;
+                usuarioSelect.appendChild(option);
             });
-        });
-    
-        // Função para preencher o select de responsáveis com os dados da API
-        fetch('/api/usuarios')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                const usuarioSelect = document.getElementById('responsavel');
-                if (usuarioSelect) {
-                    data.forEach(usuario => {
-                        const option = document.createElement('option');
-                        option.value = usuario.id;
-                        option.textContent = usuario.nome_usuario;
-                        usuarioSelect.appendChild(option);
-                    });
-                } else {
-                    console.error('Elemento select com ID "responsavel" não encontrado.');
-                }
-            })
-            .catch(error => {
-                console.error('Erro ao buscar ou processar os usuários:', error.message);
-            });
-
-        // Função para abrir o modal de edição
-        function abrirModalEdicao(servico) {
-            document.getElementById('editId').value = servico.id;
-            document.getElementById('editNomeServico').value = servico.nome_servico;
-            document.getElementById('editPreco').value = servico.preco;
-            document.getElementById('editTempo').value = servico.tempo;
-            document.getElementById('editDispCliente').checked = servico.disp_cliente;
-            document.getElementById('editStatus').checked = servico.status !== false; // Se status for undefined ou null, assume true
-            
-            // Abre o modal usando Bootstrap
-            new bootstrap.Modal(document.getElementById('modalEdicao')).show();
+        } else {
+            console.error('Elemento select com ID "responsavel" não encontrado.');
         }
+    })
+    .catch(error => {
+        console.error('Erro ao buscar ou processar os usuários:', error.message);
+    });
 
-        // Função para salvar a edição
-        function salvarEdicao() {
-            const id = document.getElementById('editId').value;
-            const dados = {
-                nome_servico: document.getElementById('editNomeServico').value,
-                preco: parseFloat(document.getElementById('editPreco').value),
-                tempo: parseInt(document.getElementById('editTempo').value),
-                disp_cliente: document.getElementById('editDispCliente').checked,
-                status: document.getElementById('editStatus').checked
-            };
+// Função para abrir o modal de edição
+function abrirModalEdicao(servico) {
+    document.getElementById('editId').value = servico.id;
+    document.getElementById('editNomeServico').value = servico.nome_servico;
+    document.getElementById('editPreco').value = servico.preco;
+    document.getElementById('editTempo').value = servico.tempo;
+    document.getElementById('editDispCliente').checked = servico.disp_cliente;
+    document.getElementById('editStatus').checked = servico.status !== false; // Se status for undefined ou null, assume true
+    new bootstrap.Modal(document.getElementById('modalEdicao')).show();
+}
 
-            fetch(`/servicos/editar/${id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(dados)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Serviço atualizado com sucesso!');
-                    // Fecha o modal
-                    bootstrap.Modal.getInstance(document.getElementById('modalEdicao')).hide();
-                    // Recarrega a página para mostrar as alterações
-                    location.reload();
-                } else {
-                    alert(data.error || 'Erro ao atualizar serviço');
-                }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                alert('Erro ao atualizar serviço');
-            });
+// Função para salvar a edição
+function salvarEdicao() {
+    const id = document.getElementById('editId').value;
+    const dados = {
+        nome_servico: document.getElementById('editNomeServico').value,
+        preco: parseFloat(document.getElementById('editPreco').value),
+        tempo: parseInt(document.getElementById('editTempo').value),
+        disp_cliente: document.getElementById('editDispCliente').checked,
+        status: document.getElementById('editStatus').checked
+    };
+
+    fetch(`/servicos/editar/${id}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(dados)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            mostrarMensagem('Sucesso', 'Serviço atualizado com sucesso!');
+            bootstrap.Modal.getInstance(document.getElementById('modalEdicao')).hide();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            mostrarMensagem('Erro', data.error || 'Erro ao atualizar serviço');
         }
-    </script>
-    
-
-</body>
-
-</html>
+    })
+    .catch(error => {
+        console.error('Erro:', error);
+        mostrarMensagem('Erro', 'Erro ao atualizar serviço');
+    });
+}
+</script>
+{% endblock %}

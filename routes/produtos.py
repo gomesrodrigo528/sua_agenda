@@ -47,6 +47,8 @@ def iserir_produtos():
         "preco": data.get('preco'),
         "estoque": data.get('estoque'),
         "id_empresa": id_empresa,
+        "un_medida": data.get('un_medida'),
+        "status": data.get('status'),
         "preco_custo": data.get('preco_custo', 0.0),  # Preço de custo opcional
         "cod_barras": data.get('cod_barra', None),  # Código de barra opcional
         "grupo":data.get('grupo', None),  # Grupo opcional
@@ -56,7 +58,7 @@ def iserir_produtos():
 
     except Exception as e:
         print("ERRO:", str(e))
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 400
     
 
 
@@ -129,13 +131,16 @@ def editar(id):
             "preco": float(data['preco']),
             "cod_barras": data['cod_barra'],
             "preco_custo": float(data['preco_custo']),
+            "grupo": data['grupo'],
+            "un_medida": data['un_medida'],
+            "status": data['status'],
             "estoque": int(data['estoque'])
         }).eq("id", id).execute()
 
         return jsonify({"message": "Produto alterado com sucesso!"}), 200
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 400
     
 
 
@@ -214,20 +219,28 @@ def buscar_produtos():
             if not termo:
                 return jsonify([])
 
-            # Busca produtos que contenham o termo no nome
-            response = supabase.table("produtos") \
-                .select("*") \
-                .eq("id_empresa", id_empresa) \
-                .ilike("nome_produto", f"%{termo}%") \
-                .execute()
+            # Se o termo for numérico, busca por código de barras ou nome
+            if termo.isdigit():
+                response = supabase.table("produtos") \
+                    .select("*") \
+                    .eq("id_empresa", id_empresa) \
+                    .or_(f"cod_barras.eq.{termo},nome_produto.ilike.%{termo}%") \
+                    .execute()
+            else:
+                # Busca produtos que contenham o termo no nome
+                response = supabase.table("produtos") \
+                    .select("*") \
+                    .eq("id_empresa", id_empresa) \
+                    .ilike("nome_produto", f"%{termo}%") \
+                    .execute()
 
         produtos = response.data if response.data else []
         
         # Formata os dados para o frontend
         produtos_formatados = [{
             'id': p['id'],
-            'cod_barras': p['cod_barras'],
-            'identificador_empresa': p['identificador_empresa'],
+            'cod_barras': p.get('cod_barras'),
+            'identificador_empresa': p.get('identificador_empresa'),
             'nome': p['nome_produto'],
             'preco': p['preco'],
             'estoque': p['estoque']
@@ -306,4 +319,34 @@ def comprar_produtos():
 
     except Exception as e:
         print("Erro ao realizar compra:", str(e))
+        return jsonify({"error": str(e)}), 500
+
+@produtos_bp.route('/produtos/filtro', methods=['GET'])
+def filtrar_produtos():
+    try:
+        if verificar_login():
+            return verificar_login()
+
+        id_empresa = request.cookies.get('empresa_id')
+        grupo = request.args.get('grupo')
+        un_medida = request.args.get('un_medida')
+        status = request.args.get('status')
+
+        query = supabase.table("produtos").select("*").eq("id_empresa", id_empresa)
+
+        if grupo:
+            query = query.eq("grupo", grupo)
+        if un_medida:
+            query = query.eq("un_medida", un_medida)
+        if status:
+            # status deve ser 'true' ou 'false' (string)
+            query = query.eq("status", status.lower() == 'true')
+
+        response = query.execute()
+        produtos = response.data if response.data else []
+
+        return jsonify(produtos)
+
+    except Exception as e:
+        print("Erro ao filtrar produtos:", str(e))
         return jsonify({"error": str(e)}), 500

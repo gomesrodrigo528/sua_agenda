@@ -130,39 +130,119 @@ def vendaprazo():
     
 @contas_receber_bp.route('/contas_receber/baixar/<int:id>', methods=['POST'])
 def baixar(id):
+    login_resp = verificar_login()
+    if login_resp is not None:
+        return login_resp
     try:
-        if verificar_login():
-            return verificar_login()
-        
         id_empresa = request.cookies.get('empresa_id')
-        data = supabase.table("contas_receber").select("*").eq("id", id).single().execute()
+        data = supabase.table("contas_receber").select("*").eq("id", id).single().execute().data
         responsedata = request.get_json()
         pagamento = responsedata.get('pagamento')
 
-
         print(pagamento)
         
+        # Atualiza a conta a receber para baixada
         supabase.table("contas_receber").update({"baixa": True, "status": "Recebido"}).eq("id", id).execute()
 
+        # Registra a entrada no financeiro
         supabase.table("financeiro_entrada").insert({
             "id_empresa": id_empresa,
-            "motivo": "Referente a venda a prazo n° " + str(data.data['id_venda']),
+            "motivo": "Referente a venda a prazo n° " + str(data.get('id_venda', '')),
             "id_servico": "145",
             "data": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            "valor_entrada": data.data['valor'],
-            "meio_pagamento":pagamento ,
-       
-            "id_usuario": data.data['id_usuario'],
-            "id_cliente": data.data['id_cliente'],
-            "id_agenda":data.data['id_agendamento_pagamento']
+            "valor_entrada": data.get('valor', 0),
+            "meio_pagamento": pagamento,
+            "id_usuario": data.get('id_usuario'),
+            "id_cliente": data.get('id_cliente'),
+            "id_agenda": data.get('id_agendamento_pagamento')
         }).execute()
 
-        supabase.table("agenda").update({"status": "finalizado"}).eq("id", data.data['id_agendamento_pagamento']).execute()
+        # Atualiza o status do agendamento para finalizado (se existir)
+        if data.get('id_agendamento_pagamento'):
+            supabase.table("agenda").update({"status": "finalizado"}).eq("id", data['id_agendamento_pagamento']).execute()
+        
+        # Atualiza também o agendamento vinculado à conta (se existir)
+        if data.get('id_agendamento'):
+            supabase.table("agenda").update({"status": "finalizado"}).eq("id", data['id_agendamento']).execute()
+        
         return jsonify({"success": True}), 200
-            
     except Exception as e:
         print("Erro ao baixar venda a prazo:", str(e))
         return jsonify({"error": str(e)}), 500
+
+@contas_receber_bp.route('/contas_receber/incluir', methods=['POST'])
+def incluir_conta_receber():
+    try:
+        if verificar_login():
+            return verificar_login()
+        id_empresa = request.cookies.get('empresa_id')
+        id_usuario = request.cookies.get('user_id')
+        data = request.get_json()
+        erros = []
+        # Validação dos campos obrigatórios
+        data_vencimento = data.get('data_vencimento')
+        id_cliente = data.get('id_cliente')
+        descricao = data.get('descricao')
+        valor = data.get('valor')
+        plano_contas = data.get('plano_contas')
+        data_emissao = data.get('data_emissao')
+        status = data.get('status')
+        if not data_vencimento:
+            erros.append('Data de vencimento é obrigatória.')
+        if not descricao:
+            erros.append('Descrição é obrigatória.')
+        if not valor:
+            erros.append('Valor é obrigatório.')
+        if not data_emissao:
+            erros.append('Data de emissão é obrigatória.')
+        if not status:
+            erros.append('Status é obrigatório.')
+        if erros:
+            return jsonify({'error': erros}), 400
+        try:
+            valor = float(valor)
+        except Exception:
+            return jsonify({'error': 'Valor deve ser numérico.'}), 400
+        
+        # Cria a conta a receber
+        insert_data = {
+            'id_empresa': id_empresa,
+            'id_usuario': id_usuario,
+            'data_vencimento': data_vencimento,
+            'valor': valor,
+            'descricao': descricao,
+            'plano_contas': plano_contas,
+            'data_emissao': data_emissao,
+            'status': status
+        }
+        if id_cliente:
+            insert_data['id_cliente'] = id_cliente
+        
+        response = supabase.table('contas_receber').insert(insert_data).execute()
+        
+        # Cria agendamento para a data de vencimento
+        insert_agendamento = supabase.table("agenda").insert({
+            "data": data_vencimento,
+            "horario": "12:00",
+            "id_empresa": id_empresa,
+            "usuario_id": id_usuario,
+            "cliente_id": id_cliente if id_cliente else None,
+            "descricao": f"Vencimento: {descricao} - R$ {valor:.2f}",
+            "servico_id": "145",  # ID padrão para contas a receber
+            "status": "ativo"
+        }).execute()
+        
+        # Atualiza a conta a receber com o ID do agendamento
+        if insert_agendamento.data:
+            id_agendamento = insert_agendamento.data[0]['id']
+            supabase.table("contas_receber").update({
+                "id_agendamento": id_agendamento
+            }).eq("id", response.data[0]['id']).execute()
+        
+        return jsonify({'message': 'Conta a receber cadastrada com sucesso!'}), 201
+    except Exception as e:
+        print('Erro ao cadastrar conta a receber:', str(e))
+        return jsonify({'error': str(e)}), 500
 
 
 

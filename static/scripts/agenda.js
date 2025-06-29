@@ -3,16 +3,47 @@ document.addEventListener('DOMContentLoaded', function () {
     const listContainer = document.getElementById('list-container');
     const appointmentList = document.getElementById('appointment-list');
     const filter = document.getElementById('filter');
+    let filtroAgendamento = 'meus'; // padrão: meus agendamentos
+
+    // Botões de filtro
+    const btnMeus = document.getElementById('btnMeusAgendamentos');
+    const btnTodos = document.getElementById('btnTodosAgendamentos');
+    if (btnMeus && btnTodos) {
+        btnMeus.addEventListener('click', function () {
+            filtroAgendamento = 'meus';
+            btnMeus.classList.add('active');
+            btnTodos.classList.remove('active');
+            calendar.refetchEvents();
+            renderAppointments(filter.value);
+        });
+        btnTodos.addEventListener('click', function () {
+            filtroAgendamento = 'todos';
+            btnTodos.classList.add('active');
+            btnMeus.classList.remove('active');
+            calendar.refetchEvents();
+            renderAppointments(filter.value);
+        });
+    }
 
     const cachedData = {};
 
+    // Função para mostrar pop-up de mensagem
+    function mostrarMensagem(msg, titulo = 'Mensagem') {
+        document.getElementById('modalMensagemLabel').textContent = titulo;
+        document.getElementById('modalMensagemBody').textContent = msg;
+        var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+        modal.show();
+    }
+
     async function fetchData(url) {
-        if (cachedData[url]) {
-            return cachedData[url];
+        // Adiciona o filtro na URL
+        const urlComFiltro = url.includes('?') ? `${url}&filtro=${filtroAgendamento}` : `${url}?filtro=${filtroAgendamento}`;
+        if (cachedData[urlComFiltro]) {
+            return cachedData[urlComFiltro];
         }
-        const response = await fetch(url);
+        const response = await fetch(urlComFiltro);
         const data = await response.json();
-        cachedData[url] = data;
+        cachedData[urlComFiltro] = data;
         return data;
     }
 
@@ -34,6 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
         events: async function (fetchInfo, successCallback, failureCallback) {
             try {
                 const data = await fetchData('/agenda/data');
+                console.log('Agendamentos recebidos do backend:', data);
                 if (Array.isArray(data)) {
                     const eventos = await Promise.all(data.map(async (agendamento) => {
                         const usuarioResponse = await fetch('/api/usuario/logado'); // Aqui você busca os dados do usuário logado
@@ -50,10 +82,13 @@ document.addEventListener('DOMContentLoaded', function () {
                             telefone: agendamento.telefone,
                             empresa: nomeEmpresa,
                             nome_usuario: nomeUsuario,  // Adiciona o nome do usuário ao evento
-                            finalizado: agendamento.finalizado || false
+                            finalizado: agendamento.finalizado || false,
+                            conta_receber: agendamento.conta_receber || false,
+                            servico_preco: agendamento.servico_preco || 0
                         };
                     }));
 
+                    console.log('Eventos formatados para o calendário:', eventos);
                     successCallback(eventos);
                 } else {
                     console.error('Dados recebidos não são um array:', data);
@@ -77,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!info.event.extendedProps.finalizado) {
                 mostrarDetalhesAgendamento(info.event);
             } else {
-                alert('Este agendamento já foi finalizado e não pode ser modificado.');
+                mostrarMensagem('Este agendamento já foi finalizado e não pode ser modificado.', 'Aviso');
             }
         },
         eventDidMount: function (info) {
@@ -87,6 +122,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (info.event.start < now) {
                 eventEl.style.backgroundColor = 'red';
                 eventEl.style.color = 'white';
+            }
+            // Destacar agendamentos de contas a receber apenas com cor do texto (forçado)
+            if (info.event.extendedProps.conta_receber) {
+                eventEl.style.setProperty('color', 'orange', 'important');
+                eventEl.style.fontWeight = 'bold';
             }
         }
     });
@@ -155,6 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const appointmentsHTML = await Promise.all(filteredAppointments.map(async (event) => {
                 const eventDate = new Date(event.data + 'T00:00:00');
                 const isPast = new Date(eventDate) < new Date(now);
+                const isContaReceber = event.conta_receber || false;
     
                 try {
                     const response = await fetch('/api/usuario/logado');
@@ -166,16 +207,28 @@ document.addEventListener('DOMContentLoaded', function () {
     
                     const linkWhatsApp = `https://wa.me/+55${event.telefone}?text=Olá, ${event.cliente_nome}. Sou ${nomeUsuario} da empresa ${event.nome_empresa} e gostaria de falar com você sobre o agendamento de: ${event.servico_nome} na data: ${eventDate.toLocaleDateString()} às ${event.horario}`;
     
+                    // Define a cor de fundo baseada no status
+                    let backgroundColor = 'transparent';
+                    let textColor = 'black';
+                    
+                    if (isPast) {
+                        backgroundColor = 'blanchedalmond';
+                        textColor = 'red';
+                    } else if (isContaReceber) {
+                        backgroundColor = 'yellow';
+                        textColor = 'black';
+                    }
+    
                     return `
                     <div class="appointment-details">
-                        <li class="appointment-item" style="background-color: ${isPast ? 'blanchedalmond' : 'transparent'}; color: ${isPast ? 'red' : 'black'}; margin-top: 20px;">
+                        <li class="appointment-item" style="background-color: ${backgroundColor}; color: ${textColor}; margin-top: 20px; ${isContaReceber ? 'font-weight: bold; border: 2px solid orange;' : ''}">
                             <div>
-                                <strong>${event.cliente_nome} - ${event.servico_nome}</strong> <br>
+                                <strong>${event.cliente_nome} - ${event.servico_nome}</strong> ${isContaReceber ? '<span style="color: orange;">💰 Conta a Receber</span>' : ''}<br>
                                 <span><strong>Data:</strong> ${eventDate.toLocaleDateString()} às ${event.horario}</span>
                             </div>
                             <div class="button-group-2">
-                                <button class="btn btn-danger btn-cancelar" data-id="${event.id}">Cancelar</button>
-                                <button class="btn btn-success btn-finalizar" data-id="${event.id}">Finalizar</button>
+                                ${!isContaReceber ? `<button class="btn btn-danger btn-cancelar" data-id="${event.id}">Cancelar</button>` : ''}
+                                ${!isContaReceber ? `<button class="btn btn-success btn-finalizar" data-id="${event.id}" data-valor="${event.servico_preco || 0}">Finalizar</button>` : ''}
                                 <a class="btn btn-success btn-sm whatsapp-button d-flex align-items-center" target="_blank" href="${linkWhatsApp}">
                                     <i class="bi bi-whatsapp me-1"></i> Whatsapp
                                 </a>
@@ -202,7 +255,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.btn-finalizar').forEach(button => {
                 button.addEventListener('click', function () {
                     const id = this.getAttribute('data-id');
-                    mostrarModalPagamento(id);
+                    const valorServico = parseFloat(this.getAttribute('data-valor')) || 0;
+                    mostrarModalPagamento(id, valorServico);
                 });
             });
     
@@ -227,24 +281,35 @@ async function mostrarDetalhesAgendamento(event) {
     const modalTitle = document.getElementById('modal-title');
     modalTitle.textContent = ` ${event.title}`;
 
+    let extraMsg = '';
+    let showBtns = true;
+    if (event.extendedProps.conta_receber) {
+        extraMsg = '<div class="alert alert-warning mt-3">Para dar baixa, utilize o módulo de Contas a Receber.</div>';
+        showBtns = false;
+    }
+
+    // Formatar o valor do serviço
+    const valorServico = event.extendedProps.servico_preco || 0;
+    const valorFormatado = valorServico > 0 ? `R$ ${parseFloat(valorServico).toFixed(2).replace('.', ',')}` : 'Valor não informado';
+
     modalBody.innerHTML = `
     <p><strong>Cliente:</strong> ${event.title.split(' - ')[0]}</p>
     <p><strong>Serviço:</strong> ${event.title.split(' - ')[1]}</p>
+    <p><strong>Valor:</strong> <span style="color: #28a745; font-weight: bold;">${valorFormatado}</span></p>
     <p><strong>Data:</strong> ${event.start.toLocaleDateString()}</p>
     <p><strong>Horário:</strong> ${event.start.toLocaleTimeString()}</p>
     <p><strong>Descrição:</strong> ${event.extendedProps.descricao || 'Sem descrição'}</p>
     <p><strong>Telefone:</strong> ${event.extendedProps.telefone}</p>
+    ${event.extendedProps.conta_receber ? '<p><strong style="color: orange;">💰 Conta a Receber</strong></p>' : ''}
     <div class="button-group d-flex justify-content-end align-items-center mt-3">
-        <button class="btn btn-danger btn-cancelar me-2">Cancelar</button>
-        <button class="btn btn-success btn-finalizar me-2">Finalizar</button>
+        ${showBtns ? '<button class="btn btn-danger btn-cancelar me-2">Cancelar</button>' : ''}
+        ${showBtns ? '<button class="btn btn-success btn-finalizar me-2">Finalizar</button>' : ''}
         <a class="btn btn-success btn-sm whatsapp-button d-flex align-items-center" target="_blank" id="btnEnviarMensagem">
             <i class="bi bi-whatsapp me-1"></i> Whatsapp
         </a>
     </div>
-
-    
+    ${extraMsg}
 `;
-
 
     try {
         const response = await fetch('/api/usuario/logado');
@@ -261,8 +326,6 @@ async function mostrarDetalhesAgendamento(event) {
         console.error('Erro ao buscar nome do usuário:', error.message);
     }
 
-
-
     const btnCancelar = document.querySelector('.btn-cancelar');
     if (btnCancelar) {
         btnCancelar.addEventListener('click', function () {
@@ -273,7 +336,7 @@ async function mostrarDetalhesAgendamento(event) {
     const btnFinalizar = document.querySelector('.btn-finalizar');
     if (btnFinalizar) {
         btnFinalizar.addEventListener('click', function () {
-            mostrarModalPagamento(event.id);
+            mostrarModalPagamento(event.id, valorServico);
         });
     }
 
@@ -281,7 +344,7 @@ async function mostrarDetalhesAgendamento(event) {
     modal.show();
 }
 
-function mostrarModalPagamento(agendamentoId) {
+function mostrarModalPagamento(agendamentoId, valorServico = 0) {
     const modalPagamentoBody = document.getElementById('modal-pagamento-body');
     const modalPagamento = new bootstrap.Modal(document.getElementById('pagamentoModal'));
 
@@ -289,7 +352,7 @@ function mostrarModalPagamento(agendamentoId) {
             <form id="form-pagamento">
                 <div class="mb-3">
                     <label for="valor-pagamento" class="form-label">Valor</label>
-                    <input type="number" class="form-control" id="valor-pagamento" required>
+                    <input type="number" class="form-control" id="valor-pagamento" required value="${valorServico}" step="0.01">
                 </div>
                 <div class="mb-3">
                     <label for="meio-pagamento" class="form-label">Meio de Pagamento</label>
@@ -334,15 +397,16 @@ function finalizarAgendamento(agendamentoId, valor, meioPagamento) {
         .then(data => {
             esconderCarregamento();
             if (data.message) {
-                alert('Agendamento finalizado com sucesso!');
+                mostrarMensagem('Agendamento finalizado com sucesso!', 'Sucesso');
                 location.reload();
             } else {
-                alert('Erro ao finalizar agendamento.');
+                mostrarMensagem('Erro ao finalizar agendamento.', 'Erro');
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro:', error);
+            mostrarMensagem('Erro ao finalizar agendamento.', 'Erro');
         });
 }
 
@@ -357,12 +421,13 @@ function cancelarAgendamento(id) {
             if (data.message) {
                 location.reload();
             } else {
-                alert('Erro ao cancelar agendamento.');
+                mostrarMensagem('Erro ao cancelar agendamento.', 'Erro');
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro ao processar a solicitação:', error);
+            mostrarMensagem('Erro ao cancelar agendamento.', 'Erro');
         });
 }
 
@@ -449,19 +514,15 @@ document.getElementById('form-agendamento').addEventListener('submit', function 
             if (data.message) {
                 location.reload();
             } else {
-                alert('Erro ao criar agendamento.');
+                mostrarMensagem('Erro ao criar agendamento.', 'Erro');
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro ao enviar os dados do agendamento:', error);
+            mostrarMensagem('Erro ao criar agendamento.', 'Erro');
         });
 });
-
-
-
-
-
 
 function mostrarCarregamento() {
     document.getElementById('loading-screen').style.display = 'flex';

@@ -107,6 +107,13 @@
 
 {% block page_scripts %}
 <script>
+function mostrarMensagem(titulo, mensagem) {
+    document.getElementById('modalMensagemLabel').textContent = titulo || 'Mensagem';
+    document.getElementById('modalMensagemBody').textContent = mensagem;
+    const modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    modal.show();
+}
+
 function exibirFormulario() {
     const formulario = document.getElementById('formularioCadastro');
     const btnCriarCliente = document.getElementById('btnCriarCliente');
@@ -137,11 +144,11 @@ function excluirCliente() {
             url: `/excluir_cliente/${id}`,
             method: 'POST',
             success: function () {
-                alert('Cliente excluído com sucesso.');
-                location.reload();
+                mostrarMensagem('Sucesso', 'Cliente excluído com sucesso.');
+                setTimeout(() => location.reload(), 1500);
             },
             error: function () {
-                alert('Erro ao excluir cliente.');
+                mostrarMensagem('Erro', 'Erro ao excluir cliente.');
             }
         });
     }
@@ -159,11 +166,11 @@ function salvarCliente() {
         method: 'POST',
         data: { nome, email, telefone },
         success: function () {
-            alert('Cliente atualizado com sucesso!');
-            location.reload();
+            mostrarMensagem('Sucesso', 'Cliente atualizado com sucesso!');
+            setTimeout(() => location.reload(), 1500);
         },
         error: function () {
-            alert('Erro ao atualizar cliente.');
+            mostrarMensagem('Erro', 'Erro ao atualizar cliente.');
         }
     });
 }

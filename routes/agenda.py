@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for
 from supabase import create_client
 import os
@@ -173,41 +172,52 @@ def listar_agendamentos():
 
     empresa_id = obter_id_empresa()
     usuario_id = obter_id_usuario()
+    filtro = request.args.get('filtro', 'meus')
 
     if not empresa_id or not usuario_id:
         return redirect(url_for('login.login'))
-     # Obtém informações da empresa logada
+    # Obtém informações da empresa logada
     response_empresa = supabase.table("empresa").select("nome_empresa").eq("id", empresa_id).execute()
 
     if not response_empresa.data:
         return jsonify({"erro": "Empresa não encontrada"}), 404
 
-    
-
-  # Filtro para buscar apenas agendamentos que não estejam finalizados e que pertencem ao usuário logado
-    response = supabase.table("agenda").select(
-        "id, data, horario, descricao, cliente_id, servico_id, "
-        "clientes!agendamentos_cliente_id_fkey(nome_cliente, telefone), "
-        "servicos!agendamentos_servico_id_fkey(nome_servico)"
-    ).eq("id_empresa", empresa_id).eq("usuario_id", usuario_id).neq("status", "finalizado").execute()
+    # Filtro para buscar agendamentos
+    if filtro == 'todos':
+        response = supabase.table("agenda").select(
+            "id, data, horario, descricao, cliente_id, servico_id, conta_receber, "
+            "clientes!agendamentos_cliente_id_fkey(nome_cliente, telefone), "
+            "servicos!agendamentos_servico_id_fkey(nome_servico, preco)"
+        ).eq("id_empresa", empresa_id).neq("status", "finalizado").execute()
+    else:
+        response = supabase.table("agenda").select(
+            "id, data, horario, descricao, cliente_id, servico_id, conta_receber, "
+            "clientes!agendamentos_cliente_id_fkey(nome_cliente, telefone), "
+            "servicos!agendamentos_servico_id_fkey(nome_servico, preco)"
+        ).eq("id_empresa", empresa_id).eq("usuario_id", usuario_id).neq("status", "finalizado").execute()
 
     # Estruturando os dados para o retorno
-    agendamentos = [
-        {
+    agendamentos = []
+    for item in response.data:
+        valor_servico = item["servicos"]["preco"]
+        # Se for conta a receber, buscar o valor na tabela contas_receber
+        if item.get("conta_receber", False):
+            contas_receber_resp = supabase.table("contas_receber").select("valor").eq("id_agendamento", item["id"]).eq("id_empresa", empresa_id).execute()
+            if contas_receber_resp.data and len(contas_receber_resp.data) > 0:
+                valor_servico = contas_receber_resp.data[0]["valor"]
+        agendamentos.append({
             "id": item["id"],
             "data": item["data"],
             "horario": item["horario"],
-            "descricao": item.get("descricao", "Sem descrição"),  # Inclui a descrição com valor padrão
+            "descricao": item.get("descricao", "Sem descrição"),
             "cliente_nome": item["clientes"]["nome_cliente"],
             'telefone': item["clientes"]["telefone"],
             "servico_nome": item["servicos"]["nome_servico"],
-            "nome_empresa": response_empresa.data[0]["nome_empresa"]
-            
-        }
-        for item in response.data
-    ]
-  
-    return jsonify(agendamentos), 200 
+            "servico_preco": valor_servico,
+            "nome_empresa": response_empresa.data[0]["nome_empresa"],
+            "conta_receber": item.get("conta_receber", False)
+        })
+    return jsonify(agendamentos), 200
 
 # Rota para retornar os clientes
 @agenda_bp.route('/api/clientes', methods=['GET'])
