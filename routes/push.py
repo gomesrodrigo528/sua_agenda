@@ -1,77 +1,72 @@
 from flask import Blueprint, request, jsonify
-import json
-from pywebpush import webpush, WebPushException
-from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime, timedelta
 from utils.vapid_keys import get_vapid_keys
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
-import base64
+from pywebpush import webpush, WebPushException
+import os
+import json
+from supabase import create_client
+
+# Configuração do Supabase
+supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
+supabase_key = os.getenv(
+    'SUPABASE_KEY',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
+)
+supabase = create_client(supabase_url, supabase_key)
 
 push_bp = Blueprint('push_bp', __name__)
-subscriptions = {}  # Em produção, use banco de dados
 
-VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY = get_vapid_keys()
-VAPID_CLAIMS = {"sub": "mailto:seu@email.com"}
-
-scheduler = BackgroundScheduler()
-scheduler.start()
-
-@push_bp.route('/api/push/subscribe', methods=['POST'])
-def push_subscribe():
-    user_id = request.cookies.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'Usuário não autenticado'}), 401
-    subscriptions[user_id] = request.json
-    return jsonify({'success': True})
-
-def enviar_push(user_id, title, body):
-    subscription = subscriptions.get(user_id)
-    if not subscription:
-        return
-    try:
-        webpush(
-            subscription_info=subscription,
-            data=json.dumps({'title': title, 'body': body}),
-            vapid_private_key=VAPID_PRIVATE_KEY,
-            vapid_claims=VAPID_CLAIMS
-        )
-    except WebPushException as ex:
-        print("Erro ao enviar push:", ex)
-
-def agendar_notificacao_push(user_id, agendamento_id, agendamento_data, agendamento_hora, servico_nome):
-    agendamento_datetime = datetime.strptime(f'{agendamento_data} {agendamento_hora}', '%Y-%m-%d %H:%M')
-    notificar_em = agendamento_datetime - timedelta(minutes=15)
-    if notificar_em > datetime.now():
-        scheduler.add_job(
-            enviar_push,
-            'date',
-            run_date=notificar_em,
-            args=[user_id, "Lembrete de Agendamento", f"Seu agendamento '{servico_nome}' começa em 15 minutos!"],
-            id=f"push_{user_id}_{agendamento_id}",
-            replace_existing=True
-        )
-
+# Endpoint para fornecer a chave pública VAPID
 @push_bp.route('/api/push/vapid_public', methods=['GET'])
 def get_vapid_public():
     _, public_key = get_vapid_keys()
-    if public_key.startswith('-----BEGIN PUBLIC KEY-----'):
-        public_key_obj = serialization.load_pem_public_key(
-            public_key.encode(),
-            backend=default_backend()
-        )
-        raw = public_key_obj.public_bytes(
-            encoding=serialization.Encoding.X962,
-            format=serialization.PublicFormat.UncompressedPoint
-        )
-        base64url_key = base64.urlsafe_b64encode(raw).decode('utf-8').rstrip('=')
-        return jsonify({'publicKey': base64url_key})
     return jsonify({'publicKey': public_key})
 
-@push_bp.route('/api/push/teste', methods=['POST', 'GET'])
-def push_teste():
+# Endpoint para registrar a subscription do usuário
+@push_bp.route('/api/push/subscribe', methods=['POST'])
+def subscribe():
+    subscription = request.get_json()
     user_id = request.cookies.get('user_id')
     if not user_id:
         return jsonify({'error': 'Usuário não autenticado'}), 401
-    enviar_push(user_id, 'Notificação de Teste', 'Esta é uma notificação push de teste!')
-    return jsonify({'success': True, 'message': 'Notificação enviada (se houver subscription ativa).'}) 
+    # Salva a subscription no Supabase
+    data = {
+        'user_id': user_id,
+        'subscription': json.dumps(subscription)
+    }
+    # Tenta atualizar se já existe, senão insere
+    existing = supabase.table('push_subscriptions').select('id').eq('user_id', user_id).execute()
+    if existing.data:
+        supabase.table('push_subscriptions').update(data).eq('user_id', user_id).execute()
+    else:
+        supabase.table('push_subscriptions').insert(data).execute()
+    return jsonify({'success': True})
+
+# Função utilitária para enviar notificação push
+
+def agendar_notificacao_push(user_id, agendamento_id, agendamento_data, agendamento_hora, servico_nome):
+    try:
+        # Busca a subscription do usuário
+        resp = supabase.table('push_subscriptions').select('subscription').eq('user_id', user_id).execute()
+        if not resp.data:
+            print(f"[PUSH] Nenhuma subscription encontrada para o usuário {user_id}")
+            return
+        subscription_info = json.loads(resp.data[0]['subscription'])
+        private_key, public_key = get_vapid_keys()
+        payload = {
+            'title': 'Novo Agendamento',
+            'body': f'Você tem um novo agendamento: {servico_nome} em {agendamento_data} às {agendamento_hora}',
+            'agendamento_id': agendamento_id
+        }
+        webpush(
+            subscription_info,
+            json.dumps(payload),
+            vapid_private_key=private_key,
+            vapid_claims={
+                "sub": "mailto:contato@suaagenda.fun"
+            }
+        )
+        print(f"[PUSH] Notificação enviada para o usuário {user_id}")
+    except WebPushException as ex:
+        print(f"[PUSH] Erro ao enviar notificação push: {ex}")
+    except Exception as e:
+        print(f"[PUSH] Erro inesperado: {e}") 
