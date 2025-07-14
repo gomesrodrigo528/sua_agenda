@@ -927,4 +927,100 @@ window.enviarPedidoWhatsApp = async function() {
     window.open(url, '_blank');
 }
 
+// Preencher nome do cliente logado no topo
+function atualizarNomeClienteTopo() {
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    const nome = getCookie('cliente_name');
+    if (nome) {
+        document.getElementById('userName').textContent = nome;
+    }
+}
+document.addEventListener('DOMContentLoaded', atualizarNomeClienteTopo);
+
+// Abrir modal de edição de cliente e preencher dados
+const btnEditarCliente = document.getElementById('btnEditarCliente');
+if (btnEditarCliente) {
+    btnEditarCliente.addEventListener('click', async function() {
+        // Buscar dados do cliente via cookie ou API
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        const clienteId = getCookie('cliente_id');
+        if (!clienteId) {
+            alert('Cliente não logado!');
+            return;
+        }
+        // Buscar dados do cliente via API
+        let cliente = {};
+        try {
+            const res = await fetch(`/api/cliente/${clienteId}`);
+            if (res.ok) {
+                cliente = await res.json();
+            }
+        } catch (e) {}
+        // Preencher campos
+        document.getElementById('cliente_nome').value = cliente.nome_cliente || getCookie('cliente_name') || '';
+        document.getElementById('cliente_email').value = cliente.email || getCookie('cliente_email') || '';
+        document.getElementById('cliente_telefone').value = cliente.telefone || '';
+        document.getElementById('cliente_endereco').value = cliente.endereco || '';
+        document.getElementById('cliente_senha').value = '';
+        // Abrir modal
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarCliente'));
+        modal.show();
+    });
+}
+
+// Salvar alterações do cliente
+const btnSalvarCliente = document.getElementById('btnSalvarCliente');
+if (btnSalvarCliente) {
+    btnSalvarCliente.addEventListener('click', async function() {
+        const clienteId = (function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        })('cliente_id');
+        if (!clienteId) {
+            alert('Cliente não logado!');
+            return;
+        }
+        const email = document.getElementById('cliente_email').value.trim();
+        const telefone = document.getElementById('cliente_telefone').value.trim();
+        const endereco = document.getElementById('cliente_endereco').value.trim();
+        const senha = document.getElementById('cliente_senha').value;
+        if (!email || !telefone || !endereco) {
+            alert('Preencha todos os campos obrigatórios!');
+            return;
+        }
+        const payload = { email, telefone, endereco };
+        if (senha) payload.senha = senha;
+        try {
+            const res = await fetch(`/api/cliente/${clienteId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert('Dados atualizados com sucesso!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCliente'));
+                modal.hide();
+                atualizarNomeClienteTopo();
+            } else {
+                const erro = await res.json();
+                alert(erro.error || 'Erro ao atualizar dados.');
+            }
+        } catch (e) {
+            alert('Erro ao atualizar dados.');
+        }
+    });
+}
+
 
