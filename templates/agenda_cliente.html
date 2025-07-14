@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles/agenda_cliente.css">
+    <link rel="stylesheet" href="/static/styles/agendamentos.css">
     <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
 </head>
 
@@ -69,18 +70,18 @@
                 <div class="user-info">
                     <i class="bi bi-person-circle"></i>
                     <span id="userName">Cliente</span>
+                    <button id="btnEditarCliente" class="btn btn-link p-0 ms-2" title="Editar meus dados"><i class="bi bi-pencil-square"></i></button>
                 </div>
             </div>
         </header>
-
-        <!-- Conteúdo da Página -->
         <main class="page-content">
+            <div id="lista-agendamentos"></div>
             <!-- Seção de Dados -->
             <section class="data-section">
                 <div class="container">
                     <div class="dados">
                         <div id="formAgendamentos">
-                            <h2>Consultar Agendamentos</h2>
+                            
                         </div>
                     </div>
                     <div class="msg" style="display: none;">
@@ -92,6 +93,31 @@
         </main>
     </div>
 
+    <!-- Modal Justificativa Cancelamento -->
+    <div class="modal fade" id="modalJustificativaCancelamento" tabindex="-1" aria-labelledby="modalJustificativaCancelamentoLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalJustificativaCancelamentoLabel">Cancelar Agendamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formJustificativaCancelamento" autocomplete="off">
+                        <div class="mb-3">
+                            <label for="justificativa_cancelamento" class="form-label">Justificativa do cancelamento</label>
+                            <textarea class="form-control" id="justificativa_cancelamento" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmarCancelamento">Confirmar Cancelamento</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/static/scripts/agenda_cliente.js"></script>
 </body>
 

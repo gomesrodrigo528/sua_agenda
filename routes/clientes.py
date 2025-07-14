@@ -231,3 +231,24 @@ def buscar_clientes():
     except Exception as e:
         print(f"Erro ao buscar clientes: {str(e)}")
         return jsonify({'error': 'Erro ao buscar clientes'}), 500
+
+@clientes_bp.route('/api/cliente/<int:cliente_id>', methods=['GET'])
+def get_cliente(cliente_id):
+    response = supabase.table('clientes').select('*').eq('id', cliente_id).single().execute()
+    if not response.data:
+        return jsonify({'error': 'Cliente não encontrado'}), 404
+    return jsonify(response.data)
+
+@clientes_bp.route('/api/cliente/<int:cliente_id>', methods=['PUT'])
+def update_cliente(cliente_id):
+    data = request.get_json()
+    update_data = {}
+    for campo in ['email', 'telefone', 'endereco']:
+        if campo in data:
+            update_data[campo] = data[campo]
+    if 'senha' in data and data['senha']:
+        update_data['senha'] = data['senha']  # Ideal: hash da senha!
+    if not update_data:
+        return jsonify({'error': 'Nenhum dado para atualizar'}), 400
+    supabase.table('clientes').update(update_data).eq('id', cliente_id).execute()
+    return jsonify({'message': 'Dados atualizados com sucesso!'})

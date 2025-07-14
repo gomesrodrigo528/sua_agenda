@@ -123,7 +123,7 @@ def agendar_cliente():
     if agendamentos_existentes.data:
         # Buscar duração do serviço
         duracao_servico = supabase.table("servicos").select("tempo").eq("id", dados["servico_id"]).execute()
-        duracao_minutos = duracao_servico.data[0]["tempo"] if duracao_servico.data and duracao_servico.data[0]["tempo"] else 60
+        duracao_minutos = int(duracao_servico.data[0]["tempo"]) if duracao_servico.data and duracao_servico.data[0]["tempo"] else 60
         
         # Verificar conflitos de horário
         for agendamento in agendamentos_existentes.data:
@@ -132,7 +132,7 @@ def agendar_cliente():
             
             # Buscar duração do serviço existente
             duracao_existente = supabase.table("servicos").select("tempo").eq("id", servico_existente_id).execute()
-            duracao_existente_minutos = duracao_existente.data[0]["tempo"] if duracao_existente.data and duracao_existente.data[0]["tempo"] else 60
+            duracao_existente_minutos = int(duracao_existente.data[0]["tempo"]) if duracao_existente.data and duracao_existente.data[0]["tempo"] else 60
             
             # Calcular sobreposição de horários
             hora_existente, minuto_existente = map(int, horario_existente.split(':')[:2])
@@ -488,5 +488,74 @@ def listar_horarios_disponiveis():
         import traceback
         traceback.print_exc()
         return jsonify({"error": f"Erro interno do servidor: {str(e)}"}), 500
+
+@agendamento_bp.route('/api/agendamento/cancelar/<int:agendamento_id>', methods=['POST'])
+def cancelar_agendamento(agendamento_id):
+    try:
+        data = request.get_json()
+        justificativa = data.get('justificativa', '').strip()
+        if not justificativa:
+            return jsonify({'error': 'Justificativa obrigatória'}), 400
+        # Buscar agendamento
+        agendamento = supabase.table('agenda').select('*').eq('id', agendamento_id).single().execute()
+        if not agendamento.data:
+            return jsonify({'error': 'Agendamento não encontrado'}), 404
+        # Atualizar status e salvar justificativa
+        supabase.table('agenda').update({
+            'status': 'cancelado'
+        }).eq('id', agendamento_id).execute()
+        # Buscar dados para e-mail
+        cliente = supabase.table('clientes').select('email, nome_cliente').eq('id', agendamento.data['cliente_id']).single().execute().data
+        usuario = supabase.table('usuarios').select('email, nome_usuario').eq('id', agendamento.data['usuario_id']).single().execute().data
+        servico = supabase.table('servicos').select('nome_servico').eq('id', agendamento.data['servico_id']).single().execute().data
+        # Enviar e-mail para cliente
+        assunto_cliente = f'Agendamento Cancelado - {servico["nome_servico"]}'
+        mensagem_cliente = f"""
+        Olá {cliente['nome_cliente']},\n\nSeu agendamento para o serviço '{servico['nome_servico']}' foi cancelado.\nJustificativa: {justificativa}\n\nSe tiver dúvidas, entre em contato com o profissional.\n"""
+        # Enviar e-mail para profissional
+        assunto_prof = f'Agendamento Cancelado - {servico["nome_servico"]}'
+        mensagem_prof = f"""
+        Olá {usuario['nome_usuario']},\n\nO cliente {cliente['nome_cliente']} cancelou o agendamento do serviço '{servico['nome_servico']}'.\nJustificativa: {justificativa}\n\nVerifique sua agenda.\n"""
+        # Envio de e-mail (reutiliza função existente)
+        empresa = supabase.table('empresa').select('email, senha_app').eq('id', agendamento.data['id_empresa']).single().execute().data
+        enviar_email(cliente['email'], assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
+        enviar_email(usuario['email'], assunto_prof, mensagem_prof, empresa['email'], empresa['senha_app'])
+        return jsonify({'message': 'Agendamento cancelado e e-mails enviados.'})
+    except Exception as e:
+        print('Erro ao cancelar agendamento:', str(e))
+        return jsonify({'error': 'Erro ao cancelar agendamento.'}), 500
+
+@agendamento_bp.route('/api/meus-agendamentos', methods=['GET'])
+def meus_agendamentos():
+    cliente_id = request.cookies.get('cliente_id')
+    if not cliente_id:
+        return jsonify([]), 401
+
+    # Buscar agendamentos do cliente
+    response = (
+        supabase.table('agenda')
+        .select('*')
+        .eq('cliente_id', cliente_id)
+        .eq('status', 'ativo')
+        .eq('conta_pagar', 'False')
+        .eq('conta_receber', 'False')
+        .order('data', desc=False)
+        .execute()
+    )
+    agendamentos = response.data if response.data else []
+
+    # Buscar nomes dos serviços e profissionais
+    for ag in agendamentos:
+        servico = supabase.table('servicos').select('nome_servico').eq('id', ag['servico_id']).single().execute().data
+        usuario = supabase.table('usuarios').select('nome_usuario, telefone').eq('id', ag['usuario_id']).single().execute().data
+        empresa = supabase.table('empresa').select('nome_empresa').eq('id', ag.get('id_empresa') or 0).single().execute().data if ag.get('id_empresa') else None
+        ag['nome_servico'] = servico['nome_servico'] if servico else ''
+        ag['nome_profissional'] = usuario['nome_usuario'] if usuario else ''
+        ag['telefone_profissional'] = usuario['telefone'] if usuario and 'telefone' in usuario else ''
+        ag['nome_empresa'] = empresa['nome_empresa'] if empresa else ''
+
+    return jsonify(agendamentos)
+
+
 
 

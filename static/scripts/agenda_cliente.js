@@ -73,6 +73,16 @@ function formatarData(dataISO) {
     return `${dia}/${mes}/${ano}`;
 }
 
+function formatarDataBR(dataISO) {
+    if (!dataISO) return '';
+    const [ano, mes, dia] = dataISO.split('-');
+    return `${dia}/${mes}/${ano}`;
+}
+function formatarHora(hora) {
+    if (!hora) return '';
+    return hora.slice(0,5); // Pega HH:mm
+}
+
 // Funcionalidade do Menu Lateral
 document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
@@ -118,7 +128,227 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Carregar agendamentos automaticamente quando a página for carregada
-document.addEventListener('DOMContentLoaded', function() {
-    buscarAgendamentos();
-});
+// Preencher nome do cliente logado no topo
+function atualizarNomeClienteTopo() {
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    const nome = getCookie('cliente_name');
+    if (nome) {
+        document.getElementById('userName').textContent = nome;
+    }
+}
+document.addEventListener('DOMContentLoaded', atualizarNomeClienteTopo);
+
+// Abrir modal de edição de cliente e preencher dados (reutiliza lógica do agendamento_cli.js)
+const btnEditarCliente = document.getElementById('btnEditarCliente');
+if (btnEditarCliente) {
+    btnEditarCliente.addEventListener('click', async function() {
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        const clienteId = getCookie('cliente_id');
+        if (!clienteId) {
+            alert('Cliente não logado!');
+            return;
+        }
+        let cliente = {};
+        try {
+            const res = await fetch(`/api/cliente/${clienteId}`);
+            if (res.ok) {
+                cliente = await res.json();
+            }
+        } catch (e) {}
+        document.getElementById('cliente_nome').value = cliente.nome_cliente || getCookie('cliente_name') || '';
+        document.getElementById('cliente_email').value = cliente.email || getCookie('cliente_email') || '';
+        document.getElementById('cliente_telefone').value = cliente.telefone || '';
+        document.getElementById('cliente_endereco').value = cliente.endereco || '';
+        document.getElementById('cliente_senha').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarCliente'));
+        modal.show();
+    });
+}
+
+// Salvar alterações do cliente (reutiliza lógica do agendamento_cli.js)
+const btnSalvarCliente = document.getElementById('btnSalvarCliente');
+if (btnSalvarCliente) {
+    btnSalvarCliente.addEventListener('click', async function() {
+        const clienteId = (function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        })('cliente_id');
+        if (!clienteId) {
+            alert('Cliente não logado!');
+            return;
+        }
+        const email = document.getElementById('cliente_email').value.trim();
+        const telefone = document.getElementById('cliente_telefone').value.trim();
+        const endereco = document.getElementById('cliente_endereco').value.trim();
+        const senha = document.getElementById('cliente_senha').value;
+        if (!email || !telefone || !endereco) {
+            alert('Preencha todos os campos obrigatórios!');
+            return;
+        }
+        const payload = { email, telefone, endereco };
+        if (senha) payload.senha = senha;
+        try {
+            const res = await fetch(`/api/cliente/${clienteId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert('Dados atualizados com sucesso!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCliente'));
+                modal.hide();
+                atualizarNomeClienteTopo();
+            } else {
+                const erro = await res.json();
+                alert(erro.error || 'Erro ao atualizar dados.');
+            }
+        } catch (e) {
+            alert('Erro ao atualizar dados.');
+        }
+    });
+}
+
+// Função para renderizar agendamentos com botão Cancelar
+function renderizarAgendamentos(agendamentos) {
+    const container = document.getElementById('lista-agendamentos');
+    container.innerHTML = '';
+    agendamentos.forEach(agendamento => {
+        const card = document.createElement('div');
+        card.className = 'agendamento-card';
+        // Mensagem WhatsApp
+        const mensagem = encodeURIComponent(
+            `Olá, gostaria de falar sobre meu agendamento:\n` +
+            `Cliente: ${document.getElementById('userName').textContent}\n` +
+            `Serviço: ${agendamento.nome_servico}\n` +
+            `Data: ${formatarDataBR(agendamento.data)}\n` +
+            `Horário: ${formatarHora(agendamento.horario)}`
+        );
+        // Telefone do profissional
+        const telefoneProf = agendamento.telefone_profissional ? agendamento.telefone_profissional.replace(/\D/g, '') : '';
+        // Botão WhatsApp
+        let whatsappBtn = '';
+        if (telefoneProf.length >= 10) {
+            whatsappBtn = `<button class="btn-whatsapp" title="Conversar no WhatsApp" data-tel="${telefoneProf}" data-msg="${mensagem}"><i class='fab fa-whatsapp'></i></button>`;
+        } else {
+            whatsappBtn = `<button class="btn-whatsapp" title="WhatsApp não disponível" disabled><i class='fab fa-whatsapp'></i></button>`;
+        }
+        card.innerHTML = `
+            <div class="agendamento-label">${agendamento.nome_empresa || ''}</div>
+            <div class="agendamento-info"><span class="agendamento-label">Data:</span> ${formatarDataBR(agendamento.data)}</div>
+            <div class="agendamento-info"><span class="agendamento-label">Horário:</span> ${formatarHora(agendamento.horario)}</div>
+            <div class="agendamento-info"><span class="agendamento-label">Serviço:</span> ${agendamento.nome_servico}</div>
+            <div class="agendamento-info"><span class="agendamento-label">Profissional:</span> ${agendamento.nome_profissional}</div>
+            <div class="botoes-agendamento">
+                <button class="btn-cancelar" data-id="${agendamento.id}">Cancelar</button>
+                ${whatsappBtn}
+            </div>
+        `;
+        container.appendChild(card);
+    });
+    // Adiciona eventos aos botões WhatsApp
+    container.querySelectorAll('.btn-whatsapp').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tel = this.getAttribute('data-tel');
+            const msg = this.getAttribute('data-msg');
+            if (tel && msg) {
+                window.open(`https://wa.me/${tel}?text=${msg}`, '_blank');
+            }
+        });
+    });
+    // Adiciona eventos aos botões Cancelar
+    container.querySelectorAll('.btn-cancelar').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.getAttribute('data-id');
+            abrirModalCancelamento(id);
+        });
+    });
+}
+
+// Variável global para armazenar o ID do agendamento a cancelar
+let agendamentoIdParaCancelar = null;
+
+// Função para abrir modal de justificativa
+window.abrirModalCancelamento = function(id) {
+    agendamentoIdParaCancelar = id;
+    document.getElementById('justificativa_cancelamento').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('modalJustificativaCancelamento'));
+    modal.show();
+}
+
+// Função para mostrar overlay de carregamento
+function mostrarLoadingOverlay() {
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.innerHTML = '<div class="loading-spinner"></div><span>Processando...</span>';
+        document.body.appendChild(overlay);
+    }
+    overlay.style.display = 'flex';
+}
+function esconderLoadingOverlay() {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) overlay.style.display = 'none';
+}
+
+// Função para confirmar cancelamento
+const btnConfirmarCancelamento = document.getElementById('btnConfirmarCancelamento');
+if (btnConfirmarCancelamento) {
+    btnConfirmarCancelamento.addEventListener('click', async function() {
+        const justificativa = document.getElementById('justificativa_cancelamento').value.trim();
+        if (!justificativa) {
+            alert('Por favor, informe a justificativa do cancelamento.');
+            return;
+        }
+        if (!agendamentoIdParaCancelar) {
+            alert('Agendamento não selecionado.');
+            return;
+        }
+        mostrarLoadingOverlay();
+        try {
+            const res = await fetch(`/api/agendamento/cancelar/${agendamentoIdParaCancelar}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ justificativa })
+            });
+            esconderLoadingOverlay();
+            if (res.ok) {
+                alert('Agendamento cancelado com sucesso!');
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalJustificativaCancelamento'));
+                modal.hide();
+                // Atualizar lista de agendamentos
+                carregarAgendamentos();
+            } else {
+                const erro = await res.json();
+                alert(erro.error || 'Erro ao cancelar agendamento.');
+            }
+        } catch (e) {
+            esconderLoadingOverlay();
+            alert('Erro ao cancelar agendamento.');
+        }
+    });
+}
+
+// Função para carregar agendamentos do cliente
+async function carregarAgendamentos() {
+    try {
+        const res = await fetch('/api/meus-agendamentos');
+        if (res.ok) {
+            const agendamentos = await res.json();
+            renderizarAgendamentos(agendamentos);
+        }
+    } catch (e) {}
+}
+document.addEventListener('DOMContentLoaded', carregarAgendamentos);
