@@ -1,270 +1,399 @@
-body {
-    font-family: Arial, sans-serif;
-    background-color: #121212;
-    color: #f5f5f5;
+/* Reset e configurações básicas */
+* {
     margin: 0;
     padding: 0;
+    box-sizing: border-box;
 }
 
-header{
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #f5f5f5;
+    overflow-x: hidden;
+}
+
+/* Menu Lateral */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background-color: #1e1e1e;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid #333;
+}
+
+.sidebar-logo {
+    height: 50px;
+    width: auto;
+}
+
+.sidebar-toggle {
+    background: none;
+    border: none;
+    color: #f5f5f5;
+    font-size: 20px;
+    cursor: pointer;
+    display: none;
+}
+
+.sidebar-nav {
+    padding: 20px 0;
+}
+
+.nav-list {
+    list-style: none;
+}
+
+.nav-item {
+    margin-bottom: 5px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: #f5f5f5;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.nav-link:hover {
+    background-color: #2c2c2c;
+    border-left-color: #007bff;
+    color: #007bff;
+}
+
+.nav-link.active {
+    background-color: #007bff;
+    color: white;
+    border-left-color: #0056b3;
+}
+
+.nav-link i {
+    margin-right: 12px;
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Overlay para mobile */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: none;
+}
+
+/* Conteúdo Principal */
+.main-content {
+    margin-left: 280px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+}
+
+/* Header Principal */
+.main-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    padding: 20px 30px;
     background-color: #1e1e1e;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
-.container {
- 
-    max-width: 800px;
-    margin: 40px auto;
-    padding: 20px;
-    background-color: #1e1e1e;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-
-
-h1 {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-form {
+.header-left {
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-input[type="email"] {
-    padding: 10px;
-    border: 1px solid #333;
-    border-radius: 8px;
-    background-color: #2c2c2c;
-    color: #f5f5f5;
-}
-
-button {
-    padding: 10px 15px;
-    background-color: #007bff;
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s;
-}
-
-button:hover {
-    background-color: #0056b3;
-}
-
-#resultado {
-    margin-bottom: 5%;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    align-items: center;
     gap: 20px;
 }
 
-.card {
-    position: relative;
-    padding-bottom: 50px; /* Ajuste para acomodar o botão */
-    background-color: #292929;
-    border-radius: 12px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
-    padding: 20px;
+.menu-toggle {
+    background: none;
+    border: none;
     color: #f5f5f5;
+    font-size: 24px;
+    cursor: pointer;
+    display: none;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    color: #f5f5f5;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    background-color: #2c2c2c;
+    border-radius: 25px;
+}
+
+.user-info i {
+    font-size: 20px;
+    color: #007bff;
+}
+
+/* Conteúdo da Página */
+.page-content {
+    padding: 30px;
+}
+
+/* Seção de Dados */
+.data-section {
+    margin-bottom: 30px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.dados {
+    margin-bottom: 30px;
+}
+
+#formAgendamentos h2 {
+    font-size: 28px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #f5f5f5;
+}
+
+.msg {
+    margin-bottom: 30px;
+}
+
+.msg h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #f5f5f5;
+    margin-bottom: 20px;
+}
+
+/* Grid de Agendamentos */
+#resultado {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+}
+
+/* Cards de Agendamento */
+.card {
+    background-color: #1e1e1e;
+    border-radius: 16px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: 1px solid #333;
+    position: relative;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
 .card-header {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    gap: 15px;
 }
 
 .card-logo {
-    width: 50px;
-    height:5 50px;
-    border-radius: 50%;
-    margin-right: 15px;
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
     object-fit: cover;
 }
 
 .card-title {
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 20px;
+    font-weight: 600;
+    color: #f5f5f5;
     margin: 0;
 }
 
 .card p {
-    margin: 5px 0;
+    margin: 12px 0;
+    color: #ccc;
+    line-height: 1.5;
 }
 
 .card strong {
     color: #007bff;
+    font-weight: 600;
 }
 
+/* Botão WhatsApp */
 .whatsapp-button {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    background-color: transparent;
+    bottom: 20px;
+    right: 20px;
+    background-color: #25d366;
     border: none;
-    padding: 0;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
     cursor: pointer;
-}
-
-.whatsapp-button img {
-    width: 40px;
-    height: 40px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
 }
 
 .whatsapp-button:hover {
-    background-color: #1da955;
+    background-color: #128c7e;
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
 }
 
-/* Estilo do Footer */
-.footer {
+.whatsapp-button img {
+    width: 28px;
+    height: 28px;
+}
 
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 10px;
-    background-color: #1e1e1e;
+/* Mensagens de Status */
+#resultado p {
+    text-align: center;
+    font-size: 16px;
     color: #f5f5f5;
-    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    z-index: 1000;
+    margin: 20px 0;
+    grid-column: 1 / -1;
 }
 
-.footer-btn {
+/* Loading */
+.loading {
+    text-align: center;
+    padding: 40px;
     color: #f5f5f5;
-    text-decoration: none;
-    font-weight: bold;
-    padding: 10px 20px;
-    background-color: #007bff;
-    border-radius: 8px;
-    transition: background-color 0.3s;
 }
 
-.footer-btn:hover {
-    background-color: #0056b3;
-}
-.header img {
-    height: 80px;
-    width: auto;
-    border-radius: 8px;
-}
-
-.header .header-link {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    text-decoration: none;
-    font-weight: bold;
-    border-radius: 8px;
-    transition: background-color 0.3s, transform 0.3s;
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #007bff;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+    margin-left: 10px;
 }
 
-.header .header-link:hover {
-    background-color: #0056b3;
-    transform: scale(1.05);
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-/* Responsividade para dispositivos menores */
+/* Responsividade */
 @media (max-width: 768px) {
-    .container {
-        margin: 20px;
-        padding: 15px;
+    .sidebar {
+        transform: translateX(-100%);
     }
-
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+        display: block;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .menu-toggle {
+        display: block;
+    }
+    
+    .sidebar-overlay.active {
+        display: block;
+    }
+    
+    .page-content {
+        padding: 20px 15px;
+    }
+    
+    .main-header {
+        padding: 15px 20px;
+    }
+    
+    .page-title {
+        font-size: 20px;
+    }
+    
+    #resultado {
+        grid-template-columns: 1fr;
+    }
+    
     .card {
-        position: relative;
-        padding-bottom: 50px; /* Ajuste para acomodar o botão */
+        padding: 20px;
     }
-
+    
     .card-header {
         flex-direction: column;
-        align-items: flex-start;
-    }
-
-    .card-logo {
-        margin: 0 0 10px 0;
-    }
-
-    .card-title {
-        font-size: 16px;
-    }
-
-    button {
-        font-size: 14px;
-        padding: 8px 12px;
-    }
-
-    .footer {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        padding: 10px;
-        background-color: #1e1e1e;
-        color: #f5f5f5;
-        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.3);
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        z-index: 1000;
-    }
-
-    .footer-btn {
-        width: 90%;
         text-align: center;
-        padding: 12px 0;
+        gap: 10px;
     }
-    .header img {
-    height: 50px;
-    width: auto;
-    border-radius: 8px;
-}
-
-.header .header-link {
-    padding: 10px 20px;
-    background-color: #007bff;
-    color: #fff;
-    text-decoration: none;
-    font-weight: bold;
-    border-radius: 8px;
-    transition: background-color 0.3s, transform 0.3s;
-}
-
-.header .header-link:hover {
-    background-color: #0056b3;
-    transform: scale(1.05);
-}
+    
+    .whatsapp-button {
+        position: static;
+        margin-top: 15px;
+        align-self: center;
+    }
 }
 
 @media (max-width: 480px) {
-    input[type="email"] {
-        font-size: 14px;
-        padding: 8px;
+    .page-content {
+        padding: 15px 10px;
     }
-
-    button {
-        font-size: 12px;
-        padding: 6px 10px;
+    
+    .main-header {
+        padding: 10px 15px;
     }
-
-    .card-title {
-        font-size: 14px;
+    
+    .page-title {
+        font-size: 18px;
     }
-
-    .card p {
-        font-size: 12px;
+    
+    #formAgendamentos h2 {
+        font-size: 24px;
+    }
+    
+    .card {
+        padding: 15px;
     }
 }

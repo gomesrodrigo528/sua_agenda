@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, render_template
+from flask import Blueprint, jsonify, request, render_template, redirect, url_for
 from supabase import create_client
 import os
 from datetime import datetime
@@ -17,6 +17,12 @@ supabase = create_client(supabase_url, supabase_key)
 
 # Criação do Blueprint
 agendamento_bp = Blueprint('agendamento_bp', __name__)
+
+# Função auxiliar para verificar se o cliente está logado
+def verificar_cliente_logado():
+    cliente_id = request.cookies.get('cliente_id')
+    cliente_email = request.cookies.get('cliente_email')
+    return cliente_id and cliente_email
 
 # Função para enviar emails
 def enviar_email(destinatario, assunto, mensagem, email_remetente, senha_remetente):
@@ -47,34 +53,166 @@ def enviar_email(destinatario, assunto, mensagem, email_remetente, senha_remeten
 def agendar_cliente():
     dados = request.get_json()
 
+    # Buscar informações do cliente nos cookies
+    cliente_id = request.cookies.get('cliente_id')
+    cliente_name = request.cookies.get('cliente_name')
+    cliente_email = request.cookies.get('cliente_email')
+    cliente_empresa = request.cookies.get('cliente_empresa')
+
+    # VALIDAÇÃO 0: Verificar se o cliente está logado
+    if not verificar_cliente_logado():
+        return jsonify({"error": "Cliente não está logado. Faça login para continuar."}), 401
+
     # Validação simples: verifica se todos os campos obrigatórios estão presentes
     campos_obrigatorios = ["nome", "email", "usuario_id", "servico_id", "data", "horario"]
     for campo in campos_obrigatorios:
         if not dados.get(campo):
             return jsonify({"error": f"O campo '{campo}' é obrigatório"}), 400
 
-    # Busca o id_empresa relacionado ao usuario_id
-    usuario = supabase.table("usuarios").select("id_empresa").eq("id", dados["usuario_id"]).execute()
+    # VALIDAÇÃO 1: Verificar se o usuário existe e pertence a uma empresa
+    usuario = supabase.table("usuarios").select("id_empresa, nome_usuario").eq("id", dados["usuario_id"]).execute()
     if not usuario.data:
-        return jsonify({"error": "Usuário não encontrado ou sem id_empresa"}), 404
+        return jsonify({"error": "Profissional não encontrado."}), 404
+    
+    if not usuario.data[0]["id_empresa"]:
+        return jsonify({"error": "Profissional não está vinculado a nenhuma empresa."}), 400
+    
     id_empresa = usuario.data[0]["id_empresa"]
+    nome_usuario = usuario.data[0]["nome_usuario"]
+
+    # VALIDAÇÃO 2: Verificar se o serviço existe e pertence à mesma empresa
+    servico = supabase.table("servicos").select("id_empresa, nome_servico, disp_cliente").eq("id", dados["servico_id"]).execute()
+    if not servico.data:
+        return jsonify({"error": "Serviço não encontrado."}), 404
+    
+    if servico.data[0]["id_empresa"] != id_empresa:
+        return jsonify({"error": "Serviço não pertence à empresa selecionada."}), 400
+    
+    if not servico.data[0]["disp_cliente"]:
+        return jsonify({"error": "Este serviço não está disponível para agendamento."}), 400
+    
+    nome_servico = servico.data[0]["nome_servico"]
+
+    # VALIDAÇÃO 3: Verificar se a data não é no passado
+    from datetime import datetime, date
+    data_agendamento = datetime.strptime(dados["data"], "%Y-%m-%d").date()
+    data_atual = date.today()
+    
+    if data_agendamento < data_atual:
+        return jsonify({"error": "Não é possível agendar para datas passadas."}), 400
+
+    # VALIDAÇÃO 4: Verificar se o horário está no formato correto
+    try:
+        horario = dados["horario"]
+        if not (len(horario) == 5 and horario[2] == ':'):
+            return jsonify({"error": "Formato de horário inválido. Use HH:MM."}), 400
+        
+        hora, minuto = map(int, horario.split(':'))
+        if not (0 <= hora <= 23 and 0 <= minuto <= 59):
+            return jsonify({"error": "Horário inválido."}), 400
+    except (ValueError, IndexError):
+        return jsonify({"error": "Formato de horário inválido."}), 400
+
+    # VALIDAÇÃO 5: Verificar se o horário está dentro do horário de funcionamento (8h às 18h)
+    if not (8 <= hora <= 17 or (hora == 18 and minuto == 0)):
+        return jsonify({"error": "Horário fora do horário de funcionamento (8h às 18h)."}), 400
+
+    # VALIDAÇÃO 6: Verificar se o horário está disponível (não conflita com outros agendamentos)
+    agendamentos_existentes = supabase.table("agenda").select("horario, servico_id").eq("usuario_id", dados["usuario_id"]).eq("data", dados["data"]).neq("status", "finalizado").execute()
+    
+    if agendamentos_existentes.data:
+        # Buscar duração do serviço
+        duracao_servico = supabase.table("servicos").select("tempo").eq("id", dados["servico_id"]).execute()
+        duracao_minutos = duracao_servico.data[0]["tempo"] if duracao_servico.data and duracao_servico.data[0]["tempo"] else 60
+        
+        # Verificar conflitos de horário
+        for agendamento in agendamentos_existentes.data:
+            horario_existente = agendamento["horario"]
+            servico_existente_id = agendamento["servico_id"]
+            
+            # Buscar duração do serviço existente
+            duracao_existente = supabase.table("servicos").select("tempo").eq("id", servico_existente_id).execute()
+            duracao_existente_minutos = duracao_existente.data[0]["tempo"] if duracao_existente.data and duracao_existente.data[0]["tempo"] else 60
+            
+            # Calcular sobreposição de horários
+            hora_existente, minuto_existente = map(int, horario_existente.split(':')[:2])
+            hora_nova, minuto_novo = map(int, horario.split(':')[:2])
+            
+            inicio_existente = hora_existente * 60 + minuto_existente
+            fim_existente = inicio_existente + duracao_existente_minutos
+            inicio_novo = hora_nova * 60 + minuto_novo
+            fim_novo = inicio_novo + duracao_minutos
+            
+            # Verificar se há sobreposição
+            if (inicio_novo < fim_existente and fim_novo > inicio_existente):
+                return jsonify({"error": f"Horário {horario} conflita com agendamento existente às {horario_existente}."}), 400
+
+    # VALIDAÇÃO 7: Verificar dados do cliente
+    if cliente_id and cliente_email:
+        # Cliente logado, usar dados dos cookies
+        nome_cliente = cliente_name
+        email_cliente = cliente_email
+        
+        # Verificar se o cliente ainda existe
+        cliente_existente = supabase.table("clientes").select("id").eq("id", cliente_id).execute()
+        if not cliente_existente.data:
+            return jsonify({"error": "Cliente não encontrado. Faça login novamente."}), 404
+    else:
+        # Cliente não logado, usar dados do formulário
+        nome_cliente = dados.get("nome")
+        email_cliente = dados.get("email")
+        
+        # VALIDAÇÃO 8: Validar dados do formulário
+        if not nome_cliente or len(nome_cliente.strip()) < 2:
+            return jsonify({"error": "Nome deve ter pelo menos 2 caracteres."}), 400
+        
+        if not email_cliente or '@' not in email_cliente:
+            return jsonify({"error": "Email inválido."}), 400
+
+    # VALIDAÇÃO 9: Verificar telefone (se fornecido)
+    telefone = dados.get("telefone")
+    if telefone:
+        # Remover caracteres não numéricos
+        telefone_limpo = ''.join(filter(str.isdigit, telefone))
+        if len(telefone_limpo) < 10:
+            return jsonify({"error": "Telefone deve ter pelo menos 10 dígitos."}), 400
+
+    # VALIDAÇÃO 10: Verificar se a empresa está ativa
+    empresa = supabase.table("empresa").select("status").eq("id", id_empresa).execute()
+    if not empresa.data:
+        return jsonify({"error": "Empresa não encontrada."}), 404
+    
+    if not empresa.data[0]["status"]:
+        return jsonify({"error": "Empresa não está ativa no momento."}), 400
 
     # Busca ou criação do cliente baseado no email
-    cliente = supabase.table("clientes").select("id").eq("email", dados["email"]).execute()
-    if cliente.data:
-        cliente_id = cliente.data[0]["id"]  # Cliente já existe, usa o ID
+    if cliente_id:
+        # Cliente já logado, usar o ID do cookie
+        pass
     else:
-        # Cria um novo cliente se não existir e inclui id_empresa
-        cliente_response = supabase.table("clientes").insert({
-            "nome_cliente": dados["nome"],
-            "email": dados["email"],
-            "telefone": dados.get("telefone"),
-            "id_empresa": id_empresa  # Inclui o id_empresa automaticamente
-        }).execute()
-        if cliente_response.data:
-            cliente_id = cliente_response.data[0]["id"]
+        # Buscar cliente pelo email ou criar novo
+        cliente = supabase.table("clientes").select("id").eq("email", email_cliente).execute()
+        if cliente.data:
+            cliente_id = cliente.data[0]["id"]  # Cliente já existe, usa o ID
         else:
-            return jsonify({"error": "Erro ao registrar o cliente"}), 500
+            # Cria um novo cliente se não existir
+            # NOTA: Não incluímos id_empresa aqui, pois o cliente pode agendar em várias empresas
+            cliente_response = supabase.table("clientes").insert({
+                "nome_cliente": nome_cliente,
+                "email": email_cliente,
+                "telefone": dados.get("telefone")
+                # Removido id_empresa para permitir agendamentos em múltiplas empresas
+            }).execute()
+            if cliente_response.data:
+                cliente_id = cliente_response.data[0]["id"]
+            else:
+                return jsonify({"error": "Erro ao registrar o cliente"}), 500
+
+    # VALIDAÇÃO 11: Verificar se não há agendamento duplicado
+    agendamento_duplicado = supabase.table("agenda").select("id").eq("cliente_id", cliente_id).eq("usuario_id", dados["usuario_id"]).eq("servico_id", dados["servico_id"]).eq("data", dados["data"]).eq("horario", dados["horario"]).eq("status", "ativo").execute()
+    
+    if agendamento_duplicado.data:
+        return jsonify({"error": "Agendamento duplicado. Este horário já foi reservado."}), 400
 
     # Inserção do agendamento na tabela "agenda" com todos os campos necessários
     response = supabase.table("agenda").insert({
@@ -89,6 +227,9 @@ def agendar_cliente():
     }).execute()
 
     if response.data:
+        # Log de sucesso do agendamento
+        print(f"Agendamento criado com sucesso: Cliente {nome_cliente} ({email_cliente}) - Serviço: {nome_servico} - Profissional: {nome_usuario} - Data: {dados['data']} - Horário: {dados['horario']}")
+        
         empresa = supabase.table('empresa').select("email, senha_app").eq('id', id_empresa).execute().data[0]
         cliente = supabase.table("clientes").select("email, nome_cliente").eq("id", cliente_id).execute().data[0]
         usuario = supabase.table("usuarios").select("email, nome_usuario").eq("id", dados["usuario_id"]).execute().data[0]
@@ -141,7 +282,8 @@ def agendar_cliente():
 
         return jsonify({"message": "Agendamento realizado com sucesso"}), 201
     else:
-        return jsonify({"error": "Erro ao criar agendamento"}), 400
+        print(f"Erro ao criar agendamento: Resposta vazia do banco de dados")
+        return jsonify({"error": "Erro interno ao criar agendamento. Tente novamente."}), 500
 
 
 
@@ -236,13 +378,40 @@ def listar_servicos(empresa_id):
 
 @agendamento_bp.route('/agendamento', methods=['GET'])
 def pagina_agendamento():
-    # Renderiza a página HTML para o agendamento
+    # Verificar se o cliente está logado
+    if not verificar_cliente_logado():
+        # Cliente não está logado, redirecionar para a página de login
+        return redirect(url_for('login.login'))
+    
+    # Cliente está logado, renderizar a página HTML para o agendamento
     return render_template('agendamento_cli.html')
 
 
 
+@agendamento_bp.route('/api/produtos-empresa/<int:empresa_id>', methods=['GET'])
+def listar_produtos_empresa(empresa_id):
+    try:
+        response = (
+            supabase.table('produtos')
+            .select('id, nome_produto, preco, estoque, un_medida, grupo, status, UUID_IMG')
+            .eq('id_empresa', empresa_id)
+            .eq('status', True)
+            .neq('grupo', 'uso e consumo')
+            .gt('estoque', 0)
+            .execute()
+        )
+        produtos = response.data if response.data else []
+        return jsonify(produtos), 200
+    except Exception as e:
+        print(f"Erro ao listar produtos da empresa: {e}")
+        return jsonify([]), 500
+
 @agendamento_bp.route('/api/agenda/data', methods=['GET'])
 def listar_horarios_disponiveis():
+    # Verificar se o cliente está logado
+    if not verificar_cliente_logado():
+        return jsonify({"error": "Cliente não está logado. Faça login para continuar."}), 401
+    
     try:
         usuario_id = request.args.get('usuario_id')
         data = request.args.get('data')
@@ -294,7 +463,7 @@ def listar_horarios_disponiveis():
 
             # Ajustar para aceitar formatos HH:mm e HH:mm:ss
             try:
-                hora, minuto = map(int, horario_inicio.split(":")[:2])  # Ignora os segundos, se existirem
+                hora, minuto = map(int, horario_inicio.split(':')[:2])  # Ignora os segundos, se existirem
             except ValueError:
                 print(f"Erro ao processar horário: {horario_inicio}")
                 continue

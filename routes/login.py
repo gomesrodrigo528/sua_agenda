@@ -80,3 +80,47 @@ def verificar_cookies():
     else:
         return 'Cookies não encontrados.'
 
+@login_bp.route('/login_cliente', methods=['POST'])
+def login_cliente():
+    email = request.form.get('email', '').strip()
+    senha = request.form.get('senha', '').strip()
+
+    # Validações
+    if not email:
+        return jsonify(success=False, message='O campo "Email" é obrigatório.'), 400
+    
+    if not senha:
+        return jsonify(success=False, message='O campo "Senha" é obrigatório.'), 400
+
+    try:
+        # Buscar cliente pelo email
+        cliente_data = supabase.table('clientes').select('*').eq('email', email).single().execute()
+        
+        if not cliente_data.data:
+            return jsonify(success=False, message='Email não encontrado, verifique o email e tente novamente.'), 404
+        
+        # Verificar senha
+        if cliente_data.data['senha'] != senha:
+            return jsonify(success=False, message='Senha incorreta, tente novamente.'), 401
+        
+        # Login bem-sucedido, criar cookies
+        resp = make_response(jsonify(success=True, redirect_url=url_for('agendamento_bp.pagina_agendamento')))
+        resp.set_cookie('cliente_id', str(cliente_data.data['id']), max_age=timedelta(days=30))
+        resp.set_cookie('cliente_name', str(cliente_data.data['nome_cliente']), max_age=timedelta(days=30))
+        resp.set_cookie('cliente_email', str(cliente_data.data['email']), max_age=timedelta(days=30))
+        resp.set_cookie('cliente_empresa', str(cliente_data.data['id_empresa']), max_age=timedelta(days=30))
+        return resp
+
+    except Exception as e:
+        print(f"Erro no login do cliente: {str(e)}")
+        return jsonify(success=False, message='Erro interno no servidor. Tente novamente mais tarde.'), 500
+
+@login_bp.route('/logout_cliente')
+def logout_cliente():
+    resp = make_response(redirect(url_for('login.login')))
+    resp.delete_cookie('cliente_id')
+    resp.delete_cookie('cliente_name')
+    resp.delete_cookie('cliente_email')
+    resp.delete_cookie('cliente_empresa')
+    return resp
+

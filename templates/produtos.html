@@ -132,6 +132,10 @@
                         <label for="status" class="form-label">Status</label><br>
                         <input type="checkbox" id="status" name="status"> Ativo
                     </div>
+                    <div class="mb-3">
+                        <label for="imagem_produto" class="form-label">Imagem do Produto</label>
+                        <input type="file" class="form-control" id="imagem_produto" name="imagem" accept="image/*">
+                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-primary" onclick="salvarProduto()">Salvar</button>
@@ -270,6 +274,7 @@ function salvarProduto() {
     const status = document.getElementById('status').checked; // booleano
     const precoCusto = converterMoedaParaNumero(document.getElementById('preco_custo').value);
     const codBarra = document.getElementById('cod_barra').value.trim();
+    const imagem = document.getElementById('imagem_produto').files[0];
     
     // Validações
     if (!nomeProduto) {
@@ -315,55 +320,93 @@ function salvarProduto() {
     const url = produtoId ? `/produtos/editar/${produtoId}` : '/produtos/cadastro';
     const method = produtoId ? 'PUT' : 'POST';
 
-    fetch(url, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(dados)
-    })
-    .then(async res => {
-        console.log('Status HTTP da resposta:', res.status);
-        // Tenta converter para JSON, mas se falhar, trata como sucesso se status for 200
-        try {
-            const response = await res.json();
-            console.log('Resposta recebida do backend:', response);
-            return response;
-        } catch (e) {
-            console.log('Resposta recebida do backend (não é JSON):', e);
-            return { success: true };
+    // Se houver imagem, envia como FormData
+    if (imagem) {
+        const formData = new FormData();
+        for (const key in dados) {
+            formData.append(key, dados[key]);
         }
-    })
-    .then(response => {
-        // Considera sucesso se status for 200, mesmo que não tenha os campos esperados
-        if (response && (response.success || response.id || response.nome_produto)) {
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
-            modal.hide();
-            document.getElementById('formProduto').reset();
-            document.getElementById('produto_id').value = '';
-            document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
-            carregarProdutos();
-            mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
-        } else if (response && response.code === '23505') {
-            mostrarMensagem('Atenção', 'Já existe um produto com este código de barras!');
-        } else {
-            // Sucesso genérico se chegou aqui (status 200)
-            const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
-            modal.hide();
-            document.getElementById('formProduto').reset();
-            document.getElementById('produto_id').value = '';
-            document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
-            carregarProdutos();
-            mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
-        }
-    })
-    .catch(err => {
-        if (err.message && err.message.includes('23505')) {
-            mostrarMensagem('Atenção', 'Já existe um produto com este código de barras!');
-        } else {
+        formData.append('imagem', imagem);
+        fetch(url, {
+            method: method,
+            body: formData
+        })
+        .then(async res => {
+            try {
+                const response = await res.json();
+                return response;
+            } catch (e) {
+                return { success: true };
+            }
+        })
+        .then(response => {
+            // Considera sucesso se status for 200, mesmo que não tenha os campos esperados
+            if (response && (response.success || response.id || response.nome_produto)) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
+                modal.hide();
+                document.getElementById('formProduto').reset();
+                document.getElementById('produto_id').value = '';
+                document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+                carregarProdutos();
+                mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
+            } else if (response && response.code === '23505') {
+                mostrarMensagem('Atenção', 'Já existe um produto com este código de barras!');
+            } else {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
+                modal.hide();
+                document.getElementById('formProduto').reset();
+                document.getElementById('produto_id').value = '';
+                document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+                carregarProdutos();
+                mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
+            }
+        })
+        .catch(err => {
             mostrarMensagem('Erro', 'Erro ao salvar produto. Por favor, tente novamente. Erro: ' + err.message);
-        }
-    });
+        });
+    } else {
+        // Se não houver imagem, envia como JSON
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+        })
+        .then(async res => {
+            try {
+                const response = await res.json();
+                return response;
+            } catch (e) {
+                return { success: true };
+            }
+        })
+        .then(response => {
+            // Considera sucesso se status for 200, mesmo que não tenha os campos esperados
+            if (response && (response.success || response.id || response.nome_produto)) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
+                modal.hide();
+                document.getElementById('formProduto').reset();
+                document.getElementById('produto_id').value = '';
+                document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+                carregarProdutos();
+                mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
+            } else if (response && response.code === '23505') {
+                mostrarMensagem('Atenção', 'Já existe um produto com este código de barras!');
+            } else {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalProduto'));
+                modal.hide();
+                document.getElementById('formProduto').reset();
+                document.getElementById('produto_id').value = '';
+                document.getElementById('modalProdutoLabel').textContent = 'Novo Produto';
+                carregarProdutos();
+                mostrarMensagem('Sucesso', 'Produto salvo com sucesso!');
+            }
+        })
+        .catch(err => {
+            mostrarMensagem('Erro', 'Erro ao salvar produto. Por favor, tente novamente. Erro: ' + err.message);
+        });
+    }
 }
 
 // Função para mostrar detalhes do produto

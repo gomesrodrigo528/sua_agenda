@@ -1,20 +1,113 @@
 // Variável global para armazenar o ID da empresa atual
 let empresaIdAtual = null;
 
-document.getElementById('fechar-modal').addEventListener('click', function () {
-    window.location.reload();
+// Variável global para o carrinho
+let carrinho = [];
+
+// Event listeners para fechar o modal
+document.addEventListener('DOMContentLoaded', function() {
+    const fecharModalBtns = document.querySelectorAll('#fechar-modal');
+    fecharModalBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.getElementById('modal-agendamento').style.display = 'none';
+            document.getElementById('empresas-lista').style.display = 'block';
+            document.getElementById('search-container').style.display = 'block';
+            // Limpar formulário
+            document.getElementById('form-agendamento').reset();
+            document.getElementById('horarios-disponiveis').innerHTML = '';
+            document.getElementById('horario-selecionado').innerHTML = '';
+        });
+    });
 });
 
 document.addEventListener('DOMContentLoaded', function () {
     esconderCarregamento(); // Garante que a tela de carregamento estará oculta ao carregar a página
+    preencherDadosCliente(); // Preenche os campos com dados dos cookies se disponível
 });
 
-async function carregarDetalhesEmpresa(empresaId) {
+// Funcionalidade do Menu Lateral
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+    // Função para abrir o menu
+    function openSidebar() {
+        sidebar.classList.add('active');
+        sidebarOverlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    // Função para fechar o menu
+    function closeSidebar() {
+        sidebar.classList.remove('active');
+        sidebarOverlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    // Event listeners
+    menuToggle.addEventListener('click', openSidebar);
+    sidebarToggle.addEventListener('click', closeSidebar);
+    sidebarOverlay.addEventListener('click', closeSidebar);
+
+    // Fechar menu ao clicar em um link
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                closeSidebar();
+            }
+        });
+    });
+
+    // Fechar menu ao redimensionar a tela
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 768) {
+            closeSidebar();
+        }
+    });
+});
+
+// Função para preencher dados do cliente nos campos do formulário
+function preencherDadosCliente() {
+    // Função para obter cookie por nome
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    // Buscar dados dos cookies
+    const clienteName = getCookie('cliente_name');
+    const clienteEmail = getCookie('cliente_email');
+
+    // Preencher campos se os cookies existirem
+    if (clienteName) {
+        const nomeField = document.getElementById('nome-cliente');
+        if (nomeField) {
+            nomeField.value = clienteName;
+            nomeField.readOnly = true; // Torna o campo somente leitura
+        }
+    }
+
+    if (clienteEmail) {
+        const emailField = document.getElementById('email-cliente');
+        if (emailField) {
+            emailField.value = clienteEmail;
+            emailField.readOnly = true; // Torna o campo somente leitura
+        }
+    }
+}
+
+async function carregarDetalhesEmpresa(empresaId, modoSPA = false) {
     try {
         // Faz a requisição para buscar os detalhes da empresa
         const response = await axios.get(`/api/empresa/${empresaId}`);
-
         const empresa = response.data; // Obtém os dados da empresa
+        empresaIdAtual = empresaId;
 
         // Garantir que os valores booleanos sejam tratados corretamente
         const estacionamento = empresa.estacionamento ? 'Disponível' : null;
@@ -23,9 +116,13 @@ async function carregarDetalhesEmpresa(empresaId) {
         const acessibilidade = empresa.acessibilidade ? 'Disponível' : null;
         const endereco = empresa.endereco && empresa.endereco.trim() ? empresa.endereco : 'Endereço não informado';
 
-
         // Atualiza o conteúdo da div com as informações da empresa
         const divInfo = document.getElementById('informacoes-empresa');
+        if (!divInfo) {
+            console.error("Elemento com id 'informacoes-empresa' não encontrado no DOM.");
+            alert("Erro interno: elemento de informações da empresa não encontrado na página.");
+            return;
+        }
         divInfo.innerHTML = `
         <div class="empresa-info">
         <img src="${empresa.logo}" alt="Logo da ${empresa.nome_empresa}" class="logo-descricao">
@@ -55,18 +152,26 @@ async function carregarDetalhesEmpresa(empresaId) {
                             <span>Acessibilidade Disponível</span>
                           </div>` : ''}
                           </div>
-    
-            <!-- Botão do WhatsApp dentro do card -->
-            <a href="https://api.whatsapp.com/send?phone=${empresa.tel_empresa.replace(/\D/g, '')}&text=Ol%C3%A1%2C%20gostaria%20de%20agendar%20um%20hor%C3%A1rio" 
-               target="_blank" 
-               class="whatsapp-card">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp Icon">
-               <span></span>
-            </a>
         </div>
-    `;
+        `;
+        // Se for modo SPA, adiciona os botões extras
+        if (modoSPA) {
+            divInfo.innerHTML += `
+                <div class="botoes-detalhes-empresa" style="margin-top: 2rem; display: flex; gap: 1rem;">
+                    <button class="btn btn-primary" onclick="abrirModalAgendamento(${empresa.id})">Agendar</button>
+                    <button class="btn btn-success" onclick="verProdutosEmpresa(${empresa.id})">Ver Produtos</button>
+                    <button class="btn btn-secondary" onclick="voltarParaListaEmpresas()">Voltar</button>
+                </div>
+            `;
+        }
+        divInfo.style.display = 'block';
     } catch (error) {
-        console.error("Erro ao carregar os detalhes da empresa:", error);
+        console.error('Erro ao carregar detalhes da empresa:', error);
+        let msg = 'Erro ao carregar detalhes da empresa.';
+        if (error.response && error.response.data && error.response.data.error) {
+            msg += '\n' + error.response.data.error;
+        }
+        alert(msg);
     }
 }
 
@@ -127,7 +232,7 @@ async function carregarEmpresas() {
                     <div class="card-text">
                         <h3 class="card-title">${empresa.nome_empresa}</h3>
                         <p class="card-text">${empresa.descricao}</p>
-                        <button class="btn-agendar" onclick="abrirModalAgendamento(${empresa.id})">Agendar</button>
+                        <button class="btn btn-info btn-ver-mais" onclick="verMaisEmpresa(${empresa.id})">Ver Mais</button>
                     </div>
                 </div>
             `;
@@ -304,37 +409,63 @@ function abrirModalAgendamento(empresaId) {
     carregarFuncionarios(empresaId);
     carregarServicos(empresaId);
     carregarDetalhesEmpresa(empresaId); // Chama a nova função
-    document.getElementById('modal-agendamento').style.display = 'block';
+    document.getElementById('modal-agendamento').style.display = 'flex';
     document.getElementById('empresas-lista').style.display = 'none';
     document.getElementById('search-container').style.display = 'none';
 }
 
 
 
-document.getElementById('form-agendamento').onsubmit = async function (e) {
-    e.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('form-agendamento');
+    if (form) {
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
 
-    mostrarCarregamento(); // Exibe a tela de carregamento
+            mostrarCarregamento(); // Exibe a tela de carregamento
 
-    const dados = new FormData(e.target);
-    const dadosObj = Object.fromEntries(dados.entries());
+            const dados = new FormData(e.target);
+            const dadosObj = Object.fromEntries(dados.entries());
 
-    try {
-        const response = await axios.post('/api/agendar-cliente', dadosObj);
-        alert(response.data.message);
-        document.getElementById('modal-agendamento').style.display = 'none';
-        window.location.reload();
-    } catch (err) {
-        console.error('Erro ao agendar:', err);
-        alert(err.response?.data?.error || 'Erro ao realizar o agendamento');
-    } finally {
-        esconderCarregamento(); // Esconde a tela de carregamento após o processo
+            // Validação do telefone
+            const telefone = dadosObj.telefone;
+            if (telefone.length < 10 || telefone.length > 11) {
+                alert('Por favor, insira um número de telefone válido com 10 ou 11 dígitos.');
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/agendar-cliente', dadosObj);
+                alert(response.data.message);
+                document.getElementById('modal-agendamento').style.display = 'none';
+                document.getElementById('empresas-lista').style.display = 'block';
+                document.getElementById('search-container').style.display = 'block';
+                form.reset();
+                document.getElementById('horarios-disponiveis').innerHTML = '';
+                document.getElementById('horario-selecionado').innerHTML = '';
+            } catch (err) {
+                console.error('Erro ao agendar:', err);
+                alert(err.response?.data?.error || 'Erro ao realizar o agendamento');
+            } finally {
+                esconderCarregamento(); // Esconde a tela de carregamento após o processo
+            }
+        });
     }
-};
+});
 
-// Remover os event listeners duplicados e manter apenas estes
-document.getElementById('data-input').addEventListener('change', carregarHorariosDisponiveis);
-document.getElementById('profissional-select').addEventListener('change', carregarHorariosDisponiveis);
+// Event listeners para campos de data e profissional
+document.addEventListener('DOMContentLoaded', function() {
+    const dataInput = document.getElementById('data-input');
+    const profissionalSelect = document.getElementById('profissional-select');
+    
+    if (dataInput) {
+        dataInput.addEventListener('change', carregarHorariosDisponiveis);
+    }
+    
+    if (profissionalSelect) {
+        profissionalSelect.addEventListener('change', carregarHorariosDisponiveis);
+    }
+});
 
 
 function mostrarCarregamento() {
@@ -356,34 +487,31 @@ function esconderCarregamento() {
 }
 
 
-const form = document.getElementById('form-agendamento');
-const telefoneInput = document.getElementById('telefone-input');
-
-// Remove caracteres inválidos do telefone
-telefoneInput.addEventListener('input', (event) => {
-    const apenasNumeros = telefoneInput.value.replace(/\D/g, ''); // Remove qualquer caractere não numérico
-    telefoneInput.value = apenasNumeros; // Atualiza o valor no campo
-});
-
-// Validação ao enviar o formulário
-form.addEventListener('submit', (event) => {
-    const telefone = telefoneInput.value;
-
-    // Verifica se o telefone tem um tamanho válido (ex: 10 ou 11 dígitos para o Brasil)
-    if (telefone.length < 10 || telefone.length > 11) {
-        alert('Por favor, insira um número de telefone válido com 10 ou 11 dígitos.');
-        event.preventDefault(); // Impede o envio do formulário
-        return;
+// Validação do telefone
+document.addEventListener('DOMContentLoaded', function() {
+    const telefoneInput = document.getElementById('telefone-input');
+    
+    if (telefoneInput) {
+        // Remove caracteres inválidos do telefone
+        telefoneInput.addEventListener('input', (event) => {
+            const apenasNumeros = telefoneInput.value.replace(/\D/g, ''); // Remove qualquer caractere não numérico
+            telefoneInput.value = apenasNumeros; // Atualiza o valor no campo
+        });
     }
-
-    // (Opcional) Aqui, o campo de telefone já está limpo e validado antes de ser enviado ao banco
-    console.log('Telefone validado e pronto para envio:', telefone);
 });
 
 
 
-document.getElementById('btn-definir-cidade').addEventListener('click', () => {
-    obterCidade();
+// Event listener para o botão de localização
+document.addEventListener('DOMContentLoaded', function() {
+    const btnDefinirCidade = document.getElementById('btn-definir-cidade');
+    
+    if (btnDefinirCidade) {
+        btnDefinirCidade.addEventListener('click', function(e) {
+            e.preventDefault();
+            obterCidade();
+        });
+    }
 });
 
 
@@ -393,19 +521,25 @@ document.getElementById('btn-definir-cidade').addEventListener('click', () => {
 // Verifica se a geolocalização está disponível no navegador
 async function obterCidade() {
     if (!navigator.geolocation) {
-        console.error("[ERRO] Geolocalização não suportada pelo navegador.");
+        alert('Geolocalização não é suportada pelo seu navegador.');
         return;
     }
 
+    // Mostrar feedback visual
+    const btn = document.getElementById('btn-definir-cidade');
+    if (btn) {
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i><span>Obtendo localização...</span>';
+        btn.disabled = true;
+    }
+    
     navigator.geolocation.getCurrentPosition(async (position) => {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
 
         try {
             const url = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
-            console.log(`[INFO] Enviando requisição para: ${url}`);
-
             const response = await fetch(url);
+            
             if (!response.ok) throw new Error(`Erro na requisição: ${response.status}`);
 
             const data = await response.json();
@@ -415,7 +549,7 @@ async function obterCidade() {
                 data.address.municipality || data.address.county;
 
             if (cidade) {
-                console.log(`[INFO] Cidade detectada: ${cidade}`);
+                alert(`Cidade detectada: ${cidade}`);
 
                 const cidadeParam = encodeURIComponent(cidade);
                 const urlParams = new URLSearchParams(window.location.search);
@@ -424,19 +558,48 @@ async function obterCidade() {
                 if (urlParams.get('cidade') !== cidadeParam) {
                     urlParams.set('cidade', cidadeParam);
                     window.history.replaceState({}, '', `${window.location.pathname}?${urlParams}`);
-                    window.location.reload();  // 🔄 Recarrega só se a cidade mudou
+                    carregarEmpresas(); // Recarrega as empresas com a nova cidade
                 }
 
                 buscarEmpresas(cidade);
             }
             else {
-                console.error("[ERRO] Nenhum nome de cidade foi encontrado na resposta.", data.address);
+                alert('Não foi possível detectar sua cidade. Tente novamente.');
             }
         } catch (error) {
             console.error("[ERRO] Exceção ao buscar a cidade:", error);
+            alert('Erro ao buscar informações da cidade. Tente novamente.');
+        } finally {
+            // Restaurar o botão
+            if (btn) {
+                btn.innerHTML = '<i class="bi bi-geo-alt-fill"></i><span>Localização</span>';
+                btn.disabled = false;
+            }
         }
     }, (error) => {
-        console.error("[ERRO] Falha ao obter a localização do usuário:", error.message);
+        let mensagemErro = 'Erro ao obter localização.';
+        
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                mensagemErro = 'Permissão de localização negada. Por favor, permita o acesso à localização.';
+                break;
+            case error.POSITION_UNAVAILABLE:
+                mensagemErro = 'Informação de localização indisponível.';
+                break;
+            case error.TIMEOUT:
+                mensagemErro = 'Tempo limite excedido para obter localização.';
+                break;
+            default:
+                mensagemErro = 'Erro desconhecido ao obter localização.';
+        }
+        
+        alert(mensagemErro);
+        
+        // Restaurar o botão
+        if (btn) {
+            btn.innerHTML = '<i class="bi bi-geo-alt-fill"></i><span>Localização</span>';
+            btn.disabled = false;
+        }
     });
 }
 
@@ -487,6 +650,281 @@ function filtrarEmpresas() {
             empresa.style.display = "none";
         }
     });
+}
+
+// Função SPA para exibir detalhes da empresa na tela principal
+window.verMaisEmpresa = function(empresaId) {
+    // Esconde a lista e busca, se existirem
+    const lista = document.getElementById('empresas-lista');
+    if (lista) lista.style.display = 'none';
+    const search = document.getElementById('search-container');
+    if (search) search.style.display = 'none';
+    const searchSection = document.getElementById('search-section');
+    if (searchSection) searchSection.style.display = 'none';
+    // NOVO: Esconde também a section pela classe
+    const searchSectionClass = document.querySelector('.search-section');
+    if (searchSectionClass) searchSectionClass.style.display = 'none';
+    // Mostra o detalhe usando o layout bonito já existente
+    carregarDetalhesEmpresa(empresaId, true); // true = modo SPA
+}
+
+// Função para voltar para a lista de empresas
+window.voltarParaListaEmpresas = function() {
+    document.getElementById('informacoes-empresa').style.display = 'none';
+    document.getElementById('informacoes-empresa').innerHTML = '';
+    const lista = document.getElementById('empresas-lista');
+    if (lista) lista.style.display = 'block';
+    const search = document.getElementById('search-container');
+    if (search) search.style.display = 'block';
+    const searchSection = document.getElementById('search-section');
+    if (searchSection) searchSection.style.display = 'block';
+    // NOVO: Mostra também a section pela classe
+    const searchSectionClass = document.querySelector('.search-section');
+    if (searchSectionClass) searchSectionClass.style.display = 'block';
+}
+
+// Função placeholder para ver produtos (será implementada na próxima etapa)
+window.verProdutosEmpresa = async function(empresaId) {
+    try {
+        // Buscar produtos da empresa
+        const response = await axios.get(`/api/produtos-empresa/${empresaId}`);
+        const produtos = response.data;
+        const infoDiv = document.getElementById('informacoes-empresa');
+        if (!infoDiv) return alert('Erro interno: elemento de informações da empresa não encontrado.');
+
+        // Renderizar lista de produtos em cards
+        let html = `<div class='produtos-spa'>
+            <button class='btn btn-secondary' onclick='voltarParaDetalhesEmpresa(${empresaId})'>Voltar</button>
+            <h2>Produtos</h2>
+            <div class='produtos-lista-cards'>`;
+        if (!produtos || produtos.length === 0) {
+            html += '<p>Nenhum produto disponível.</p>';
+        } else {
+            produtos.forEach(produto => {
+                // URL da imagem do Supabase Storage
+                const imagemUrl = produto.UUID_IMG 
+                    ? `https://gccxbkoejigwkqwyvcav.supabase.co/storage/v1/object/public/produtosimg/${produto.UUID_IMG}`
+                    : null;
+                
+                html += `
+                <div class='produto-card'>
+                    <div class='produto-imagem-container'>
+                        ${imagemUrl 
+                            ? `<img src="${imagemUrl}" alt="${produto.nome_produto}" class="produto-imagem" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                               <div class='produto-imagem-placeholder' style="display: none;">
+                                   <span>Imagem</span>
+                               </div>`
+                            : `<div class='produto-imagem-placeholder'>
+                                   <span>Imagem</span>
+                               </div>`
+                        }
+                    </div>
+                    <div class='produto-info'>
+                        <div class='produto-nome'><strong>${produto.nome_produto}</strong></div>
+                        <div>Preço: R$ ${produto.preco.toFixed(2)}</div>
+                        <div>Estoque: ${produto.estoque} ${produto.un_medida || ''}</div>
+                        <div class='produto-botoes'>
+                            <button class='btn btn-sm btn-success' onclick='adicionarAoCarrinho(${JSON.stringify(produto)})'>+</button>
+                            <button class='btn btn-sm btn-danger' onclick='removerDoCarrinho(${produto.id})'>-</button>
+                            <span id='qtd-carrinho-${produto.id}'>${getQtdCarrinho(produto.id)}</span>
+                        </div>
+                    </div>
+                </div>`;
+            });
+        }
+        html += '</div>';
+        // Botão de carrinho flutuante
+        html += `<button id='abrir-carrinho-btn' class='btn-carrinho-flutuante' onclick='abrirModalCarrinho()'>🛒 <span id='carrinho-count'>${carrinho.length}</span></button>`;
+        // Modal do carrinho (inicialmente oculto)
+        html += `<div id='modal-carrinho' class='modal-carrinho-overlay' style='display:none;'><div class='modal-carrinho-content' id='modal-carrinho-content'></div></div>`;
+        html += '</div>';
+        infoDiv.innerHTML = html;
+        infoDiv.style.display = 'block';
+        atualizarCarrinhoCount();
+    } catch (error) {
+        alert('Erro ao buscar produtos da empresa.');
+    }
+}
+
+function atualizarCarrinhoCount() {
+    const count = document.getElementById('carrinho-count');
+    if (count) count.innerText = carrinho.length;
+}
+
+window.abrirModalCarrinho = function() {
+    const modal = document.getElementById('modal-carrinho');
+    if (!modal) return;
+    renderizarModalCarrinho();
+    modal.style.display = 'flex';
+}
+
+window.fecharModalCarrinho = function() {
+    const modal = document.getElementById('modal-carrinho');
+    if (modal) modal.style.display = 'none';
+}
+
+function renderizarModalCarrinho() {
+    const modalContent = document.getElementById('modal-carrinho-content');
+    if (!modalContent) return;
+    if (carrinho.length === 0) {
+        modalContent.innerHTML = `<h4>Carrinho</h4><p>Carrinho vazio.</p><button class='btn btn-secondary' onclick='fecharModalCarrinho()'>Fechar</button>`;
+        return;
+    }
+    let total = 0;
+    let html = `<h4>Carrinho</h4><ul class='carrinho-lista'>`;
+    carrinho.forEach(item => {
+        html += `<li>${item.nome_produto} x${item.quantidade} - R$ ${(item.preco * item.quantidade).toFixed(2)}</li>`;
+        total += item.preco * item.quantidade;
+    });
+    html += `</ul><strong>Total: R$ ${total.toFixed(2)}</strong><br>`;
+    html += `<button class='btn btn-success' onclick='finalizarCompraModal()'>Finalizar Compra</button> `;
+    html += `<button class='btn btn-secondary' onclick='fecharModalCarrinho()'>Fechar</button>`;
+    modalContent.innerHTML = html;
+}
+
+window.finalizarCompraModal = function() {
+    fecharModalCarrinho();
+    finalizarCompra();
+}
+
+window.voltarParaDetalhesEmpresa = function(empresaId) {
+    carregarDetalhesEmpresa(empresaId, true);
+}
+
+window.adicionarAoCarrinho = function(produto) {
+    // produto é um objeto
+    let idx = carrinho.findIndex(p => p.id === produto.id);
+    if (idx === -1) {
+        carrinho.push({ ...produto, quantidade: 1 });
+    } else {
+        if (carrinho[idx].quantidade < produto.estoque) {
+            carrinho[idx].quantidade++;
+        }
+    }
+    atualizarCarrinho();
+    document.getElementById('qtd-carrinho-' + produto.id).innerText = getQtdCarrinho(produto.id);
+    atualizarCarrinhoCount(); // Atualiza o contador do botão flutuante
+}
+
+window.removerDoCarrinho = function(produtoId) {
+    let idx = carrinho.findIndex(p => p.id === produtoId);
+    if (idx !== -1) {
+        if (carrinho[idx].quantidade > 1) {
+            carrinho[idx].quantidade--;
+        } else {
+            carrinho.splice(idx, 1);
+        }
+    }
+    atualizarCarrinho();
+    let span = document.getElementById('qtd-carrinho-' + produtoId);
+    if (span) span.innerText = getQtdCarrinho(produtoId);
+    atualizarCarrinhoCount(); // Atualiza o contador do botão flutuante
+}
+
+function getQtdCarrinho(produtoId) {
+    let item = carrinho.find(p => p.id === produtoId);
+    return item ? item.quantidade : 0;
+}
+
+function atualizarCarrinho() {
+    const container = document.getElementById('carrinho-container');
+    if (!container) return;
+    if (carrinho.length === 0) {
+        container.innerHTML = '<p>Carrinho vazio.</p>';
+        return;
+    }
+    let total = 0;
+    let html = '<h4>Carrinho</h4><ul>';
+    carrinho.forEach(item => {
+        html += `<li>${item.nome_produto} x${item.quantidade} - R$ ${(item.preco * item.quantidade).toFixed(2)}</li>`;
+        total += item.preco * item.quantidade;
+    });
+    html += `</ul><strong>Total: R$ ${total.toFixed(2)}</strong>`;
+    container.innerHTML = html;
+}
+
+window.finalizarCompra = async function() {
+    if (carrinho.length === 0) {
+        alert('Seu carrinho está vazio!');
+        return;
+    }
+    // Buscar nome do cliente dos cookies
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+    const nomeCliente = getCookie('cliente_name') || 'Cliente';
+
+    // Exibir formulário para endereço e meio de pagamento
+    const infoDiv = document.getElementById('informacoes-empresa');
+    let total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
+    let html = `<div class='finalizar-compra-form'>
+        <h3>Finalizar Compra</h3>
+        <p><strong>Nome:</strong> ${nomeCliente}</p>
+        <p><strong>Total:</strong> R$ ${total.toFixed(2)}</p>
+        <label>Endereço para entrega:</label>
+        <input type='text' id='endereco-cliente' class='form-control' placeholder='Digite seu endereço completo' required />
+        <label>Meio de pagamento:</label>
+        <select id='meio-pagamento' class='form-control'>
+            <option value='Dinheiro'>Dinheiro</option>
+            <option value='Pix'>Pix</option>
+            <option value='Cartão'>Cartão</option>
+            <option value='Outro'>Outro</option>
+        </select>
+        <button class='btn btn-success' onclick='enviarPedidoWhatsApp()'>Enviar Pedido pelo WhatsApp</button>
+        <button class='btn btn-secondary' onclick='verProdutosEmpresa(empresaIdAtual)'>Voltar</button>
+    </div>`;
+    infoDiv.innerHTML = html;
+
+    // Adiciona validação para o campo endereço
+    const btnEnviar = document.querySelector('.finalizar-compra-form .btn-success');
+    btnEnviar.onclick = function() {
+        const endereco = document.getElementById('endereco-cliente').value.trim();
+        if (!endereco) {
+            alert('Por favor, preencha o endereço para entrega.');
+            document.getElementById('endereco-cliente').focus();
+            return;
+        }
+        enviarPedidoWhatsApp();
+    };
+}
+
+window.enviarPedidoWhatsApp = async function() {
+    // Buscar telefone da empresa
+    let empresaId = empresaIdAtual;
+    let telefoneEmpresa = '';
+    let nomeEmpresa = '';
+    try {
+        const response = await axios.get(`/api/empresa/${empresaId}`);
+        telefoneEmpresa = response.data.tel_empresa || '';
+        nomeEmpresa = response.data.nome_empresa || '';
+    } catch (e) {
+        alert('Erro ao buscar telefone da empresa.');
+        return;
+    }
+    // Buscar nome do cliente dos cookies
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+    }
+    const nomeCliente = getCookie('cliente_name') || 'Cliente';
+    const endereco = document.getElementById('endereco-cliente').value;
+    const meioPagamento = document.getElementById('meio-pagamento').value;
+    let total = carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0);
+    let listaProdutos = carrinho.map(item => `- ${item.nome_produto} x${item.quantidade} (R$ ${(item.preco * item.quantidade).toFixed(2)})`).join('%0A');
+    let mensagem = `Olá, gostaria de fazer um pedido na empresa *${nomeEmpresa}*:%0A%0A` +
+        `Cliente: *${nomeCliente}*%0A` +
+        `Produtos:%0A${listaProdutos}%0A` +
+        `Total: *R$ ${total.toFixed(2)}*%0A` +
+        `Endereço: ${endereco}%0A` +
+        `Meio de pagamento: ${meioPagamento}`;
+    let telefoneLimpo = telefoneEmpresa.replace(/\D/g, '');
+    let url = `https://wa.me/55${telefoneLimpo}?text=${mensagem}`;
+    window.open(url, '_blank');
 }
 
 

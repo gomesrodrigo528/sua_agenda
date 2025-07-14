@@ -27,8 +27,6 @@
     style="z-index: 100;">
     <img src="/static/img/agendamento.png" alt="sua agenda" class="logo-header">
 
-      <a href="https://gccxbkoejigwkqwyvcav.supabase.co/storage/v1/object/public/app%20release//Sua%20agenda.apk" id="download-link" class="header-link" style="background-color: green; border: 1px solid white; "><strong>Download</strong> </a>
- 
   </header>
 
   <!-- Modal de Login -->
@@ -88,6 +86,43 @@
     </div>
   </div>
 
+  <!-- Modal de Login de Clientes -->
+  <div class="modal fade" id="loginClienteModal" tabindex="-1" aria-labelledby="loginClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #1e1e1e; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title" id="loginClienteModalLabel">Login Cliente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"
+            style="background-color: red;"></button>
+        </div>
+        <div class="modal-body">
+          <div id="error-messages-cliente"></div>
+      
+          <form method="POST" action="/login_cliente">
+            <div class="text-center mb-4">
+              <img src="/static/img/logo login.png" alt="Logo" style="border: none; height: 80px; width: auto;">
+            </div>
+          
+            <div class="mb-3">
+              <label for="email-cliente" class="form-label">Email</label>
+              <input type="email" id="email-cliente" name="email" class="form-control" required placeholder="Digite o email">
+            </div>
+            <div class="mb-3">
+              <label for="senha-cliente" class="form-label">Senha</label>
+              <input type="password" id="senha-cliente" name="senha" class="form-control" required placeholder="Digite a senha">
+            </div>
+            <div class="mb-4">
+              <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#ModalEmail"
+                style="color: white;">Esqueci minha senha</button>
+              <button type="submit" class="btn btn-primary w-100">Entrar</button>
+            </div>
+          </form>
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card-container" style="max-width: 400px; width: 100%; margin: auto;">
     <div class="text-center mb-4">
       <img src="/static/img/logo login.png" alt="Logo" style="border: none; height: 100px; width: auto;">
@@ -96,7 +131,7 @@
 
     <!-- Botões -->
     <div id="buttons" class="text-center">
-      <a href="/agendamento" class="btn btn-primary">Sou cliente</a>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#loginClienteModal">Sou cliente</button>
       <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#loginModal">Quero acessar minha
         agenda</button>
     </div>
@@ -104,6 +139,7 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // Formulário de login de usuários
     const form = document.querySelector("form");
     form.addEventListener("submit", async function (event) {
         event.preventDefault(); // Previne o recarregamento da página
@@ -129,7 +165,43 @@ document.addEventListener("DOMContentLoaded", function () {
             if (data.success) {
                 window.location.href = data.redirect_url;
             } else {
-                errorMessages.innerHTML = data.message || "Erro desconhecido."; // ⬅️ Alterado para innerHTML
+                errorMessages.innerHTML = data.message || "Erro desconhecido.";
+                errorMessages.style.display = "block";
+            }
+        } catch (error) {
+            console.error("Erro ao enviar o formulário:", error);
+            errorMessages.textContent = "Erro de conexão com o servidor.";
+            errorMessages.style.display = "block";
+        }
+    });
+
+    // Formulário de login de clientes
+    const formCliente = document.querySelector("#loginClienteModal form");
+    formCliente.addEventListener("submit", async function (event) {
+        event.preventDefault(); // Previne o recarregamento da página
+
+        const formData = new FormData(formCliente);
+        const errorMessages = document.getElementById("error-messages-cliente");
+        errorMessages.style.display = "none"; // Oculta os erros anteriores
+
+        try {
+            const response = await fetch(formCliente.action, {
+                method: "POST",
+                body: formData,
+            });
+
+            const contentType = response.headers.get("content-type");
+
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("Resposta do servidor não é JSON.");
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                window.location.href = data.redirect_url;
+            } else {
+                errorMessages.innerHTML = data.message || "Erro desconhecido.";
                 errorMessages.style.display = "block";
             }
         } catch (error) {

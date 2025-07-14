@@ -6,6 +6,8 @@ from supabase import create_client, Client
 
 import os
 import datetime
+import uuid
+import mimetypes
 produtos_bp = Blueprint('produtos_bp', __name__)
 
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
@@ -32,27 +34,57 @@ def iserir_produtos():
     try:
         if verificar_login():
             return verificar_login()
-        
-        data = request.get_json()
-        print("JSON recebido:", data)
+
+        # Suporte a multipart/form-data para upload de imagem
+        if request.content_type and request.content_type.startswith('multipart/form-data'):
+            data = request.form
+            imagem = request.files.get('imagem')
+        else:
+            data = request.get_json()
+            imagem = None
 
         id_empresa = request.cookies.get('empresa_id')
         id_usuario = request.cookies.get('user_id')
 
+        # Validações de campos obrigatórios
+        obrigatorios = ['nome_produto', 'preco', 'estoque', 'un_medida', 'status']
+        for campo in obrigatorios:
+            if not data.get(campo):
+                return jsonify({"error": f"O campo '{campo}' é obrigatório."}), 400
+        try:
+            preco = float(data.get('preco'))
+            estoque = int(data.get('estoque'))
+        except Exception:
+            return jsonify({"error": "Preço e estoque devem ser numéricos."}), 400
+
         if not id_empresa or not id_usuario:
             return jsonify({"error": "Usuário não autenticado"}), 401
 
+        uuid_img = None
+        if imagem:
+            ext = mimetypes.guess_extension(imagem.mimetype) or '.jpg'
+            uuid_img = str(uuid.uuid4())
+            nome_arquivo = f"{uuid_img}{ext}"
+            # CORRIGIDO: passar content-type como dict
+            res = supabase.storage.from_('produtosimg').upload(nome_arquivo, imagem.read(), {"content-type": imagem.mimetype})
+            if not res or (isinstance(res, dict) and 'error' in res and res['error']):
+                return jsonify({"error": "Erro ao salvar imagem no storage"}), 500
+
         response = supabase.table("produtos").insert({
-        "nome_produto": data.get('nome_produto'),
-        "preco": data.get('preco'),
-        "estoque": data.get('estoque'),
-        "id_empresa": id_empresa,
-        "un_medida": data.get('un_medida'),
-        "status": data.get('status'),
-        "preco_custo": data.get('preco_custo', 0.0),  # Preço de custo opcional
-        "cod_barras": data.get('cod_barra', None),  # Código de barra opcional
-        "grupo":data.get('grupo', None),  # Grupo opcional
+            "nome_produto": data.get('nome_produto'),
+            "preco": preco,
+            "estoque": estoque,
+            "id_empresa": id_empresa,
+            "un_medida": data.get('un_medida'),
+            "status": data.get('status'),
+            "preco_custo": data.get('preco_custo', 0.0),
+            "cod_barras": data.get('cod_barra', None),
+            "grupo": data.get('grupo', None),
+            "UUID_IMG": nome_arquivo if imagem else None
         }).execute()
+
+        if hasattr(response, 'error') and response.error:
+            return jsonify({"error": str(response.error)}), 400
 
         return jsonify({"message": "Produto cadastrado com sucesso!"}), 201
 
@@ -102,22 +134,24 @@ def editar(id):
         if verificar_login():
             return verificar_login()
         
-        data = request.get_json()
-        
+        # Suporte a multipart/form-data para upload de imagem
+        if request.content_type and request.content_type.startswith('multipart/form-data'):
+            data = request.form
+            imagem = request.files.get('imagem')
+        else:
+            data = request.get_json()
+            imagem = None
+
         # Validação dos dados
         if not data.get('nome_produto'):
             return jsonify({"error": "Nome do produto é obrigatório"}), 400
-        
-        if not isinstance(data.get('preco'), (int, float)) or data['preco'] < 0:
+        if not isinstance(float(data.get('preco', 0)), (int, float)) or float(data.get('preco', 0)) < 0:
             return jsonify({"error": "Preço inválido"}), 400
-        
         if not data.get('cod_barra'):
             return jsonify({"error": "Código de barra é obrigatório"}), 400
-        
         if not data.get('preco_custo'):
             return jsonify({"error": "Preço de custo é obrigatório"}), 400
-        
-        if not isinstance(data.get('estoque'), (int, float)) or data['estoque'] < 0:
+        if not isinstance(int(data.get('estoque', 0)), (int, float)) or int(data.get('estoque', 0)) < 0:
             return jsonify({"error": "Estoque inválido"}), 400
 
         # Busca o produto atual
@@ -125,8 +159,7 @@ def editar(id):
         if not produto.data:
             return jsonify({"error": "Produto não encontrado"}), 404
 
-        # Atualiza o produto
-        supabase.table("produtos").update({
+        update_data = {
             "nome_produto": data['nome_produto'],
             "preco": float(data['preco']),
             "cod_barras": data['cod_barra'],
@@ -135,7 +168,20 @@ def editar(id):
             "un_medida": data['un_medida'],
             "status": data['status'],
             "estoque": int(data['estoque'])
-        }).eq("id", id).execute()
+        }
+
+        # Se veio imagem, faz upload e atualiza UUID_IMG
+        if imagem:
+            ext = mimetypes.guess_extension(imagem.mimetype) or '.jpg'
+            uuid_img = str(uuid.uuid4())
+            nome_arquivo = f"{uuid_img}{ext}"
+            res = supabase.storage.from_('produtosimg').upload(nome_arquivo, imagem.read(), {"content-type": imagem.mimetype})
+            if not res or (isinstance(res, dict) and 'error' in res and res['error']):
+                return jsonify({"error": "Erro ao salvar imagem no storage"}), 500
+            update_data["UUID_IMG"] = nome_arquivo
+
+        # Atualiza o produto
+        supabase.table("produtos").update(update_data).eq("id", id).execute()
 
         return jsonify({"message": "Produto alterado com sucesso!"}), 200
 
@@ -350,3 +396,21 @@ def filtrar_produtos():
     except Exception as e:
         print("Erro ao filtrar produtos:", str(e))
         return jsonify({"error": str(e)}), 500
+
+@produtos_bp.route('/api/produtos/<int:empresa_id>', methods=['GET'])
+def listar_produtos_publico(empresa_id):
+    try:
+        response = (
+            supabase.table('produtos')
+            .select('id, nome_produto, preco, estoque, un_medida, grupo, status, UUID_IMG')
+            .eq('id_empresa', empresa_id)
+            .eq('status', True)
+            .neq('grupo', 'uso e consumo')
+            .gt('estoque', 0)
+            .execute()
+        )
+        produtos = response.data if response.data else []
+        return jsonify(produtos), 200
+    except Exception as e:
+        print(f"Erro ao listar produtos publicamente: {e}")
+        return jsonify([]), 500

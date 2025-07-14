@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
@@ -8,89 +8,190 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="/static/styles/agendamentos.css">
     <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
-
 </head>
-<header class="header">
-    <img src="/static/img/agendamento.png" alt="sua agenda" class="logo-header">
-    <a href="/adquirir" class="header-link"
-        style="background-color: #FDC81D;">Quero a minha agenda</a>
-</header>
 
 <body>
+    <!-- Menu Lateral -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="/static/img/agendamento.png" alt="sua agenda" class="sidebar-logo">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="/agendamento" class="nav-link active">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Novo Agendamento</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/agenda_cliente" class="nav-link">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>Meus Agendamentos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/adquirir" class="nav-link">
+                        <i class="bi bi-bag-plus"></i>
+                        <span>Quero minha agenda</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/logout_cliente" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 
+    <!-- Overlay para mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <body>
-
-
-
-        <div class="corpo">
-            <h3>Buscar Empresa</h3>
-            <div id="search-container" class="search-container">
-                <input id="search-bar" type="text" class="form-control" placeholder="Buscar empresa por nome">
-                <button id="btn-definir-cidade" class="btn-quadrado">
-                    <i class="bi bi-geo-alt-fill"></i>
+    <!-- Conteúdo Principal -->
+    <div class="main-content" id="mainContent">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="bi bi-list"></i>
                 </button>
+                <h1 class="page-title">Agendamento</h1>
             </div>
-            
-            <!-- Campo de busca -->
-            <div id="empresas-lista"></div>
+            <div class="header-right">
+                <div class="user-info">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="userName">Cliente</span>
+                </div>
+            </div>
+        </header>
 
-            <div class="container">
+        <!-- Conteúdo da Página -->
+        <main class="page-content">
+            <!-- Seção de Busca -->
+            <section class="search-section">
+                <div class="search-container">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input id="search-bar" type="text" placeholder="Buscar empresa por nome...">
+                    </div>
+                    <button id="btn-definir-cidade" class="location-btn">
+                        <i class="bi bi-geo-alt-fill"></i>
+                        <span>Localização</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Lista de Empresas -->
+            <section class="companies-section">
+                <div id="empresas-lista" class="companies-grid"></div>
+            </section>
+
+            <!-- Informações da Empresa -->
+            <section class="company-info-section">
                 <div id="informacoes-empresa"></div>
-                <!-- Modal de Agendamento -->
-               <div id="modal-agendamento" style="display: none;">
+            </section>
 
-  
+            <!-- Modal de Agendamento -->
+            <div id="modal-agendamento" class="modal-overlay" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Novo Agendamento</h3>
+                        <button class="modal-close" id="fechar-modal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="form-agendamento" class="booking-form">
+                        <div class="form-section">
+                            <h4>Serviço e Profissional</h4>
+                            <div class="form-group">
+                                <label for="servico-select">Serviço</label>
+                                <select name="servico_id" id="servico-select" onchange="carregarUsuarioResponsavel()">
+                                    <option value="">Selecione o Serviço</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="profissional-select">Profissional</label>
+                                <select name="usuario_id" id="profissional-select">
+                                    <option value="">Selecione o Profissional</option>
+                                </select>
+                            </div>
+                        </div>
 
-                    <form id="form-agendamento">
+                        <div class="form-section">
+                            <h4>Data e Horário</h4>
+                            <div class="form-group">
+                                <label for="data-input">Data</label>
+                                <input id="data-input" type="date" name="data" required />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Horários Disponíveis</label>
+                                <div id="horarios-disponiveis" class="time-slots"></div>
+                                <div id="horario-selecionado" class="selected-time"></div>
+                            </div>
+                        </div>
 
+                        <div class="form-section">
+                            <h4>Informações Adicionais</h4>
+                            <div class="form-group">
+                                <label for="descricao">Descrição (opcional)</label>
+                                <textarea name="descricao" id="descricao" placeholder="Descreva suas necessidades..."></textarea>
+                            </div>
+                        </div>
 
-                        <h4 class="titulo">Selecione o servico e o profissional</h4>
-                        <select name="servico_id" id="servico-select" onchange="carregarUsuarioResponsavel()">
-                            <option value="">Selecione o Serviço</option>
-                        </select>
-                        
-                        <select name="usuario_id" id="profissional-select">
-                            <option value="">Selecione o Profissional</option>
-                        </select>
-                        <label for="data-input" class="form-label">Selecione a data</label>
-                        <input id="data-input" type="date" name="data" required />
-                        <div id="horarios-disponiveis" class="horarios-container"> </div>
-                        <div id="horario-selecionado"></div>
-                        <label for="descricao" class="form-label">Descrição</label>
-                        <textarea name="descricao" placeholder="Descrição (opcional)"></textarea>
-                        <hr>
+                        <div class="form-section">
+                            <h4>Suas Informações</h4>
+                            <div class="form-group">
+                                <label for="nome-cliente">Nome</label>
+                                <input type="text" name="nome" id="nome-cliente" placeholder="Seu nome completo" required />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="telefone-input">Telefone</label>
+                                <input id="telefone-input" type="tel" name="telefone" placeholder="(00) 00000-0000" required />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="email-cliente">E-mail</label>
+                                <input type="email" name="email" id="email-cliente" placeholder="seu@email.com" required />
+                            </div>
+                        </div>
 
-
-                        <h4>Suas informações</h4>
-                        <input type="text" name="nome" placeholder="Seu nome" required />
-                        <input id="telefone-input" type="tel" name="telefone" placeholder="Telefone" required />
-                        <input type="email" name="email" placeholder="E-mail" required />
-
-                        <button type="submit" class="btn btn-success">Agendar</button>
-                        <button id="fechar-modal" class="btn btn-danger">cancelar</button>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i>
+                                Confirmar Agendamento
+                            </button>
+                            <button type="button" id="fechar-modal" class="btn btn-secondary">
+                                <i class="bi bi-x-lg"></i>
+                                Cancelar
+                            </button>
+                        </div>
                     </form>
                 </div>
+            </div>
 
-                <div id="loading-screen"
-                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; z-index: 9999;">
-                    <div class="spinner"
-                        style="width: 50px; height: 50px; border: 5px solid #ccc; border-top: 5px solid #000; border-radius: 50%; animation: spin 1s linear infinite;">
-                    </div>
-                    <p style="color: #fff; margin-top: 10px;"> Agendando...</p>
+            <!-- Loading Screen -->
+            <div id="loading-screen" class="loading-overlay" style="display: none;">
+                <div class="loading-content">
+                    <div class="spinner"></div>
+                    <p>Processando agendamento...</p>
                 </div>
-
-                <script src="/static/scripts/agendamento.js">  </script>
-    </body>
+            </div>
+        </main>
     </div>
-    <footer class="footer">
-        <a href="/login" class="footer-btn">inicio</a>
-        <a href="/agenda_cliente" class="footer-btn-2">Ver meus agendamentos</a>
-    </footer>
 
-
+    <script src="/static/scripts/agendamento.js"></script>
+</body>
 </html>
