@@ -1,33 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const calendarEl = document.getElementById('calendar');
-    const listContainer = document.getElementById('list-container');
-    const appointmentList = document.getElementById('appointment-list');
-    const filter = document.getElementById('filter');
-    let filtroAgendamento = 'meus'; // padrão: meus agendamentos
-
-    // Botões de filtro
-    const btnMeus = document.getElementById('btnMeusAgendamentos');
-    const btnTodos = document.getElementById('btnTodosAgendamentos');
-    if (btnMeus && btnTodos) {
-        btnMeus.addEventListener('click', function () {
-            filtroAgendamento = 'meus';
-            btnMeus.classList.add('active');
-            btnTodos.classList.remove('active');
-            calendar.refetchEvents();
-            renderAppointments(filter.value);
-        });
-        btnTodos.addEventListener('click', function () {
-            filtroAgendamento = 'todos';
-            btnTodos.classList.add('active');
-            btnMeus.classList.remove('active');
-            calendar.refetchEvents();
-            renderAppointments(filter.value);
-        });
-    }
-
-    const cachedData = {};
-
-    // Funções para gerenciar popups
+// Funções para gerenciar popups (escopo global)
 function mostrarPopup(tipo, mensagem, titulo = null, callback = null) {
     const popup = document.getElementById(`popup-${tipo}`);
     const messageElement = document.getElementById(`popup-${tipo}-message`);
@@ -59,11 +30,6 @@ function fecharPopup(popupId) {
     }, 300);
 }
 
-// Função para substituir alert
-function mostrarAlerta(mensagem, tipo = 'warning') {
-    mostrarPopup(tipo, mensagem);
-}
-
 // Função para substituir confirm
 function mostrarConfirmacao(mensagem, callback) {
     mostrarPopup('confirm', mensagem, 'Confirmar', callback);
@@ -76,6 +42,60 @@ function mostrarMensagem(msg, titulo = 'Mensagem') {
     var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
     modal.show();
 }
+
+// Funções para gerenciar tela de carregamento
+function mostrarCarregamento() {
+    document.getElementById('loading-screen').style.display = 'flex';
+}
+
+function esconderCarregamento() {
+    document.getElementById('loading-screen').style.display = 'none';
+}
+
+// Variável global para armazenar o usuário logado
+let usuarioLogado = null;
+
+// Função para buscar o usuário logado uma vez
+async function buscarUsuarioLogado() {
+    try {
+        const response = await fetch('/api/usuario/logado');
+        if (!response.ok) throw new Error('Erro ao buscar usuário logado');
+        usuarioLogado = await response.json();
+    } catch (e) {
+        usuarioLogado = { nome_usuario: '' };
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function () {
+    const calendarEl = document.getElementById('calendar');
+    const listContainer = document.getElementById('list-container');
+    const appointmentList = document.getElementById('appointment-list');
+    const filter = document.getElementById('filter');
+    let filtroAgendamento = 'meus'; // padrão: meus agendamentos
+
+    await buscarUsuarioLogado(); // Busca o usuário logado uma vez antes de renderizar
+
+    // Botões de filtro
+    const btnMeus = document.getElementById('btnMeusAgendamentos');
+    const btnTodos = document.getElementById('btnTodosAgendamentos');
+    if (btnMeus && btnTodos) {
+        btnMeus.addEventListener('click', function () {
+            filtroAgendamento = 'meus';
+            btnMeus.classList.add('active');
+            btnTodos.classList.remove('active');
+            calendar.refetchEvents();
+            renderAppointments(filter.value);
+        });
+        btnTodos.addEventListener('click', function () {
+            filtroAgendamento = 'todos';
+            btnTodos.classList.add('active');
+            btnMeus.classList.remove('active');
+            calendar.refetchEvents();
+            renderAppointments(filter.value);
+        });
+    }
+
+    const cachedData = {};
 
     async function fetchData(url) {
         // Adiciona o filtro na URL
@@ -109,12 +129,10 @@ function mostrarMensagem(msg, titulo = 'Mensagem') {
                 const data = await fetchData('/agenda/data');
                 console.log('Agendamentos recebidos do backend:', data);
                 if (Array.isArray(data)) {
-                    const eventos = await Promise.all(data.map(async (agendamento) => {
-                        const usuarioResponse = await fetch('/api/usuario/logado'); // Aqui você busca os dados do usuário logado
-                        const usuarioData = await usuarioResponse.json();
-                        const nomeUsuario = usuarioData.nome_usuario; // Pegue o nome do usuário logado
-                        const nomeEmpresa = agendamento.nome_empresa; // A empresa já está sendo retornada no agendamento
-
+                    const eventos = data.map((agendamento) => {
+                        // Usa o nome do usuário logado já buscado
+                        const nomeUsuario = usuarioLogado && usuarioLogado.nome_usuario ? usuarioLogado.nome_usuario : '';
+                        const nomeEmpresa = agendamento.nome_empresa;
                         return {
                             id: agendamento.id,
                             title: `${agendamento.cliente_nome} -  ${agendamento.servico_nome}`,
@@ -123,12 +141,12 @@ function mostrarMensagem(msg, titulo = 'Mensagem') {
                             descricao: agendamento.descricao,
                             telefone: agendamento.telefone,
                             empresa: nomeEmpresa,
-                            nome_usuario: nomeUsuario,  // Adiciona o nome do usuário ao evento
+                            nome_usuario: nomeUsuario,  // Usa o nome do usuário logado
                             finalizado: agendamento.finalizado || false,
                             conta_receber: agendamento.conta_receber || false,
                             servico_preco: agendamento.servico_preco || 0
                         };
-                    }));
+                    });
 
                     console.log('Eventos formatados para o calendário:', eventos);
                     successCallback(eventos);
@@ -153,9 +171,9 @@ function mostrarMensagem(msg, titulo = 'Mensagem') {
         eventClick: function (info) {
             if (!info.event.extendedProps.finalizado) {
                 mostrarDetalhesAgendamento(info.event);
-                    } else {
-            mostrarAlerta('Este agendamento já foi finalizado e não pode ser modificado.', 'warning');
-        }
+            } else {
+                mostrarPopup('warning', 'Este agendamento já foi finalizado e não pode ser modificado.', 'Aviso');
+            }
         },
         eventDidMount: function (info) {
             const eventEl = info.el;
@@ -334,9 +352,14 @@ async function mostrarDetalhesAgendamento(event) {
     const valorServico = event.extendedProps.servico_preco || 0;
     const valorFormatado = valorServico > 0 ? `R$ ${parseFloat(valorServico).toFixed(2).replace('.', ',')}` : 'Valor não informado';
 
+    // Novo: Profissional responsável
+    const nomeProfissional = event.extendedProps.nome_usuario ? event.extendedProps.nome_usuario : '';
+    const profissionalHtml = nomeProfissional ? `<p><strong>Profissional:</strong> <span style="color: #007bff;">${nomeProfissional}</span></p>` : '';
+
     modalBody.innerHTML = `
     <p><strong>Cliente:</strong> ${event.title.split(' - ')[0]}</p>
     <p><strong>Serviço:</strong> ${event.title.split(' - ')[1]}</p>
+    ${profissionalHtml}
     <p><strong>Valor:</strong> <span style="color: #28a745; font-weight: bold;">${valorFormatado}</span></p>
     <p><strong>Data:</strong> ${event.start.toLocaleDateString()}</p>
     <p><strong>Horário:</strong> ${event.start.toLocaleTimeString()}</p>
@@ -353,20 +376,10 @@ async function mostrarDetalhesAgendamento(event) {
     ${extraMsg}
 `;
 
-    try {
-        const response = await fetch('/api/usuario/logado');
-        if (!response.ok) {
-            throw new Error('Erro ao buscar nome do usuário');
-        }
-        const data = await response.json();
-        if (data && data.nome_usuario) {
-            const nomeUsuario = data.nome_usuario;
-            const linkWhatsApp = `https://wa.me/+55${event.extendedProps.telefone}?text=Olá, ${event.title.split(' - ')[0]}. Sou ${nomeUsuario} da empresa ${event.extendedProps.empresa} e gostaria de falar com vocé. sobre o agendamento de: ${event.title.split(' - ')[1]} na data: ${event.start.toLocaleDateString()} às ${event.start.toLocaleTimeString()} `;
-            document.getElementById('btnEnviarMensagem').setAttribute('href', linkWhatsApp);
-        }
-    } catch (error) {
-        console.error('Erro ao buscar nome do usuário:', error.message);
-    }
+    // Usa o nome do usuário logado já buscado
+    const nomeUsuario = usuarioLogado && usuarioLogado.nome_usuario ? usuarioLogado.nome_usuario : '';
+    const linkWhatsApp = `https://wa.me/+55${event.extendedProps.telefone}?text=Olá, ${event.title.split(' - ')[0]}. Sou ${nomeUsuario} da empresa ${event.extendedProps.empresa} e gostaria de falar com você sobre o agendamento de: ${event.title.split(' - ')[1]} na data: ${event.start.toLocaleDateString()} às ${event.start.toLocaleTimeString()} `;
+    document.getElementById('btnEnviarMensagem').setAttribute('href', linkWhatsApp);
 
     const btnCancelar = document.querySelector('.btn-cancelar');
     if (btnCancelar) {
@@ -439,18 +452,42 @@ function finalizarAgendamento(agendamentoId, valor, meioPagamento) {
         .then(data => {
             esconderCarregamento();
             if (data.message) {
-                mostrarAlerta('Agendamento finalizado com sucesso!', 'success');
-                setTimeout(() => {
+                // Mostra popup de sucesso com a mensagem do backend
+                mostrarPopup('success', data.message, 'Sucesso!');
+                // Configura o botão OK para fazer reload
+                const confirmBtn = document.querySelector('#popup-success .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-success');
                     location.reload();
-                }, 1500);
+                };
+            } else if (data.error) {
+                // Mostra popup de erro com a mensagem do backend
+                mostrarPopup('error', data.error, 'Erro');
+                // Configura o botão OK para fazer reload
+                const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-error');
+                    location.reload();
+                };
             } else {
-                mostrarAlerta('Erro ao finalizar agendamento.', 'error');
+                // Fallback para erro genérico
+                mostrarPopup('error', 'Erro ao finalizar agendamento.', 'Erro');
+                const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-error');
+                    location.reload();
+                };
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro:', error);
-            mostrarAlerta('Erro ao finalizar agendamento.', 'error');
+            mostrarPopup('error', 'Erro ao finalizar agendamento.', 'Erro');
+            const confirmBtn = document.querySelector('#popup-error .popup-btn');
+            confirmBtn.onclick = () => {
+                fecharPopup('popup-error');
+                location.reload();
+            };
         });
 }
 
@@ -462,18 +499,42 @@ function cancelarAgendamento(id) {
             .then(data => {
                 esconderCarregamento();
                 if (data.message) {
-                    mostrarAlerta('Agendamento cancelado com sucesso!', 'success');
-                    setTimeout(() => {
+                    // Mostra popup de sucesso com a mensagem do backend
+                    mostrarPopup('success', data.message, 'Sucesso!');
+                    // Configura o botão OK para fazer reload
+                    const confirmBtn = document.querySelector('#popup-success .popup-btn');
+                    confirmBtn.onclick = () => {
+                        fecharPopup('popup-success');
                         location.reload();
-                    }, 1500);
+                    };
+                } else if (data.error) {
+                    // Mostra popup de erro com a mensagem do backend
+                    mostrarPopup('error', data.error, 'Erro');
+                    // Configura o botão OK para fazer reload
+                    const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                    confirmBtn.onclick = () => {
+                        fecharPopup('popup-error');
+                        location.reload();
+                    };
                 } else {
-                    mostrarAlerta('Erro ao cancelar agendamento.', 'error');
+                    // Fallback para erro genérico
+                    mostrarPopup('error', 'Erro ao cancelar agendamento.', 'Erro');
+                    const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                    confirmBtn.onclick = () => {
+                        fecharPopup('popup-error');
+                        location.reload();
+                    };
                 }
             })
             .catch(error => {
                 esconderCarregamento();
                 console.error('Erro ao processar a solicitação:', error);
-                mostrarAlerta('Erro ao cancelar agendamento.', 'error');
+                mostrarPopup('error', 'Erro ao cancelar agendamento.', 'Erro');
+                const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-error');
+                    location.reload();
+                };
             });
     });
 }
@@ -559,25 +620,43 @@ document.getElementById('form-agendamento').addEventListener('submit', function 
         .then(data => {
             esconderCarregamento();
             if (data.message) {
-                mostrarAlerta('Agendamento criado com sucesso!', 'success');
-                setTimeout(() => {
+                // Mostra popup de sucesso com a mensagem do backend
+                mostrarPopup('success', data.message, 'Sucesso!');
+                // Configura o botão OK para fazer reload
+                const confirmBtn = document.querySelector('#popup-success .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-success');
                     location.reload();
-                }, 1500);
+                };
+            } else if (data.error) {
+                // Mostra popup de erro com a mensagem do backend
+                mostrarPopup('error', data.error, 'Erro');
+                // Configura o botão OK para fazer reload
+                const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-error');
+                    location.reload();
+                };
             } else {
-                mostrarAlerta('Erro ao criar agendamento.', 'error');
+                // Fallback para erro genérico
+                mostrarPopup('error', 'Erro ao criar agendamento.', 'Erro');
+                const confirmBtn = document.querySelector('#popup-error .popup-btn');
+                confirmBtn.onclick = () => {
+                    fecharPopup('popup-error');
+                    location.reload();
+                };
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro ao enviar os dados do agendamento:', error);
-            mostrarAlerta('Erro ao criar agendamento.', 'error');
+            mostrarPopup('error', 'Erro ao criar agendamento.', 'Erro');
+            const confirmBtn = document.querySelector('#popup-error .popup-btn');
+            confirmBtn.onclick = () => {
+                fecharPopup('popup-error');
+                location.reload();
+            };
         });
 });
 
-function mostrarCarregamento() {
-    document.getElementById('loading-screen').style.display = 'flex';
-}
-function esconderCarregamento() {
-    document.getElementById('loading-screen').style.display = 'none';
-}
 carregarDados();

@@ -5,7 +5,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-from routes.push import agendar_notificacao_push
+
 #ta em branco a linha que ta dando erro
 # Configuração do Supabase
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
@@ -165,15 +165,6 @@ def agendar():
             enviar_email(email_cliente, assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
         enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
 
-        # Após inserir o agendamento com sucesso, chame:
-        agendar_notificacao_push(
-            user_id=dados["usuario_id"],
-            agendamento_id=response.data[0]["id"],
-            agendamento_data=dados["data"],
-            agendamento_hora=dados["horario"],
-            servico_nome=servico["nome_servico"]
-        )
-
         return jsonify({"message": "Agendamento realizado com sucesso e e-mails enviados!"}), 201
     else:
         return jsonify({"error": "Erro ao criar agendamento"}), 400
@@ -211,13 +202,13 @@ def listar_agendamentos():
             "id, data, horario, descricao, cliente_id, servico_id, conta_receber, "
             "clientes!agendamentos_cliente_id_fkey(nome_cliente, telefone), "
             "servicos!agendamentos_servico_id_fkey(nome_servico, preco)"
-        ).eq("id_empresa", empresa_id).neq("status", "finalizado").execute()
+        ).eq("id_empresa", empresa_id).neq("status", "finalizado").neq("status", "cancelado").execute()
     else:
         response = supabase.table("agenda").select(
             "id, data, horario, descricao, cliente_id, servico_id, conta_receber, "
             "clientes!agendamentos_cliente_id_fkey(nome_cliente, telefone), "
             "servicos!agendamentos_servico_id_fkey(nome_servico, preco)"
-        ).eq("id_empresa", empresa_id).eq("usuario_id", usuario_id).neq("status", "finalizado").execute()
+        ).eq("id_empresa", empresa_id).eq("usuario_id", usuario_id).neq("status", "finalizado").neq("status", "cancelado").execute()
 
     # Estruturando os dados para o retorno
     agendamentos = []

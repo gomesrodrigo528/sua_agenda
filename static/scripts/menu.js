@@ -17,6 +17,7 @@ function renderMenu(containerId) {
         .then(data => {
             const logo = data.logo || '/static/img/logo.png';
             const corEmpresa = data.cor_emp || '#343a40';
+            document.documentElement.style.setProperty('--cor-empresa', corEmpresa);
 
             // Se for PDV, adiciona style="display: none" para telas médias e maiores
             const menuStyle = isPDV ? 
