@@ -1,259 +1,722 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Empresa e Usuário</title>
-    <link rel="stylesheet" href="/static/styles/telascadastro.css"> <!-- Referência para o CSS externo -->
-    <!-- Incluindo biblioteca para máscaras -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+    
     <style>
-        .error-message {
-            color: #dc3545;
-            background-color: #ffe6e6;
-            border: 1px solid #dc3545;
-            border-radius: 4px;
-            padding: 10px;
-            margin: 10px 0;
-            display: none;
-            font-size: 14px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .input-error {
-            border-color: #dc3545 !important;
-            background-color: #fff8f8 !important;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
         }
 
-        .error-icon {
-            color: #dc3545;
-            margin-right: 5px;
+        .main-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        .success-icon {
-            color: #28a745;
-            margin-right: 5px;
+        .form-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .form-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .header-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header-section h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-section h4 {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+
+        .header-section h3 {
+            font-size: 1.8rem;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        .plan-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
         }
 
         .form-group {
+            margin-bottom: 25px;
             position: relative;
-            margin-bottom: 15px;
         }
 
-        .field-error-message {
-            color: #dc3545;
-            font-size: 12px;
-            margin-top: 5px;
-            display: none;
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
         }
 
-        .toast-message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            max-width: 350px;
+        .form-control {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
             background: #fff;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            border-radius: 4px;
-            padding: 16px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .form-control.error {
+            border-color: #dc3545;
+            background-color: #fff8f8;
+        }
+
+        .form-control.success {
+            border-color: #28a745;
+        }
+
+        .document-container {
+            display: flex;
+            gap: 15px;
+            align-items: end;
+        }
+
+        .document-type {
+            flex: 0 0 120px;
+        }
+
+        .document-type select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 1rem;
+            background: #fff;
+        }
+
+        .document-input {
+            flex: 1;
+        }
+
+        .address-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .password-container {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: #666;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .password-requirements {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .password-requirements h5 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .requirement-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .requirement-list li {
+            padding: 3px 0;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .requirement-list li.valid {
+            color: #28a745;
+        }
+
+        .requirement-list li.invalid {
+            color: #dc3545;
+        }
+
+        .requirement-list li i {
+            font-size: 0.8rem;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            border: 1px solid #dc3545;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #dc3545;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .field-error {
+            color: #dc3545;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .field-error.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .success-message {
+            background: #e6ffe6;
+            border: 1px solid #28a745;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #28a745;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
             display: none;
-            z-index: 1000;
-            animation: slideIn 0.3s ease-out;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
         }
 
-        .toast-error {
-            border-left: 4px solid #dc3545;
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .toast-success {
-            border-left: 4px solid #28a745;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
             }
-            to {
-                transform: translateX(0);
-                opacity: 1;
+
+            .form-container {
+                padding: 30px 20px;
+            }
+
+            .header-section h1 {
+                font-size: 2rem;
+            }
+
+            .address-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .document-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .document-type {
+                flex: none;
             }
         }
 
-        @keyframes fadeOut {
-            from {
-                opacity: 1;
+        @media (max-width: 480px) {
+            .form-container {
+                padding: 20px 15px;
             }
-            to {
-                opacity: 0;
+
+            .header-section h1 {
+                font-size: 1.8rem;
+            }
+
+            .header-section h3 {
+                font-size: 1.5rem;
             }
         }
     </style>
 </head>
 
 <body>
-    <!-- Toast para mensagens -->
-    <div id="toastMessage" class="toast-message">
-        <span id="toastText"></span>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
     </div>
 
-    <div class="container">
-        <div class="title">
-        <h1>Plano {{plano}} Dias</h1>
-        <h4>Preencha as suas informações abaixo para começar a usar a sua agenda!</h4>
-        <h3>Cadastro</h3>
+    <div class="main-container">
+        <div class="form-container">
+            <div class="header-section">
+                <div class="plan-badge">
+                    <i class="bi bi-calendar-check"></i>
+                    Plano {{plano}} Dias
+                </div>
+                <h1>Sua Agenda</h1>
+                <h4>Preencha as suas informações abaixo para começar a usar a sua agenda!</h4>
+                <h3>Cadastro</h3>
+            </div>
 
-        <!-- Sistema de mensagens de erro do servidor -->
-        <div id="server-errors" style="margin-bottom: 20px;">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="error-message" style="display: block;">
-                <span class="error-icon">⚠️</span>
-                {% if 'duplicate key' in message %}
-                    Este e-mail já está cadastrado. Por favor, use outro e-mail.
-                {% else %}
-                    {{ message }}
+            <!-- Sistema de mensagens de erro do servidor -->
+            <div id="server-errors">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="error-message">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    {% if 'duplicate key' in message %}
+                        Este e-mail já está cadastrado. Por favor, use outro e-mail.
+                    {% else %}
+                        {{ message }}
+                    {% endif %}
+                </div>
+                {% endfor %}
                 {% endif %}
+                {% endwith %}
             </div>
-            {% endfor %}
+
+            {% if not empresa_cadastrada %}
+            <!-- Formulário de Cadastro da Empresa -->
+            <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="empresaForm" onsubmit="return validarFormularioEmpresa()">
+                <input type="hidden" name="plano" value="{{ plano }}">
+
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="nome_empresa">
+                            <i class="bi bi-building"></i>
+                            Nome da Empresa
+                        </label>
+                        <input type="text" id="nome_empresa" name="nome_empresa" class="form-control" required placeholder="Digite o nome da sua empresa" minlength="3" maxlength="100">
+                        <div class="field-error" id="nome_empresa-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipo_documento">
+                            <i class="bi bi-card-text"></i>
+                            Tipo de Documento
+                        </label>
+                        <div class="document-container">
+                            <div class="document-type">
+                                <select id="tipo_documento" name="tipo_documento">
+                                    <option value="cpf">CPF</option>
+                                    <option value="cnpj">CNPJ</option>
+                                </select>
+                            </div>
+                            <div class="document-input">
+                                <input type="text" id="cnpj" name="cnpj" class="form-control" required placeholder="Digite o documento">
+                                <div class="field-error" id="cnpj-error">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">
+                            <i class="bi bi-envelope"></i>
+                            E-mail
+                        </label>
+                        <input type="email" id="email" name="email" class="form-control" required placeholder="sua@empresa.com">
+                        <div class="field-error" id="email-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="descricao">
+                            <i class="bi bi-chat-quote"></i>
+                            Descrição
+                        </label>
+                        <textarea id="descricao" name="descricao" class="form-control" rows="3" required maxlength="30" placeholder="Descreva brevemente sua empresa"></textarea>
+                        <div class="field-error" id="descricao-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="setor">
+                            <i class="bi bi-briefcase"></i>
+                            Setor
+                        </label>
+                        <select id="setor" name="setor" class="form-control" required>
+                            <option value="">Selecione um setor</option>
+                            <option value="Tecnologia">Tecnologia</option>
+                            <option value="Beleza">Beleza</option>
+                            <option value="Barbearia">Barbearia</option>
+                            <option value="Saude">Saúde</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                        <div class="field-error" id="setor-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tel_empresa">
+                            <i class="bi bi-telephone"></i>
+                            Telefone
+                        </label>
+                        <input type="text" id="tel_empresa" name="tel_empresa" class="form-control" required placeholder="(00) 00000-0000">
+                        <div class="field-error" id="tel_empresa-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <i class="bi bi-geo-alt"></i>
+                            Localização
+                        </label>
+                        <div class="address-container">
+                            <div>
+                                <input type="text" id="cidade" name="cidade" class="form-control" required placeholder="Cidade" minlength="3">
+                                <div class="field-error" id="cidade-error">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                            <div>
+                                <input type="text" id="cep" name="cep" class="form-control" required placeholder="CEP">
+                                <div class="field-error" id="cep-error">
+                                    <i class="bi bi-exclamation-circle"></i>
+                                    <span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="endereco">
+                            <i class="bi bi-house"></i>
+                            Endereço
+                        </label>
+                        <input type="text" id="endereco" name="endereco" class="form-control" required placeholder="Rua, número, bairro" minlength="5">
+                        <div class="field-error" id="endereco-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="bi bi-check-circle"></i>
+                    Cadastrar Empresa
+                </button>
+            </form>
+            {% else %}
+            <!-- Formulário de Cadastro do Primeiro Usuário -->
+            <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="usuarioForm" onsubmit="return validarFormularioUsuario()">
+                <input type="hidden" name="plano" value="{{ plano }}">
+                <input type="hidden" name="empresa_id" value="{{ empresa_id }}">
+
+                <div class="form-section">
+                    <div class="form-group">
+                        <label for="nome_usuario">
+                            <i class="bi bi-person"></i>
+                            Nome do Usuário
+                        </label>
+                        <input type="text" id="nome_usuario" name="nome_usuario" class="form-control" required placeholder="Digite seu nome completo" minlength="3" maxlength="100">
+                        <div class="field-error" id="nome_usuario-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email_usuario">
+                            <i class="bi bi-envelope"></i>
+                            E-mail
+                        </label>
+                        <input type="email" id="email_usuario" name="email_usuario" class="form-control" required placeholder="seu@email.com">
+                        <div class="field-error" id="email_usuario-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefone">
+                            <i class="bi bi-telephone"></i>
+                            Telefone
+                        </label>
+                        <input type="text" id="telefone" name="telefone" class="form-control" required placeholder="(00) 00000-0000">
+                        <div class="field-error" id="telefone-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="senha">
+                            <i class="bi bi-lock"></i>
+                            Senha
+                        </label>
+                        <div class="password-container">
+                            <input type="password" id="senha" name="senha" class="form-control" required minlength="8" placeholder="Digite sua senha">
+                            <button type="button" id="mostrarSenha" class="password-toggle">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <div class="password-requirements">
+                            <h5>Requisitos da senha:</h5>
+                            <ul class="requirement-list">
+                                <li id="req-tamanho">
+                                    <i class="bi bi-circle"></i>
+                                    Mínimo de 8 caracteres
+                                </li>
+                                <li id="req-maiuscula">
+                                    <i class="bi bi-circle"></i>
+                                    Pelo menos uma letra maiúscula
+                                </li>
+                                <li id="req-minuscula">
+                                    <i class="bi bi-circle"></i>
+                                    Pelo menos uma letra minúscula
+                                </li>
+                                <li id="req-numero">
+                                    <i class="bi bi-circle"></i>
+                                    Pelo menos um número
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="field-error" id="senha-error">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    <i class="bi bi-person-plus"></i>
+                    Cadastrar Usuário
+                </button>
+            </form>
             {% endif %}
-            {% endwith %}
         </div>
-
-        {% if not empresa_cadastrada %}
-
-
     </div>
-        <!-- Formulário de Cadastro da Empresa -->
-        <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="empresaForm" onsubmit="return validarFormularioEmpresa()">
-            <input type="hidden" name="plano" value="{{ plano }}">
+<script>window.erroEmpresaCadastrada = {% if erro_empresa_cadastrada %}true{% else %}false{% endif %};</script>
+<script>
+        // Funções de validação e interação
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
 
-            <div class="form-group">
-                <label for="nome_empresa">Nome da Empresa:</label>
-                <input type="text" id="nome_empresa" name="nome_empresa" required placeholder="Sua Empresa" minlength="3" maxlength="100">
-                <div class="field-error-message" id="nome_empresa-error"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="cnpj">CNPJ ou CPF:</label>
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <select id="tipo_documento" style="width: 100px;">
-                        <option value="cpf">CPF</option>
-                        <option value="cnpj">CNPJ</option>
-                    </select>
-                    <input type="text" id="cnpj" name="cnpj" required placeholder="Digite o documento">
-                </div>
-                <div class="field-error-message" id="cnpj-error"></div>
-            </div>
-
-            <div class="form-group">
-                <label for="email">E-mail:</label>
-                <input type="email" id="email" name="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" placeholder="sua@empresa">
-                <div class="field-error-message" id="email-error"></div>
-            </div>
-
-            <label for="descricao">Descrição:</label>
-            <textarea id="descricao" name="descricao" rows="3" required maxlength="30" placeholder="A melhor clínica da cidade"></textarea>
-
-            <label for="setor">Setor</label>
-            <select id="setor" name="setor" required>
-                <option value="">Selecione um setor</option>
-                <option value="Tecnologia">Tecnologia</option>
-                <option value="Beleza">Beleza</option>
-                <option value="Barbearia">Barbearia</option>
-                <option value="Saude">Saúde</option>
-                <option value="Outro">Outro</option>
-            </select>
-
-            <label for="tel_empresa">Telefone:</label>
-            <input type="text" id="tel_empresa" name="tel_empresa" required placeholder="(00) 00000-0000">
-
-            <div class="endereco-container">
-                <div class="campo-cidade">
-                    <label for="cidade">Cidade:</label>
-                    <input type="text" id="cidade" name="cidade" required placeholder="SUA CIDADE" minlength="3">
-                </div>
-                <div class="campo-cep">
-                    <label for="cep">CEP:</label>
-                    <input type="text" id="cep" name="cep" required placeholder="00000-000">
-                </div>
-            </div>
-
-            <label for="endereco">Endereço:</label>
-            <input type="text" id="endereco" name="endereco" required placeholder="Rua São Paulo, 123" minlength="5">
-
-            <button type="submit">Cadastrar Empresa</button>
-        </form>
-        {% else %}
-        <!-- Formulário de Cadastro do Primeiro Usuário -->
-        <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="usuarioForm" onsubmit="return validarFormularioUsuario()">
-            <input type="hidden" name="plano" value="{{ plano }}">
-            <input type="hidden" name="empresa_id" value="{{ empresa_id }}">
-
-            <label for="nome_usuario">Nome do Usuário:</label>
-            <input type="text" id="nome_usuario" name="nome_usuario" required placeholder="Seu Nome" minlength="3" maxlength="100">
-
-            <label for="email_usuario">E-mail:</label>
-            <input type="email" id="email_usuario" name="email_usuario" required placeholder="seu@email.com">
-
-            <label for="telefone">Telefone:</label>
-            <input type="text" id="telefone" name="telefone" required placeholder="(00) 00000-0000">
-
-            <label for="senha">Senha:</label>
-            <div style="position: relative;">
-                <input type="password" id="senha" name="senha" required minlength="8">
-                <button type="button" id="mostrarSenha" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer;">👁️</button>
-            </div>
-            <div id="requisitos-senha" style="font-size: 12px; margin-top: 5px;">
-                <p style="margin: 0;">A senha deve conter:</p>
-                <ul style="margin: 5px 0; padding-left: 20px;">
-                    <li id="req-tamanho">Mínimo de 8 caracteres</li>
-                    <li id="req-maiuscula">Pelo menos uma letra maiúscula</li>
-                    <li id="req-minuscula">Pelo menos uma letra minúscula</li>
-                    <li id="req-numero">Pelo menos um número</li>
-                </ul>
-            </div>
-
-            <button type="submit">Cadastrar Usuário</button>
-        </form>
-        {% endif %}
-    </div>
-
-    <script>
-        function showToast(message, isError = true) {
-            const toast = $('#toastMessage');
-            toast.removeClass('toast-error toast-success')
-                 .addClass(isError ? 'toast-error' : 'toast-success');
-            $('#toastText').text(message);
-            toast.fadeIn();
-            
-            setTimeout(() => {
-                toast.fadeOut();
-            }, 5000);
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
         }
 
         function showFieldError(fieldId, message) {
-            const field = $(`#${fieldId}`);
-            const errorDiv = $(`#${fieldId}-error`);
+            const field = document.getElementById(fieldId);
+            const errorDiv = document.getElementById(fieldId + '-error');
+            const errorSpan = errorDiv.querySelector('span');
             
-            field.addClass('input-error');
-            errorDiv.text(message).slideDown();
+            field.classList.add('error');
+            errorSpan.textContent = message;
+            errorDiv.classList.add('show');
             
             // Limpa o erro quando o usuário começa a corrigir
-            field.one('input', function() {
-                $(this).removeClass('input-error');
-                errorDiv.slideUp();
-            });
+            field.addEventListener('input', function() {
+                this.classList.remove('error');
+                errorDiv.classList.remove('show');
+            }, { once: true });
         }
 
         function clearFieldErrors() {
-            $('.input-error').removeClass('input-error');
-            $('.field-error-message').slideUp();
+            document.querySelectorAll('.form-control.error').forEach(field => {
+                field.classList.remove('error');
+            });
+            document.querySelectorAll('.field-error.show').forEach(error => {
+                error.classList.remove('show');
+            });
         }
 
-        $(document).ready(function() {
+        function showSuccessMessage(message) {
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `<i class="bi bi-check-circle-fill"></i>${message}`;
+            
+            const container = document.querySelector('.form-container');
+            container.insertBefore(successDiv, container.firstChild);
+            
+            setTimeout(() => {
+                successDiv.remove();
+            }, 5000);
+        }
+
+        // Popup de erro para empresa já cadastrada
+        function showEmpresaCadastradaPopup() {
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = 0;
+            overlay.style.left = 0;
+            overlay.style.width = '100vw';
+            overlay.style.height = '100vh';
+            overlay.style.background = 'rgba(0,0,0,0.5)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = 99999;
+
+            const popup = document.createElement('div');
+            popup.style.background = '#fff';
+            popup.style.borderRadius = '16px';
+            popup.style.padding = '40px 30px';
+            popup.style.maxWidth = '350px';
+            popup.style.textAlign = 'center';
+            popup.style.boxShadow = '0 8px 32px rgba(0,0,0,0.25)';
+            popup.innerHTML = `
+                <div style='font-size:48px; color:#dc3545; margin-bottom:16px;'><i class='bi bi-x-circle-fill'></i></div>
+                <div style='font-size:20px; font-weight:600; margin-bottom:10px;'>Empresa já cadastrada</div>
+                <div style='font-size:16px; color:#555; margin-bottom:24px;'>Já existe uma empresa com este e-mail ou documento.<br>Entre em contato para renovar seu plano ou tente novamente.</div>
+                <button id='btnPopupEmpresaCadastrada' style='background:#dc3545; color:#fff; border:none; border-radius:8px; padding:10px 30px; font-size:16px; font-weight:600; cursor:pointer;'>OK</button>
+            `;
+            overlay.appendChild(popup);
+            document.body.appendChild(overlay);
+            document.getElementById('btnPopupEmpresaCadastrada').onclick = function() {
+                document.body.removeChild(overlay);
+                window.location.href = '/adquirir';
+            };
+        }
+
+        // Inicialização quando o documento estiver pronto
+        document.addEventListener('DOMContentLoaded', function() {
             // Máscaras para os campos
             $('#tel_empresa, #telefone').mask('(00) 00000-0000');
             $('#cep').mask('00000-000');
@@ -283,80 +746,66 @@
             // Botão para mostrar/ocultar senha
             $('#mostrarSenha').on('click', function() {
                 const senhaInput = $('#senha');
+                const icon = $(this).find('i');
+                
                 if (senhaInput.attr('type') === 'password') {
                     senhaInput.attr('type', 'text');
-                    $(this).text('🔒');
+                    icon.removeClass('bi-eye').addClass('bi-eye-slash');
                 } else {
                     senhaInput.attr('type', 'password');
-                    $(this).text('👁️');
+                    icon.removeClass('bi-eye-slash').addClass('bi-eye');
                 }
             });
 
             // Validação em tempo real dos campos
-            $('input').on('input', function() {
-                $(this).removeClass('input-error');
-                $(`#${this.id}-error`).slideUp();
+            $('.form-control').on('input', function() {
+                this.classList.remove('error');
+                const errorDiv = document.getElementById(this.id + '-error');
+                if (errorDiv) {
+                    errorDiv.classList.remove('show');
+                }
             });
 
-            // Validação em tempo real do nome da empresa
+            // Validações específicas em tempo real
             $('#nome_empresa').on('input', function() {
                 const nome = $(this).val().trim();
                 if(nome.length < 3) {
                     showFieldError('nome_empresa', 'O nome da empresa deve ter pelo menos 3 caracteres');
-                } else {
-                    $(`#nome_empresa-error`).slideUp();
-                    $(this).removeClass('input-error');
                 }
             });
 
-            // Validação em tempo real da descrição
             $('#descricao').on('input', function() {
                 const desc = $(this).val().trim();
                 if(desc.length === 0) {
                     showFieldError('descricao', 'A descrição é obrigatória');
                 } else if(desc.length > 30) {
                     showFieldError('descricao', 'A descrição deve ter no máximo 30 caracteres');
-                } else {
-                    $(`#descricao-error`).slideUp();
-                    $(this).removeClass('input-error');
                 }
             });
 
-            // Validação em tempo real do setor
             $('#setor').on('change', function() {
                 if($(this).val() === '') {
                     showFieldError('setor', 'Selecione um setor');
-                } else {
-                    $(`#setor-error`).slideUp();
-                    $(this).removeClass('input-error');
                 }
             });
 
-            // Validação em tempo real da cidade
             $('#cidade').on('input', function() {
                 const cidade = $(this).val().trim();
                 if(cidade.length < 3) {
                     showFieldError('cidade', 'Nome da cidade inválido');
-                } else {
-                    $(`#cidade-error`).slideUp();
-                    $(this).removeClass('input-error');
                 }
             });
 
-            // Validação em tempo real do endereço
             $('#endereco').on('input', function() {
                 const endereco = $(this).val().trim();
                 if(endereco.length < 5) {
                     showFieldError('endereco', 'Endereço inválido');
-                } else {
-                    $(`#endereco-error`).slideUp();
-                    $(this).removeClass('input-error');
                 }
             });
 
-            // Se houver erro do servidor, mostra o toast
-            if($('.error-message').length > 0) {
-                showToast('Ocorreram erros no cadastro. Por favor, verifique os dados.', true);
+            // Exibir popup de erro se empresa já cadastrada
+            if (window.erroEmpresaCadastrada === true) {
+                showEmpresaCadastradaPopup();
             }
         });
 
@@ -428,15 +877,22 @@
             const temNumero = /[0-9]/.test(senha);
 
             // Atualiza o visual dos requisitos
-            $('#req-tamanho').css('color', temTamanhoMinimo ? 'green' : 'red');
-            $('#req-maiuscula').css('color', temMaiuscula ? 'green' : 'red');
-            $('#req-minuscula').css('color', temMinuscula ? 'green' : 'red');
-            $('#req-numero').css('color', temNumero ? 'green' : 'red');
+            $('#req-tamanho').toggleClass('valid', temTamanhoMinimo).toggleClass('invalid', !temTamanhoMinimo)
+                .find('i').toggleClass('bi-check-circle-fill', temTamanhoMinimo).toggleClass('bi-circle', !temTamanhoMinimo);
+            
+            $('#req-maiuscula').toggleClass('valid', temMaiuscula).toggleClass('invalid', !temMaiuscula)
+                .find('i').toggleClass('bi-check-circle-fill', temMaiuscula).toggleClass('bi-circle', !temMaiuscula);
+            
+            $('#req-minuscula').toggleClass('valid', temMinuscula).toggleClass('invalid', !temMinuscula)
+                .find('i').toggleClass('bi-check-circle-fill', temMinuscula).toggleClass('bi-circle', !temMinuscula);
+            
+            $('#req-numero').toggleClass('valid', temNumero).toggleClass('invalid', !temNumero)
+                .find('i').toggleClass('bi-check-circle-fill', temNumero).toggleClass('bi-circle', !temNumero);
 
             return temTamanhoMinimo && temMaiuscula && temMinuscula && temNumero;
         }
 
-        function validarFormularioEmpresa() {
+        async function validarFormularioEmpresa() {
             clearFieldErrors();
             let hasErrors = false;
 
@@ -512,16 +968,55 @@
             }
 
             if(hasErrors) {
-                showToast('Por favor, corrija os erros destacados no formulário');
                 return false;
             }
 
-            return true;
+            // Verificar se empresa já existe antes de enviar
+            try {
+                showLoading();
+                const response = await fetch('/api/verificar-empresa', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        cnpj: cnpjCpf
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.existe) {
+                    if (data.teste_ativo) {
+                        showSuccessMessage('Empresa já cadastrada com teste ativo. Você pode continuar.');
+                        hideLoading();
+                        return true;
+                    } else {
+                        showFieldError('email', 'Empresa já cadastrada. Entre em contato para renovar seu plano.');
+                        hideLoading();
+                        return false;
+                    }
+                }
+                
+                hideLoading();
+                return true;
+            } catch (error) {
+                console.error('Erro ao verificar empresa:', error);
+                hideLoading();
+                return true; // Permite continuar em caso de erro na verificação
+            }
         }
 
         function validarFormularioUsuario() {
             clearFieldErrors();
             let hasErrors = false;
+
+            // Validação do nome do usuário
+            if($('#nome_usuario').val().trim().length < 3) {
+                showFieldError('nome_usuario', 'O nome deve ter pelo menos 3 caracteres');
+                hasErrors = true;
+            }
 
             // Validação do e-mail
             if(!validarEmail($('#email_usuario').val())) {
@@ -544,10 +1039,10 @@
             }
 
             if(hasErrors) {
-                showToast('Por favor, corrija os erros destacados no formulário');
                 return false;
             }
 
+            showLoading();
             return true;
         }
     </script>

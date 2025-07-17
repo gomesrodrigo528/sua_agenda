@@ -867,9 +867,13 @@
 
         function selecionarCliente(cliente) {
             document.getElementById('cliente').value = cliente.id;
-            document.getElementById('clienteSelecionado').value = cliente.nome;
+            // Exibe nome + email para facilitar identificação
+            let texto = cliente.nome;
+            if (cliente.email && cliente.email !== '-') {
+                texto += ' (' + cliente.email + ')';
+            }
+            document.getElementById('clienteSelecionado').value = texto;
             fecharModalClientes();
-
             // Se estiver com pagamento a prazo selecionado, atualiza a visibilidade do campo de vencimento
             exibirDataVencimento();
         }

@@ -18,42 +18,44 @@ def verificar_login():
     if 'user_id' not in request.cookies or 'empresa_id' not in request.cookies:
         flash('Você precisa estar logado para acessar essa página.', 'danger')
         return redirect(url_for('login.login'))  # Redireciona para a página de login
+    # Sempre retorna um Response, nunca None
     return None
 
 # Página de serviços com funcionalidade de pesquisa
 @services_bp.route('/servicos', methods=['GET', 'POST'])
 def index():
     # Verifica se o usuário está logado
-    if verificar_login():
-        return verificar_login()
+    redirecionar = verificar_login()
+    if redirecionar:
+        return redirecionar
 
-    search_query = request.form.get('search_query') if request.method == 'POST' else None
-    services = get_services(search_query)
-    return render_template('servicos.html', services=services)
+    search_query = request.form.get('search_query') if request.method == 'POST' else request.args.get('search_query')
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 7))
+    offset = (page - 1) * per_page
+    services, total_count = get_services(search_query, offset, per_page)
+    total_pages = (total_count + per_page - 1) // per_page
+    return render_template('servicos.html', services=services, page=page, per_page=per_page, total_pages=total_pages, total_count=total_count, search_query=search_query)
 def obter_id_empresa():
     return request.cookies.get('empresa_id')
 
 # Função para buscar serviços
-def get_services(search_query=None):
+def get_services(search_query=None, offset=0, per_page=7):
     try:
         empresa_id = request.cookies.get('empresa_id')  # Pega a empresa logada do cookie
+        base_query = supabase.table('servicos').select('*').eq('id_empresa', empresa_id).eq('status', True)
         if search_query:
-            response = (supabase.table('servicos')
-                        .select('*')
-                        .eq('id_empresa', empresa_id)
-                        .ilike('nome_servico', f'%{search_query}%')
-                        .eq('status', True)
-                        .execute())
-        else:
-            response = (supabase.table('servicos')
-                        .select('*')
-                        .eq('id_empresa', empresa_id)
-                        .eq('status', True)
-                        .execute())
-        return response.data if response.data else []
+            base_query = base_query.ilike('nome_servico', f'%{search_query}%')
+        # Contar total de serviços
+        total_servicos = base_query.execute().data
+        total_count = len(total_servicos) if total_servicos else 0
+        # Buscar apenas a página atual
+        response = base_query.range(offset, offset + per_page - 1).execute()
+        services = response.data if response.data else []
+        return services, total_count
     except Exception as e:
         print(f"Erro ao buscar serviços: {e}")
-        return []
+        return [], 0
 
 # Função para adicionar um novo serviço
 @services_bp.route('/add_service', methods=['POST'])

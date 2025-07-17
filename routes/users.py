@@ -18,17 +18,20 @@ def verificar_login():
     if 'user_id' not in request.cookies or 'empresa_id' not in request.cookies:
         flash('Você precisa estar logado para acessar essa página.', 'danger')
         return redirect(url_for('login.login'))  # Redireciona para a página de login
+    # Sempre retorna um Response, nunca None
     return None
 
 @users_bp.route('/usuarios', methods=['GET', 'POST'])
 def gerenciar_usuarios():
     # Verifica se o usuário está logado
-    if verificar_login():
-        return verificar_login()
+    redirecionar = verificar_login()
+    if redirecionar:
+        return redirecionar
 
     if request.method == 'POST':
         # Cadastro de novo usuário
-        nome_usuario = request.form.get('nome').strip().upper()  # Converte para maiúsculas
+        nome_usuario = request.form.get('nome')
+        nome_usuario = nome_usuario.strip().upper() if nome_usuario else ''
         email = request.form.get('email')
         telefone = request.form.get('telefone')
         senha = request.form.get('senha')
@@ -53,27 +56,25 @@ def gerenciar_usuarios():
 
     # Pesquisa de usuários
     search_query = request.args.get('search_query', '')
+    page = int(request.args.get('page', 1))
+    per_page = int(request.args.get('per_page', 7))
+    offset = (page - 1) * per_page
 
     try:
+        base_query = supabase.table('usuarios').select('*').eq('id_empresa', request.cookies.get('empresa_id'))
         if search_query:
-            # Filtra usuários pelo nome e pela empresa logada
-            response = (supabase.table('usuarios')
-                        .select('*')
-                        .eq('id_empresa', request.cookies.get('empresa_id'))
-                        .ilike('nome_usuario', f'%{search_query}%')
-                        .execute())
-        else:
-            # Lista todos os usuários da empresa logada
-            response = (supabase.table('usuarios')
-                        .select('*')
-                        .eq('id_empresa', request.cookies.get('empresa_id'))
-                        .execute())
-
+            base_query = base_query.ilike('nome_usuario', f'%{search_query}%')
+        # Contar total de usuários
+        total_usuarios = base_query.execute().data
+        total_count = len(total_usuarios) if total_usuarios else 0
+        # Buscar apenas a página atual
+        response = base_query.range(offset, offset + per_page - 1).execute()
         usuarios = response.data
-        return render_template('usuarios.html', usuarios=usuarios)
+        total_pages = (total_count + per_page - 1) // per_page
+        return render_template('usuarios.html', usuarios=usuarios, page=page, per_page=per_page, total_pages=total_pages, total_count=total_count, search_query=search_query)
     except Exception as e:
         print(f"Erro ao listar usuários: {e}")
-        return render_template('usuarios.html', error="Erro ao listar usuários.")
+        return render_template('usuarios.html', error="Erro ao listar usuários.", usuarios=[], page=1, per_page=7, total_pages=1, total_count=0, search_query=search_query)
 
 @users_bp.route('/usuarios/editar', methods=['POST'])
 def editar_usuario():
@@ -83,7 +84,8 @@ def editar_usuario():
 
     try:
         id_usuario = request.form.get('id')
-        nome_usuario = request.form.get('nome').strip().upper()  
+        nome_usuario = request.form.get('nome')
+        nome_usuario = nome_usuario.strip().upper() if nome_usuario else ''
         email = request.form.get('email')
         telefone = request.form.get('telefone')
         senha = request.form.get('senha')

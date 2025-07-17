@@ -57,9 +57,9 @@ def inicio():
     return redirect(url_for('agenda_bp.renderizar_agenda'))
 
 
-if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=5000)
-
-
 #if __name__ == '__main__':
- #   app.run(host ='0.0.0.0', port=5000 , debug = True)
+ #   serve(app, host='0.0.0.0', port=5000)
+
+
+if __name__ == '__main__':
+    app.run(host ='0.0.0.0', port=5000 , debug = True)

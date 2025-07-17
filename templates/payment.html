@@ -1,96 +1,322 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escolha seu Plano</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles/agendamentos.css">
+    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+    
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #121212;
-            color: white;
-        }
-        .card {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 10px;
-            text-align: center;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-            width: 200px;
-            background-color:#292929;
-        }
-        .card h3 {
+            color: #f5f5f5;
             margin: 0;
-            margin-bottom: 10px;
+            padding: 0;
         }
-        .card a {
-            text-decoration: none;
-            color: white;
-            background-color: #007bff;
-            padding: 10px 15px;
-            border-radius: 5px;
+        
+        .plans-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 20px;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .plan-card {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            width: 280px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .plan-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #007bff, #0056b3);
+        }
+        
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+            border-color: #007bff;
+        }
+        
+        .plan-card h3 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #f5f5f5;
+        }
+        
+        .plan-card .price {
+            font-size: 32px;
+            font-weight: 700;
+            color: #007bff;
+            margin: 20px 0;
+        }
+        
+        .plan-card .features {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .plan-card .features li {
+            padding: 8px 0;
+            color: #ccc;
             font-size: 14px;
         }
-        .card p {
-            text-align: justify;
+        
+        .plan-card .features li::before {
+            content: '✔';
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
         }
-        .card a:hover {
-            background-color: #0056b3;
+        
+        .plan-card .btn-assinar {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .plan-card .btn-assinar:hover {
+            background: linear-gradient(135deg, #0056b3, #004085);
+            transform: scale(1.05);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .plan-card.free {
+            border-color: #28a745;
+        }
+        
+        .plan-card.free::before {
+            background: linear-gradient(90deg, #28a745, #1e7e34);
+        }
+        
+        .plan-card.free .btn-assinar {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+        }
+        
+        .plan-card.free .btn-assinar:hover {
+            background: linear-gradient(135deg, #1e7e34, #155724);
+        }
+        
+        .page-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: 700;
+            margin: 30px 0;
+            color: #f5f5f5;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .plans-container {
+                padding: 20px;
+                gap: 15px;
+            }
+            
+            .plan-card {
+                width: 100%;
+                max-width: 320px;
+            }
+            
+            .page-title {
+                font-size: 28px;
+                margin: 20px 0;
+            }
         }
     </style>
 </head>
+
 <body>
-    <h1>Escolha seu Plano</h1>
-    <div class="card">
-        <h3>Plano Mensal</h3>
-        <p>✔acesso ilimitado</p>
-        <p>✔Gestão de agendamentos</p>
-        <p>✔Controle de clientes</p>
-        <p>✔usuarios ilimitados</p>
-        <p>✔Controle de serviços</p>
-        <p>✔Relatórios financeiros</p>
+    <!-- Menu Lateral -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <img src="/static/img/agendamento.png" alt="sua agenda" class="sidebar-logo">
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
         
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="/agendamento" class="nav-link">
+                        <i class="bi bi-calendar-plus"></i>
+                        <span>Novo Agendamento</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/agenda_cliente" class="nav-link">
+                        <i class="bi bi-calendar-check"></i>
+                        <span>Meus Agendamentos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/adquirir" class="nav-link active">
+                        <i class="bi bi-bag-plus"></i>
+                        <span>Quero minha agenda</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/logout_cliente" class="nav-link">
+                        <i class="bi bi-box-arrow-right"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
 
-        <h3>R$ 35,00</h3>
-        <a href="/adquirir/mensal">Assinar</a>
-    </div>
-    <div class="card">
-        <h3>Plano Trimestral</h3>
-        <p>✔acesso ilimitado</p>
-        <p>✔Gestão de agendamentos</p>
-        <p>✔Controle de clientes</p>
-        <p>✔usuarios ilimitados</p>
-        <p>✔Controle de serviços</p>
-        <p>✔Relatórios financeiros</p>
-        <h3>R$ 85,00</h3>
-        <a href="/adquirir/trimestral">Assinar</a>
-    </div>
-    <div class="card">
-        <h3>Plano Anual</h3>
-        <p>✔acesso ilimitado</p>
-        <p>✔Gestão de agendamentos</p>
-        <p>✔Controle de clientes</p>
-        <p>✔usuarios ilimitados</p>
-        <p>✔Controle de serviços</p>
-        <p>✔Relatórios financeiros</p>
-        <h3>R$ 125,00</h3>
-        <a href="/adquirir/anual">Assinar</a>
-    </div> 
+    <!-- Overlay para mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-    <div class="card">
-        <h3>Teste Gratuito 30 dias</h3>
-        <p>✔acesso ilimitado</p>
-        <p>✔Gestão de agendamentos</p>
-        <p>✔Controle de clientes</p>
-        <p>✔usuarios ilimitados</p>
-        <p>✔Controle de serviços</p>
-        <p>✔Relatórios financeiros</p>
-        <h3>R$ 0,00</h3>
-        <a href="/sucesso">Assinar</a>
+    <!-- Conteúdo Principal -->
+    <div class="main-content" id="mainContent">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="header-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="page-title">Escolha seu Plano</h1>
+            </div>
+            <div class="header-right">
+                <div class="user-info">
+                    <i class="bi bi-person-circle"></i>
+                    <span id="userName">Cliente</span>
+                </div>
+            </div>
+        </header>
+        
+        <main class="page-content">
+            <div class="plans-container">
+                <div class="plan-card">
+                    <h3>Plano Mensal</h3>
+                    <ul class="features">
+                        <li>Acesso ilimitado</li>
+                        <li>Gestão de agendamentos</li>
+                        <li>Controle de clientes</li>
+                        <li>Usuários ilimitados</li>
+                        <li>Controle de serviços</li>
+                        <li>Relatórios financeiros</li>
+                    </ul>
+                    <div class="price">R$ 35,00</div>
+                    <a href="/adquirir/mensal" class="btn-assinar">Assinar</a>
+                </div>
+                
+                <div class="plan-card">
+                    <h3>Plano Trimestral</h3>
+                    <ul class="features">
+                        <li>Acesso ilimitado</li>
+                        <li>Gestão de agendamentos</li>
+                        <li>Controle de clientes</li>
+                        <li>Usuários ilimitados</li>
+                        <li>Controle de serviços</li>
+                        <li>Relatórios financeiros</li>
+                    </ul>
+                    <div class="price">R$ 85,00</div>
+                    <a href="/adquirir/trimestral" class="btn-assinar">Assinar</a>
+                </div>
+                
+                <div class="plan-card">
+                    <h3>Plano Anual</h3>
+                    <ul class="features">
+                        <li>Acesso ilimitado</li>
+                        <li>Gestão de agendamentos</li>
+                        <li>Controle de clientes</li>
+                        <li>Usuários ilimitados</li>
+                        <li>Controle de serviços</li>
+                        <li>Relatórios financeiros</li>
+                    </ul>
+                    <div class="price">R$ 125,00</div>
+                    <a href="/adquirir/anual" class="btn-assinar">Assinar</a>
+                </div>
+                
+                <div class="plan-card free">
+                    <h3>Teste Gratuito</h3>
+                    <ul class="features">
+                        <li>Acesso ilimitado</li>
+                        <li>Gestão de agendamentos</li>
+                        <li>Controle de clientes</li>
+                        <li>Usuários ilimitados</li>
+                        <li>Controle de serviços</li>
+                        <li>Relatórios financeiros</li>
+                    </ul>
+                    <div class="price">R$ 0,00</div>
+                    <a href="/adquirir/teste" class="btn-assinar">Assinar</a>
+                </div>
+            </div>
+        </main>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sistema de Menu Lateral
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+            function openSidebar() {
+                sidebar.classList.add('active');
+                sidebarOverlay.classList.add('active');
+            }
+
+            function closeSidebar() {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            }
+
+            if (menuToggle) menuToggle.addEventListener('click', openSidebar);
+            if (sidebarToggle) sidebarToggle.addEventListener('click', closeSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', closeSidebar);
+
+            // Fechar menu ao redimensionar para desktop
+            window.addEventListener('resize', function() {
+                if (window.innerWidth > 768) {
+                    closeSidebar();
+                }
+            });
+
+            // Fechar menu ao pressionar ESC
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeSidebar();
+                }
+            });
+        });
+    </script>
 </body>
 </html>

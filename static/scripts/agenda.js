@@ -27,13 +27,55 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const cachedData = {};
 
-    // Função para mostrar pop-up de mensagem
-    function mostrarMensagem(msg, titulo = 'Mensagem') {
-        document.getElementById('modalMensagemLabel').textContent = titulo;
-        document.getElementById('modalMensagemBody').textContent = msg;
-        var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
-        modal.show();
+    // Funções para gerenciar popups
+function mostrarPopup(tipo, mensagem, titulo = null, callback = null) {
+    const popup = document.getElementById(`popup-${tipo}`);
+    const messageElement = document.getElementById(`popup-${tipo}-message`);
+    
+    if (titulo) {
+        const titleElement = popup.querySelector('.popup-title');
+        titleElement.textContent = titulo;
     }
+    
+    messageElement.textContent = mensagem;
+    popup.style.display = 'flex';
+    
+    // Se houver callback, configurar o botão de confirmação
+    if (callback && tipo === 'confirm') {
+        const confirmBtn = document.getElementById('popup-confirm-btn');
+        confirmBtn.onclick = () => {
+            fecharPopup(`popup-${tipo}`);
+            callback();
+        };
+    }
+}
+
+function fecharPopup(popupId) {
+    const popup = document.getElementById(popupId);
+    popup.classList.add('fade-out');
+    setTimeout(() => {
+        popup.style.display = 'none';
+        popup.classList.remove('fade-out');
+    }, 300);
+}
+
+// Função para substituir alert
+function mostrarAlerta(mensagem, tipo = 'warning') {
+    mostrarPopup(tipo, mensagem);
+}
+
+// Função para substituir confirm
+function mostrarConfirmacao(mensagem, callback) {
+    mostrarPopup('confirm', mensagem, 'Confirmar', callback);
+}
+
+// Função para mostrar pop-up de mensagem
+function mostrarMensagem(msg, titulo = 'Mensagem') {
+    document.getElementById('modalMensagemLabel').textContent = titulo;
+    document.getElementById('modalMensagemBody').textContent = msg;
+    var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    modal.show();
+}
 
     async function fetchData(url) {
         // Adiciona o filtro na URL
@@ -111,9 +153,9 @@ document.addEventListener('DOMContentLoaded', function () {
         eventClick: function (info) {
             if (!info.event.extendedProps.finalizado) {
                 mostrarDetalhesAgendamento(info.event);
-            } else {
-                mostrarMensagem('Este agendamento já foi finalizado e não pode ser modificado.', 'Aviso');
-            }
+                    } else {
+            mostrarAlerta('Este agendamento já foi finalizado e não pode ser modificado.', 'warning');
+        }
         },
         eventDidMount: function (info) {
             const eventEl = info.el;
@@ -397,38 +439,43 @@ function finalizarAgendamento(agendamentoId, valor, meioPagamento) {
         .then(data => {
             esconderCarregamento();
             if (data.message) {
-                mostrarMensagem('Agendamento finalizado com sucesso!', 'Sucesso');
-                location.reload();
+                mostrarAlerta('Agendamento finalizado com sucesso!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
             } else {
-                mostrarMensagem('Erro ao finalizar agendamento.', 'Erro');
+                mostrarAlerta('Erro ao finalizar agendamento.', 'error');
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro:', error);
-            mostrarMensagem('Erro ao finalizar agendamento.', 'Erro');
+            mostrarAlerta('Erro ao finalizar agendamento.', 'error');
         });
 }
 
 function cancelarAgendamento(id) {
-    if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
-
-    mostrarCarregamento();
-    fetch(`/api/agendamento/${id}`, { method: 'DELETE' })
-        .then(response => response.json())
-        .then(data => {
-            esconderCarregamento();
-            if (data.message) {
-                location.reload();
-            } else {
-                mostrarMensagem('Erro ao cancelar agendamento.', 'Erro');
-            }
-        })
-        .catch(error => {
-            esconderCarregamento();
-            console.error('Erro ao processar a solicitação:', error);
-            mostrarMensagem('Erro ao cancelar agendamento.', 'Erro');
-        });
+    mostrarConfirmacao("Tem certeza que deseja cancelar este agendamento?", () => {
+        mostrarCarregamento();
+        fetch(`/api/agendamento/${id}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                esconderCarregamento();
+                if (data.message) {
+                    mostrarAlerta('Agendamento cancelado com sucesso!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    mostrarAlerta('Erro ao cancelar agendamento.', 'error');
+                }
+            })
+            .catch(error => {
+                esconderCarregamento();
+                console.error('Erro ao processar a solicitação:', error);
+                mostrarAlerta('Erro ao cancelar agendamento.', 'error');
+            });
+    });
 }
 
 function carregarDados() {
@@ -512,15 +559,18 @@ document.getElementById('form-agendamento').addEventListener('submit', function 
         .then(data => {
             esconderCarregamento();
             if (data.message) {
-                location.reload();
+                mostrarAlerta('Agendamento criado com sucesso!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
             } else {
-                mostrarMensagem('Erro ao criar agendamento.', 'Erro');
+                mostrarAlerta('Erro ao criar agendamento.', 'error');
             }
         })
         .catch(error => {
             esconderCarregamento();
             console.error('Erro ao enviar os dados do agendamento:', error);
-            mostrarMensagem('Erro ao criar agendamento.', 'Erro');
+            mostrarAlerta('Erro ao criar agendamento.', 'error');
         });
 });
 

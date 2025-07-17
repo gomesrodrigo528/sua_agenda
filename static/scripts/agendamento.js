@@ -4,6 +4,98 @@ let empresaIdAtual = null;
 // Variável global para o carrinho
 let carrinho = [];
 
+// Funções para gerenciar popups
+function mostrarPopup(tipo, mensagem, titulo = null, callback = null) {
+    const popup = document.getElementById(`popup-${tipo}`);
+    const messageElement = document.getElementById(`popup-${tipo}-message`);
+    
+    if (titulo) {
+        const titleElement = popup.querySelector('.popup-title');
+        titleElement.textContent = titulo;
+    }
+    
+    messageElement.textContent = mensagem;
+    popup.style.display = 'flex';
+    
+    // Se houver callback, configurar o botão de confirmação
+    if (callback && tipo === 'confirm') {
+        const confirmBtn = document.getElementById('popup-confirm-btn');
+        confirmBtn.onclick = () => {
+            fecharPopup(`popup-${tipo}`);
+            callback();
+        };
+    }
+}
+
+function fecharPopup(popupId) {
+    const popup = document.getElementById(popupId);
+    popup.classList.add('fade-out');
+    setTimeout(() => {
+        popup.style.display = 'none';
+        popup.classList.remove('fade-out');
+    }, 300);
+}
+
+// Variável para controlar se já foi mostrado um popup
+let popupJaMostrado = false;
+
+// Função para substituir alert
+function mostrarAlerta(mensagem, tipo = 'warning') {
+    if (popupJaMostrado) {
+        console.log('Popup já foi mostrado, ignorando chamada duplicada');
+        return;
+    }
+    
+    popupJaMostrado = true;
+    console.log(`Mostrando popup: ${tipo} - ${mensagem}`);
+    
+    mostrarPopup(tipo, mensagem);
+    
+    // Resetar após 3 segundos
+    setTimeout(() => {
+        popupJaMostrado = false;
+    }, 3000);
+}
+
+// Função para substituir confirm
+function mostrarConfirmacao(mensagem, callback) {
+    mostrarPopup('confirm', mensagem, 'Confirmar', callback);
+}
+
+// Função para configurar validação de data
+function configurarValidacaoData() {
+    const dataInput = document.getElementById('data-input');
+    if (dataInput) {
+        // Define a data mínima como hoje
+        const hoje = new Date().toISOString().split('T')[0];
+        dataInput.setAttribute('min', hoje);
+        
+        // Adiciona validação adicional
+        dataInput.addEventListener('change', function() {
+            const dataSelecionada = new Date(this.value);
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0); // Remove as horas para comparar apenas a data
+            
+            if (dataSelecionada < hoje) {
+                mostrarAlerta('Não é possível selecionar uma data anterior a hoje.', 'warning');
+                this.value = ''; // Limpa o campo
+                // Limpa os horários se houver
+                const containerHorarios = document.getElementById('horarios-disponiveis');
+                if (containerHorarios) {
+                    containerHorarios.innerHTML = '';
+                }
+                const horarioSelecionado = document.getElementById('horario-selecionado');
+                if (horarioSelecionado) {
+                    horarioSelecionado.innerHTML = '';
+                }
+            } else if (dataSelecionada.getTime() === hoje.getTime()) {
+                // Se for hoje, mostrar aviso sobre horários disponíveis
+                mostrarAlerta('Para agendamentos no mesmo dia, apenas horários futuros estarão disponíveis.', 'warning');
+            }
+        });
+    }
+}
+
 // Event listeners para fechar o modal
 document.addEventListener('DOMContentLoaded', function() {
     const fecharModalBtns = document.querySelectorAll('#fechar-modal');
@@ -23,6 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function () {
     esconderCarregamento(); // Garante que a tela de carregamento estará oculta ao carregar a página
     preencherDadosCliente(); // Preenche os campos com dados dos cookies se disponível
+    configurarValidacaoData(); // Configura a validação de data
+    verificarSincronizacaoDados(); // Verifica se os dados precisam ser sincronizados
 });
 
 // Funcionalidade do Menu Lateral
@@ -72,33 +166,57 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Função para preencher dados do cliente nos campos do formulário
 function preencherDadosCliente() {
-    // Função para obter cookie por nome
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-
-    // Buscar dados dos cookies
-    const clienteName = getCookie('cliente_name');
-    const clienteEmail = getCookie('cliente_email');
-
-    // Preencher campos se os cookies existirem
-    if (clienteName) {
+    const cliente = getClienteInfo();
+    if (cliente.nome) {
         const nomeField = document.getElementById('nome-cliente');
         if (nomeField) {
-            nomeField.value = clienteName;
-            nomeField.readOnly = true; // Torna o campo somente leitura
+            nomeField.value = cliente.nome;
+            nomeField.readOnly = true;
         }
     }
-
-    if (clienteEmail) {
+    if (cliente.email) {
         const emailField = document.getElementById('email-cliente');
         if (emailField) {
-            emailField.value = clienteEmail;
-            emailField.readOnly = true; // Torna o campo somente leitura
+            emailField.value = cliente.email;
+            emailField.readOnly = true;
         }
+    }
+}
+
+// Função para verificar e sincronizar dados do cliente
+async function verificarSincronizacaoDados() {
+    try {
+        // Verificar se há dados nos cookies
+        const clienteId = getCookie('cliente_id');
+        const clienteName = getCookie('cliente_name');
+        const clienteEmail = getCookie('cliente_email');
+        const clienteTelefone = getCookie('cliente_telefone');
+        
+        if (!clienteId || !clienteName || !clienteEmail || !clienteTelefone) {
+            console.log('Dados do cliente incompletos nos cookies');
+            return;
+        }
+        
+        // Tentar sincronizar dados
+        const response = await fetch('/api/sincronizar-dados-cliente', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.mudancas && result.mudancas.length > 0) {
+                console.log('Dados sincronizados:', result.mudancas);
+                // Sincronização silenciosa - sem mostrar mensagem para o usuário
+            }
+        } else {
+            console.log('Erro ao sincronizar dados do cliente');
+        }
+        
+    } catch (error) {
+        console.error('Erro na verificação de sincronização:', error);
     }
 }
 
@@ -120,7 +238,7 @@ async function carregarDetalhesEmpresa(empresaId, modoSPA = false) {
         const divInfo = document.getElementById('informacoes-empresa');
         if (!divInfo) {
             console.error("Elemento com id 'informacoes-empresa' não encontrado no DOM.");
-            alert("Erro interno: elemento de informações da empresa não encontrado na página.");
+            mostrarAlerta("Erro interno: elemento de informações da empresa não encontrado na página.", 'error');
             return;
         }
         divInfo.innerHTML = `
@@ -171,7 +289,7 @@ async function carregarDetalhesEmpresa(empresaId, modoSPA = false) {
         if (error.response && error.response.data && error.response.data.error) {
             msg += '\n' + error.response.data.error;
         }
-        alert(msg);
+        mostrarAlerta(msg, 'error');
     }
 }
 
@@ -241,7 +359,7 @@ async function carregarEmpresas() {
         });
     } catch (error) {
         console.error('Erro ao carregar empresas:', error);
-        alert('Erro ao carregar empresas. Tente novamente mais tarde.');
+        mostrarAlerta('Erro ao carregar empresas. Tente novamente mais tarde.', 'error');
     }
 }
 
@@ -358,13 +476,20 @@ async function carregarHorariosDisponiveis(event) {
         containerHorarios.innerHTML = '';
 
         if (!horariosDisponiveis || horariosDisponiveis.length === 0) {
-            containerHorarios.innerHTML = '<p>Nenhum horário disponível.</p>';
+            const hoje = new Date().toISOString().split('T')[0];
+            const dataSelecionada = document.getElementById('data-input').value;
+            
+            if (dataSelecionada === hoje) {
+                containerHorarios.innerHTML = '<p style="color: #ffc107; text-align: center; padding: 20px;">Nenhum horário disponível para hoje. Tente selecionar outra data.</p>';
+            } else {
+                containerHorarios.innerHTML = '<p style="color: #ccc; text-align: center; padding: 20px;">Nenhum horário disponível para esta data.</p>';
+            }
             return;
         }
 
         horariosDisponiveis.forEach(horario => {
             const botaoHorario = document.createElement('button');
-            botaoHorario.classList.add('btn-horario');
+            botaoHorario.classList.add('time-slot');
             botaoHorario.textContent = horario;
             botaoHorario.onclick = () => selecionarHorario(horario);
             containerHorarios.appendChild(botaoHorario);
@@ -384,10 +509,17 @@ function selecionarHorario(horario) {
     horarioSelecionado.textContent = `Horário selecionado: ${horario}`;
 
     const containerHorarios = document.getElementById('horarios-disponiveis');
-    const botoes = containerHorarios.querySelectorAll('button');
+    const botoes = containerHorarios.querySelectorAll('.time-slot');
+    
+    // Remove a seleção de todos os botões
     botoes.forEach(botao => {
-        if (botao.textContent !== horario) {
-            botao.style.display = 'none';
+        botao.classList.remove('selected');
+    });
+    
+    // Adiciona a seleção ao botão clicado
+    botoes.forEach(botao => {
+        if (botao.textContent === horario) {
+            botao.classList.add('selected');
         }
     });
 
@@ -419,35 +551,109 @@ function abrirModalAgendamento(empresaId) {
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('form-agendamento');
     if (form) {
+        // Variável para controlar se já está processando
+        let processando = false;
+        
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
+            console.log('=== EVENTO SUBMIT DISPARADO ===');
+            
+            // Evitar múltiplas submissões
+            if (processando) {
+                console.log('Já está processando, ignorando nova submissão');
+                return;
+            }
+            
+            processando = true;
+            console.log('=== INICIANDO PROCESSAMENTO ===');
+
+            // Desabilitar botão de submit
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
+            }
 
             mostrarCarregamento(); // Exibe a tela de carregamento
 
             const dados = new FormData(e.target);
             const dadosObj = Object.fromEntries(dados.entries());
 
+            // Validação da data
+            const dataSelecionada = new Date(dadosObj.data);
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+            
+            if (dataSelecionada < hoje) {
+                mostrarAlerta('Não é possível agendar para datas passadas.', 'warning');
+                esconderCarregamento();
+                return;
+            }
+            
             // Validação do telefone
             const telefone = dadosObj.telefone;
             if (telefone.length < 10 || telefone.length > 11) {
-                alert('Por favor, insira um número de telefone válido com 10 ou 11 dígitos.');
+                mostrarAlerta('Por favor, insira um número de telefone válido com 10 ou 11 dígitos.', 'warning');
+                esconderCarregamento();
                 return;
             }
 
             try {
-                const response = await axios.post('/api/agendar-cliente', dadosObj);
-                alert(response.data.message);
-                document.getElementById('modal-agendamento').style.display = 'none';
-                document.getElementById('empresas-lista').style.display = 'block';
-                document.getElementById('search-container').style.display = 'block';
-                form.reset();
-                document.getElementById('horarios-disponiveis').innerHTML = '';
-                document.getElementById('horario-selecionado').innerHTML = '';
+                console.log('=== INÍCIO DO AGENDAMENTO ===');
+                console.log('Dados sendo enviados:', dadosObj);
+                
+                // Teste simples com fetch primeiro
+                const fetchResponse = await fetch('/api/agendar-cliente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dadosObj)
+                });
+                
+                console.log('=== RESPOSTA FETCH ===');
+                console.log('Status:', fetchResponse.status);
+                console.log('OK:', fetchResponse.ok);
+                
+                const responseData = await fetchResponse.json();
+                console.log('Dados:', responseData);
+                
+                if (fetchResponse.ok) {
+                    console.log('SUCESSO - Mostrando popup de sucesso');
+                    mostrarAlerta(responseData.message || 'Agendamento realizado com sucesso!', 'success');
+                    
+                    // Limpar interface
+                    document.getElementById('modal-agendamento').style.display = 'none';
+                    document.getElementById('empresas-lista').style.display = 'block';
+                    document.getElementById('search-container').style.display = 'block';
+                    form.reset();
+                    document.getElementById('horarios-disponiveis').innerHTML = '';
+                    document.getElementById('horario-selecionado').innerHTML = '';
+                } else {
+                    console.log('ERRO - Mostrando popup de erro');
+                    mostrarAlerta(responseData.error || 'Erro ao realizar o agendamento', 'error');
+                }
+                
             } catch (err) {
-                console.error('Erro ao agendar:', err);
-                alert(err.response?.data?.error || 'Erro ao realizar o agendamento');
+                console.log('=== ERRO CAPTURADO ===');
+                console.log('Tipo de erro:', err.name);
+                console.log('Mensagem:', err.message);
+                
+                // Erro de rede ou outro tipo
+                console.log('Erro de rede detectado, mostrando mensagem de erro');
+                mostrarAlerta('Erro de conexão. Verifique sua internet e tente novamente.', 'error');
             } finally {
-                esconderCarregamento(); // Esconde a tela de carregamento após o processo
+                esconderCarregamento();
+                processando = false;
+                
+                // Reabilitar botão de submit
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Confirmar Agendamento';
+                }
+                
+                console.log('=== PROCESSAMENTO FINALIZADO ===');
             }
         });
     }
@@ -521,7 +727,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Verifica se a geolocalização está disponível no navegador
 async function obterCidade() {
     if (!navigator.geolocation) {
-        alert('Geolocalização não é suportada pelo seu navegador.');
+        mostrarAlerta('Geolocalização não é suportada pelo seu navegador.', 'warning');
         return;
     }
 
@@ -549,7 +755,7 @@ async function obterCidade() {
                 data.address.municipality || data.address.county;
 
             if (cidade) {
-                alert(`Cidade detectada: ${cidade}`);
+                mostrarAlerta(`Cidade detectada: ${cidade}`, 'success');
 
                 const cidadeParam = encodeURIComponent(cidade);
                 const urlParams = new URLSearchParams(window.location.search);
@@ -564,11 +770,11 @@ async function obterCidade() {
                 buscarEmpresas(cidade);
             }
             else {
-                alert('Não foi possível detectar sua cidade. Tente novamente.');
+                mostrarAlerta('Não foi possível detectar sua cidade. Tente novamente.', 'warning');
             }
         } catch (error) {
             console.error("[ERRO] Exceção ao buscar a cidade:", error);
-            alert('Erro ao buscar informações da cidade. Tente novamente.');
+            mostrarAlerta('Erro ao buscar informações da cidade. Tente novamente.', 'error');
         } finally {
             // Restaurar o botão
             if (btn) {
@@ -593,7 +799,7 @@ async function obterCidade() {
                 mensagemErro = 'Erro desconhecido ao obter localização.';
         }
         
-        alert(mensagemErro);
+        mostrarAlerta(mensagemErro, 'error');
         
         // Restaurar o botão
         if (btn) {
@@ -1009,18 +1215,80 @@ if (btnSalvarCliente) {
                 body: JSON.stringify(payload)
             });
             if (res.ok) {
-                alert('Dados atualizados com sucesso!');
+                // Atualizar cookies com os novos dados
+                document.cookie = `cliente_email=${email}; path=/; max-age=${30 * 24 * 60 * 60}`;
+                document.cookie = `cliente_telefone=${telefone}; path=/; max-age=${30 * 24 * 60 * 60}`;
+                
+                // Sincronizar dados automaticamente
+                await verificarSincronizacaoDados();
+                
+                mostrarAlerta('Dados atualizados com sucesso!', 'success');
                 const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarCliente'));
                 modal.hide();
                 atualizarNomeClienteTopo();
             } else {
                 const erro = await res.json();
-                alert(erro.error || 'Erro ao atualizar dados.');
+                mostrarAlerta(erro.error || 'Erro ao atualizar dados.', 'error');
             }
         } catch (e) {
-            alert('Erro ao atualizar dados.');
+            mostrarAlerta('Erro ao atualizar dados.', 'error');
         }
     });
 }
+
+// Função para salvar dados do cliente no localStorage após login
+function salvarClienteLocalStorage(cliente) {
+    if (!cliente) return;
+    localStorage.setItem('cliente_id', cliente.id || '');
+    localStorage.setItem('cliente_name', cliente.nome || '');
+    localStorage.setItem('cliente_email', cliente.email || '');
+    localStorage.setItem('cliente_telefone', cliente.telefone || '');
+    localStorage.setItem('id_usuario_cliente', cliente.id_usuario_cliente || '');
+    localStorage.setItem('id_empresa', cliente.id_empresa || '');
+}
+
+// Função para limpar dados do cliente do localStorage
+function limparClienteLocalStorage() {
+    localStorage.removeItem('cliente_id');
+    localStorage.removeItem('cliente_name');
+    localStorage.removeItem('cliente_email');
+    localStorage.removeItem('cliente_telefone');
+    localStorage.removeItem('id_usuario_cliente');
+    localStorage.removeItem('id_empresa');
+}
+
+// Função para obter dados do cliente (prioriza localStorage, depois cookies)
+function getClienteInfo() {
+    let cliente = {
+        id: localStorage.getItem('cliente_id'),
+        nome: localStorage.getItem('cliente_name'),
+        email: localStorage.getItem('cliente_email'),
+        telefone: localStorage.getItem('cliente_telefone'),
+        id_usuario_cliente: localStorage.getItem('id_usuario_cliente'),
+        id_empresa: localStorage.getItem('id_empresa')
+    };
+    // Se não houver no localStorage, tenta cookies
+    if (!cliente.email) {
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+        cliente.id = getCookie('cliente_id');
+        cliente.nome = getCookie('cliente_name');
+        cliente.email = getCookie('cliente_email');
+        cliente.telefone = getCookie('cliente_telefone');
+        cliente.id_usuario_cliente = getCookie('id_usuario_cliente');
+        cliente.id_empresa = getCookie('id_empresa');
+    }
+    return cliente;
+}
+
+// Ao fazer login, chame salvarClienteLocalStorage(cliente) com o objeto retornado pelo backend
+// Exemplo de uso após login:
+// salvarClienteLocalStorage(response.cliente);
+
+// Ao fazer logout, chame limparClienteLocalStorage();
 
 

@@ -13,7 +13,7 @@
 <!-- Formulário para cadastrar clientes -->
 <div id="formularioCadastro" style="display: none;">
     <h3>Cadastro de Clientes</h3>
-    <form method="POST" action="/add_cliente">
+    <form id="formCadastroCliente">
         <div class="mb-3">
             <label for="nome" class="form-label">Nome</label>
             <input type="text" class="form-control" id="nome" name="nome" placeholder="Digite o nome do cliente" required>
@@ -57,10 +57,10 @@
             {% for cliente in clientes %}
             <tr>
                 <td>{{ cliente.nome_cliente }}</td>
-                <td>{{ cliente.email }}</td>
+                <td>{{ cliente.email or '-' }}</td>
                 <td>{{ cliente.telefone }}</td>
                 <td>
-                    <button class="btn btn-warning btn-sm" onclick="abrirModalEditar('{{ cliente.id }}', '{{ cliente.nome_cliente }}', '{{ cliente.email }}', '{{ cliente.telefone }}')">
+                    <button class="btn btn-warning btn-sm" onclick="abrirModalEditar('{{ cliente.id }}', '{{ cliente.nome_cliente }}', '{{ cliente.telefone }}')">
                         <i class="bi bi-pencil"></i> Editar
                     </button>
                 </td>
@@ -69,6 +69,25 @@
         </tbody>
     </table>
 </div>
+
+<!-- Paginação -->
+{% if total_pages > 0 %}
+<nav aria-label="Navegação de páginas de clientes">
+  <ul class="pagination justify-content-center mt-3">
+    <li class="page-item {% if page == 1 %}disabled{% endif %}">
+      <a class="page-link" href="?page={{ page-1 }}&per_page={{ per_page }}&query={{ query }}">Anterior</a>
+    </li>
+    {% for p in range(1, total_pages+1) %}
+    <li class="page-item {% if p == page %}active{% endif %}">
+      <a class="page-link" href="?page={{ p }}&per_page={{ per_page }}&query={{ query }}">{{ p }}</a>
+    </li>
+    {% endfor %}
+    <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+      <a class="page-link" href="?page={{ page+1 }}&per_page={{ per_page }}&query={{ query }}">Próxima</a>
+    </li>
+  </ul>
+</nav>
+{% endif %}
 
 <!-- Modal de Edição -->
 <div class="modal fade" id="editarClienteModal" tabindex="-1" aria-labelledby="editarClienteModalLabel" aria-hidden="true">
@@ -86,10 +105,6 @@
                         <input type="text" class="form-control" id="editarNome">
                     </div>
                     <div class="mb-3">
-                        <label for="editarEmail" class="form-label">E-mail</label>
-                        <input type="email" class="form-control" id="editarEmail">
-                    </div>
-                    <div class="mb-3">
                         <label for="editarTelefone" class="form-label">Telefone</label>
                         <input type="tel" class="form-control" id="editarTelefone">
                     </div>
@@ -103,14 +118,42 @@
         </div>
     </div>
 </div>
+
+<!-- Modal de Mensagem -->
+<div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalMensagemLabel">Mensagem</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p id="modalMensagemBody"></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block page_scripts %}
 <script>
-function mostrarMensagem(titulo, mensagem) {
+function mostrarMensagem(titulo, mensagem, tipo = 'info') {
+    const modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
     document.getElementById('modalMensagemLabel').textContent = titulo || 'Mensagem';
     document.getElementById('modalMensagemBody').textContent = mensagem;
-    const modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
+    
+    // Ajustar cor do modal baseado no tipo
+    const modalContent = document.querySelector('#modalMensagem .modal-content');
+    modalContent.className = 'modal-content';
+    if (tipo === 'success') {
+        modalContent.classList.add('border-success');
+    } else if (tipo === 'error') {
+        modalContent.classList.add('border-danger');
+    }
+    
     modal.show();
 }
 
@@ -128,10 +171,9 @@ function cancelarCadastro() {
 }
 
 // Função para abrir o modal de edição com os dados do cliente
-function abrirModalEditar(id, nome, email, telefone) {
+function abrirModalEditar(id, nome, telefone) {
     $('#editarClienteId').val(id);
     $('#editarNome').val(nome);
-    $('#editarEmail').val(email);
     $('#editarTelefone').val(telefone);
     $('#editarClienteModal').modal('show');
 }
@@ -144,11 +186,11 @@ function excluirCliente() {
             url: `/excluir_cliente/${id}`,
             method: 'POST',
             success: function () {
-                mostrarMensagem('Sucesso', 'Cliente excluído com sucesso.');
+                mostrarMensagem('Sucesso', 'Cliente excluído com sucesso.', 'success');
                 setTimeout(() => location.reload(), 1500);
             },
             error: function () {
-                mostrarMensagem('Erro', 'Erro ao excluir cliente.');
+                mostrarMensagem('Erro', 'Erro ao excluir cliente.', 'error');
             }
         });
     }
@@ -158,21 +200,61 @@ function excluirCliente() {
 function salvarCliente() {
     const id = $('#editarClienteId').val();
     const nome = $('#editarNome').val();
-    const email = $('#editarEmail').val();
     const telefone = $('#editarTelefone').val();
 
     $.ajax({
         url: `/editar_cliente/${id}`,
         method: 'POST',
-        data: { nome, email, telefone },
+        data: { nome, telefone },
         success: function () {
-            mostrarMensagem('Sucesso', 'Cliente atualizado com sucesso!');
+            mostrarMensagem('Sucesso', 'Cliente atualizado com sucesso!', 'success');
             setTimeout(() => location.reload(), 1500);
         },
         error: function () {
-            mostrarMensagem('Erro', 'Erro ao atualizar cliente.');
+            mostrarMensagem('Erro', 'Erro ao atualizar cliente.', 'error');
         }
     });
 }
+
+// Tratamento do formulário de cadastro
+document.addEventListener('DOMContentLoaded', function() {
+    const formCadastro = document.getElementById('formCadastroCliente');
+    if (formCadastro) {
+        formCadastro.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                nome: formData.get('nome'),
+                email: formData.get('email'),
+                telefone: formData.get('telefone'),
+                senha: '123456' // Senha padrão
+            };
+
+            fetch('/add_cliente', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    mostrarMensagem('Sucesso', data.message, 'success');
+                    formCadastro.reset();
+                    cancelarCadastro();
+                    setTimeout(() => location.reload(), 1500);
+                } else if (data.error) {
+                    mostrarMensagem('Erro', data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                mostrarMensagem('Erro', 'Erro ao cadastrar cliente. Tente novamente.', 'error');
+            });
+        });
+    }
+});
 </script>
 {% endblock %}

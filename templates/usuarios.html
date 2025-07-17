@@ -49,7 +49,6 @@
 </form>
 
 <!-- Listagem de Usuários -->
-
 <div class="tabela">
     {% if usuarios %}
     <table class="table table-striped">
@@ -64,7 +63,6 @@
             {% for usuario in usuarios %}
             <tr>
                 <td>{{ usuario.nome_usuario }}</td>
-
                 <td>{{ usuario.telefone }}</td>
                 <td>
                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
@@ -72,17 +70,32 @@
                         onclick="preencherEdicao('{{ usuario.id }}', '{{ usuario.nome_usuario }}', '{{ usuario.email }}', '{{ usuario.telefone }}')">
                         Editar
                     </button>
-
-
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-</div>
-{% else %}
-<p class="text-muted">Nenhum usuário cadastrado.</p>
-{% endif %}
+    <!-- Paginação -->
+    {% if total_pages > 0 %}
+    <nav aria-label="Navegação de páginas de usuários">
+      <ul class="pagination justify-content-center mt-3">
+        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+          <a class="page-link" href="?page={{ page-1 }}&per_page={{ per_page }}{% if search_query %}&search_query={{ search_query }}{% endif %}">Anterior</a>
+        </li>
+        {% for p in range(1, total_pages+1) %}
+        <li class="page-item {% if p == page %}active{% endif %}">
+          <a class="page-link" href="?page={{ p }}&per_page={{ per_page }}{% if search_query %}&search_query={{ search_query }}{% endif %}">{{ p }}</a>
+        </li>
+        {% endfor %}
+        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+          <a class="page-link" href="?page={{ page+1 }}&per_page={{ per_page }}{% if search_query %}&search_query={{ search_query }}{% endif %}">Próxima</a>
+        </li>
+      </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <p class="text-muted">Nenhum usuário cadastrado.</p>
+    {% endif %}
 
 <!-- Modal de Edição -->
 <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">

@@ -103,7 +103,19 @@ def agendar():
 
     if response.data:
         empresa = supabase.table('empresa').select("email, senha_app").eq('id', empresa_id).execute().data[0]
-        cliente = supabase.table("clientes").select("email, nome_cliente").eq("id", dados["cliente_id"]).execute().data[0]
+        # Buscar nome_cliente e id_usuario_cliente
+        cliente = supabase.table("clientes").select("nome_cliente, id_usuario_cliente").eq("id", dados["cliente_id"]).execute().data[0]
+        
+        # Verificar se o cliente tem id_usuario_cliente antes de buscar o email
+        email_cliente = None
+        if cliente and cliente.get("id_usuario_cliente"):
+            try:
+                usuario_cliente = supabase.table("usuarios_clientes").select("email").eq("id", cliente["id_usuario_cliente"]).execute().data[0]
+                email_cliente = usuario_cliente.get("email") if usuario_cliente else None
+            except Exception as e:
+                print(f"Erro ao buscar email do cliente: {e}")
+                email_cliente = None
+        
         usuario = supabase.table("usuarios").select("email, nome_usuario").eq("id", dados["usuario_id"]).execute().data[0]
         servico = supabase.table("servicos").select("nome_servico").eq("id", dados["servico_id"]).execute().data[0]
 
@@ -148,8 +160,9 @@ def agendar():
         Equipe de Agendamento.
         """
 
-        # Enviar os e-mails
-        enviar_email(cliente['email'], assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
+        # Enviar os e-mails (apenas se o email do cliente existir)
+        if email_cliente:
+            enviar_email(email_cliente, assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
         enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
 
         # Após inserir o agendamento com sucesso, chame:

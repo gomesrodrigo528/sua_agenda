@@ -86,6 +86,44 @@
     </div>
   </div>
 
+  <!-- Modal de Cadastro de Cliente -->
+  <div class="modal fade" id="cadastroClienteModal" tabindex="-1" aria-labelledby="cadastroClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content" style="background-color: #1e1e1e; color: white;">
+        <div class="modal-header">
+          <h5 class="modal-title" id="cadastroClienteModalLabel">Cadastro de Cliente</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" style="background-color: red;"></button>
+        </div>
+        <div class="modal-body">
+          <div id="cadastro-error-messages" style="display:none; color: #ff5252;"></div>
+          <form id="formCadastroCliente">
+            <div class="mb-3">
+              <label for="cadastro-nome" class="form-label">Nome</label>
+              <input type="text" id="cadastro-nome" name="nome" class="form-control" required placeholder="Digite seu nome">
+            </div>
+            <div class="mb-3">
+              <label for="cadastro-endereco" class="form-label">Endereço</label>
+              <input type="text" id="cadastro-endereco" name="endereco" class="form-control" required placeholder="Digite seu endereço">
+            </div>
+            <div class="mb-3">
+              <label for="cadastro-telefone" class="form-label">Telefone</label>
+              <input type="tel" id="cadastro-telefone" name="telefone" class="form-control" required placeholder="Digite seu telefone">
+            </div>
+            <div class="mb-3">
+              <label for="cadastro-email" class="form-label">Email</label>
+              <input type="email" id="cadastro-email" name="email" class="form-control" required placeholder="Digite seu email">
+            </div>
+            <div class="mb-3">
+              <label for="cadastro-senha" class="form-label">Senha</label>
+              <input type="password" id="cadastro-senha" name="senha" class="form-control" required placeholder="Digite uma senha">
+            </div>
+            <button type="submit" class="btn btn-success w-100">Cadastrar</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal de Login de Clientes -->
   <div class="modal fade" id="loginClienteModal" tabindex="-1" aria-labelledby="loginClienteModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -111,10 +149,11 @@
               <label for="senha-cliente" class="form-label">Senha</label>
               <input type="password" id="senha-cliente" name="senha" class="form-control" required placeholder="Digite a senha">
             </div>
-            <div class="mb-4">
+            <div class="mb-4 d-flex flex-column gap-2">
               <button type="button" class="btn btn-link" data-bs-toggle="modal" data-bs-target="#ModalEmail"
                 style="color: white;">Esqueci minha senha</button>
               <button type="submit" class="btn btn-primary w-100">Entrar</button>
+              <button type="button" class="btn btn-outline-success w-100" data-bs-toggle="modal" data-bs-target="#cadastroClienteModal" data-bs-dismiss="modal">Cadastrar</button>
             </div>
           </form>
           
@@ -199,6 +238,21 @@ document.addEventListener("DOMContentLoaded", function () {
             const data = await response.json();
 
             if (data.success) {
+                // Se houver dados do cliente na resposta, salvar no localStorage
+                if (data.cliente) {
+                    localStorage.setItem('cliente_id', data.cliente.id || '');
+                    localStorage.setItem('cliente_name', data.cliente.nome || '');
+                    localStorage.setItem('cliente_email', data.cliente.email || '');
+                    localStorage.setItem('cliente_telefone', data.cliente.telefone || '');
+                    localStorage.setItem('id_usuario_cliente', data.cliente.id_usuario_cliente || '');
+                    localStorage.setItem('id_empresa', data.cliente.id_empresa || '');
+                }
+                
+                // Se os dados foram atualizados, sincronização silenciosa
+                if (data.dados_atualizados) {
+                    console.log('Dados sincronizados automaticamente');
+                }
+                
                 window.location.href = data.redirect_url;
             } else {
                 errorMessages.innerHTML = data.message || "Erro desconhecido.";
@@ -210,6 +264,48 @@ document.addEventListener("DOMContentLoaded", function () {
             errorMessages.style.display = "block";
         }
     });
+
+    // Cadastro de cliente
+    const formCadastroCliente = document.getElementById('formCadastroCliente');
+    if (formCadastroCliente) {
+      formCadastroCliente.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const errorDiv = document.getElementById('cadastro-error-messages');
+        errorDiv.style.display = 'none';
+        errorDiv.textContent = '';
+        const nome = document.getElementById('cadastro-nome').value.trim();
+        const endereco = document.getElementById('cadastro-endereco').value.trim();
+        const telefone = document.getElementById('cadastro-telefone').value.trim();
+        const email = document.getElementById('cadastro-email').value.trim();
+        const senha = document.getElementById('cadastro-senha').value;
+        if (!nome || !endereco || !telefone || !email || !senha) {
+          errorDiv.textContent = 'Preencha todos os campos.';
+          errorDiv.style.display = 'block';
+          return;
+        }
+        try {
+          const res = await fetch('/api/cliente', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nome, endereco, telefone, email, senha })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            // Sucesso: fecha modal e mostra alerta
+            const modal = bootstrap.Modal.getInstance(document.getElementById('cadastroClienteModal'));
+            modal.hide();
+            alert('Cadastro realizado com sucesso! Faça login para continuar.');
+            formCadastroCliente.reset();
+          } else {
+            errorDiv.textContent = data.error || data.message || 'Erro ao cadastrar.';
+            errorDiv.style.display = 'block';
+          }
+        } catch (e) {
+          errorDiv.textContent = 'Erro de conexão com o servidor.';
+          errorDiv.style.display = 'block';
+        }
+      });
+    }
 });
 
 

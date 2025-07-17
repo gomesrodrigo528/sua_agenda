@@ -15,6 +15,143 @@
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#ffffff">
     <link rel="icon" href="/static/img/icone-mobile.png">
+    
+    <!-- Estilos para Popups -->
+    <style>
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .popup-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .popup-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .popup-icon.success {
+            color: #28a745;
+        }
+        
+        .popup-icon.error {
+            color: #dc3545;
+        }
+        
+        .popup-icon.warning {
+            color: #ffc107;
+        }
+        
+        .popup-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .popup-message {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.5;
+        }
+        
+        .popup-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .popup-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 100px;
+        }
+        
+        .popup-btn.primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .popup-btn.primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .popup-btn.secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .popup-btn.secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .popup-btn.success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .popup-btn.success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .popup-btn.danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .popup-btn.danger:hover {
+            background-color: #c82333;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px) scale(0.9);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .popup-overlay.fade-out {
+            animation: fadeOut 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
 
 </head>
 
@@ -356,15 +493,15 @@
                 event.target.reset();
 
                 // Exibe uma mensagem de sucesso
-                mostrarMensagem(data.message, "Sucesso");
+                mostrarMensagem("Sucesso", data.message);
             } else {
                 console.error("Erro:", data.error);
-                mostrarMensagem("Erro ao cadastrar cliente: " + data.error, "Erro");
+                mostrarMensagem("Erro", "Erro ao cadastrar cliente: " + data.error);
             }
         })
         .catch(error => {
             console.error("Erro na requisição:", error);
-            mostrarMensagem("Erro ao cadastrar cliente", "Erro");
+            mostrarMensagem("Erro", "Erro ao cadastrar cliente");
         });
     });
 });
@@ -405,18 +542,50 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-// Função para mostrar pop-up de mensagem
-function mostrarMensagem(msg, titulo = 'Mensagem') {
-    document.getElementById('modalMensagemLabel').textContent = titulo;
-    document.getElementById('modalMensagemBody').textContent = msg;
-    var modal = new bootstrap.Modal(document.getElementById('modalMensagem'));
-    modal.show();
+// Função para mostrar mensagens em pop-up
+function mostrarMensagem(titulo, mensagem, tipo = 'info') {
+    // Criar modal dinamicamente se não existir
+    let modal = document.getElementById('modalMensagem');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'modalMensagem';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalMensagemLabel">${titulo}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="modalMensagemBody">${mensagem}</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    } else {
+        document.getElementById('modalMensagemLabel').textContent = titulo;
+        document.getElementById('modalMensagemBody').textContent = mensagem;
+    }
+    
+    // Ajustar cor do modal baseado no tipo
+    const modalContent = modal.querySelector('.modal-content');
+    modalContent.className = 'modal-content';
+    if (tipo === 'success') {
+        modalContent.classList.add('border-success');
+    } else if (tipo === 'error') {
+        modalContent.classList.add('border-danger');
+    }
+    
+    const bootstrapModal = new bootstrap.Modal(modal);
+    bootstrapModal.show();
 }
 
-   
-
     </script>
-    
     
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -454,29 +623,23 @@ function mostrarMensagem(msg, titulo = 'Mensagem') {
         });
     </script>
     
-    
-    
-    
-
-
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const totalNaoVistos = {{ total_nao_vistos }};
 
-
-        if (totalNaoVistos > 0) {
-            // Exibe o modal com notificações
-            document.getElementById("total-nao-vistos").textContent = totalNaoVistos;
-            const notificacaoModal = new bootstrap.Modal(document.getElementById("notificacaoModal"));
-            notificacaoModal.show();
-        } else {
-            // Exibe o pop-up por 3 segundos
-            const popup = document.getElementById("popup");
-            popup.style.display = "block";
-            setTimeout(() => {
-                popup.style.display = "none";
-            }, 3000);
-        }
+            if (totalNaoVistos > 0) {
+                // Exibe o modal com notificações
+                document.getElementById("total-nao-vistos").textContent = totalNaoVistos;
+                const notificacaoModal = new bootstrap.Modal(document.getElementById("notificacaoModal"));
+                notificacaoModal.show();
+            } else {
+                // Exibe o pop-up por 3 segundos
+                const popup = document.getElementById("popup");
+                popup.style.display = "block";
+                setTimeout(() => {
+                    popup.style.display = "none";
+                }, 3000);
+            }
         });
     </script>
 
@@ -556,6 +719,63 @@ function mostrarMensagem(msg, titulo = 'Mensagem') {
     <a id="btn-vendas-flutuante" href="/vendas" title="Ir para vendas">
         <span class="cifrao">&#36;</span>
     </a>
+
+    <!-- Popup de Sucesso -->
+    <div id="popup-success" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-icon success">
+                <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="popup-title">Sucesso!</div>
+            <div class="popup-message" id="popup-success-message"></div>
+            <div class="popup-buttons">
+                <button class="popup-btn success" onclick="fecharPopup('popup-success')">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup de Erro -->
+    <div id="popup-error" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-icon error">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="popup-title">Erro</div>
+            <div class="popup-message" id="popup-error-message"></div>
+            <div class="popup-buttons">
+                <button class="popup-btn danger" onclick="fecharPopup('popup-error')">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup de Confirmação -->
+    <div id="popup-confirm" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-icon warning">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="popup-title">Confirmar</div>
+            <div class="popup-message" id="popup-confirm-message"></div>
+            <div class="popup-buttons">
+                <button class="popup-btn secondary" onclick="fecharPopup('popup-confirm')">Cancelar</button>
+                <button class="popup-btn danger" id="popup-confirm-btn">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popup de Aviso -->
+    <div id="popup-warning" class="popup-overlay">
+        <div class="popup-content">
+            <div class="popup-icon warning">
+                <i class="bi bi-exclamation-circle-fill"></i>
+            </div>
+            <div class="popup-title">Aviso</div>
+            <div class="popup-message" id="popup-warning-message"></div>
+            <div class="popup-buttons">
+                <button class="popup-btn primary" onclick="fecharPopup('popup-warning')">OK</button>
+            </div>
+        </div>
+    </div>
 
     <script src="/static/scripts/push_register.js"></script>
 

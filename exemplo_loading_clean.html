@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exemplo - Tela de Carregamento Clean</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .demo-container {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .demo-title {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        
+        .demo-description {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .demo-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 10px;
+        }
+        
+        .demo-button:hover {
+            background: #0056b3;
+        }
+        
+        /* Tela de Carregamento Clean */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        #loading-text {
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin: 0;
+        }
+        
+        /* Animação de fade */
+        #loading-screen.fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        #loading-screen.fade-out {
+            animation: fadeOut 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+        
+        .comparison-item {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .comparison-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .comparison-description {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            color: #555;
+        }
+        
+        .feature-list li:before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+            
+            .spinner {
+                width: 40px;
+                height: 40px;
+                border-width: 6px;
+            }
+            
+            #loading-text {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Tela de Carregamento -->
+    <div id="loading-screen" style="display: none;">
+        <div class="spinner"></div>
+        <p id="loading-text">Carregando...</p>
+    </div>
+
+    <div class="demo-container">
+        <h1 class="demo-title">🎨 Tela de Carregamento Clean</h1>
+        <p class="demo-description">
+            Nova versão simplificada e elegante da tela de carregamento, 
+            baseada no design do agenda.html para maior consistência visual.
+        </p>
+        
+        <button class="demo-button" onclick="testarLoading()">
+            🚀 Testar Loading
+        </button>
+        
+        <button class="demo-button" onclick="testarMensagens()">
+            💬 Testar Mensagens
+        </button>
+        
+        <button class="demo-button" onclick="testarSimulacao()">
+            ⚡ Simular API
+        </button>
+    </div>
+
+    <div class="comparison">
+        <div class="comparison-item">
+            <h3 class="comparison-title">❌ Versão Anterior</h3>
+            <p class="comparison-description">
+                Design complexo com card central, múltiplos elementos e cores escuras.
+            </p>
+            <ul class="feature-list">
+                <li>Card central com fundo escuro</li>
+                <li>Múltiplos elementos HTML</li>
+                <li>Spinner do Bootstrap</li>
+                <li>Título e descrição separados</li>
+                <li>Backdrop blur</li>
+                <li>Mais código CSS</li>
+            </ul>
+        </div>
+        
+        <div class="comparison-item">
+            <h3 class="comparison-title">✅ Versão Nova (Clean)</h3>
+            <p class="comparison-description">
+                Design minimalista e elegante, consistente com o resto da aplicação.
+            </p>
+            <ul class="feature-list">
+                <li>Overlay simples e limpo</li>
+                <li>Spinner CSS puro</li>
+                <li>Uma única mensagem</li>
+                <li>Animações suaves</li>
+                <li>Menos código</li>
+                <li>Consistente com agenda.html</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function mostrarTelaCarregamento(mensagem = 'Carregando...') {
+            const loadingScreen = document.getElementById('loading-screen');
+            const loadingText = document.getElementById('loading-text');
+            
+            if (loadingText) {
+                loadingText.textContent = mensagem;
+            }
+            
+            loadingScreen.style.display = 'flex';
+            loadingScreen.classList.add('fade-in');
+            loadingScreen.classList.remove('fade-out');
+        }
+        
+        function esconderTelaCarregamento() {
+            const loadingScreen = document.getElementById('loading-screen');
+            loadingScreen.classList.add('fade-out');
+            loadingScreen.classList.remove('fade-in');
+            
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 300);
+        }
+        
+        function testarLoading() {
+            mostrarTelaCarregamento('Carregando...');
+            setTimeout(() => {
+                esconderTelaCarregamento();
+            }, 3000);
+        }
+        
+        function testarMensagens() {
+            const mensagens = [
+                'Conectando...',
+                'Buscando dados...',
+                'Processando...',
+                'Finalizando...'
+            ];
+            
+            let index = 0;
+            mostrarTelaCarregamento(mensagens[index]);
+            
+            const interval = setInterval(() => {
+                index++;
+                if (index < mensagens.length) {
+                    mostrarTelaCarregamento(mensagens[index]);
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        esconderTelaCarregamento();
+                    }, 1000);
+                }
+            }, 1000);
+        }
+        
+        async function testarSimulacao() {
+            mostrarTelaCarregamento('Iniciando...');
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            mostrarTelaCarregamento('Conectando ao servidor...');
+            
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            mostrarTelaCarregamento('Buscando dados...');
+            
+            await new Promise(resolve => setTimeout(resolve, 1200));
+            mostrarTelaCarregamento('Processando informações...');
+            
+            await new Promise(resolve => setTimeout(resolve, 800));
+            mostrarTelaCarregamento('Finalizando...');
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            esconderTelaCarregamento();
+        }
+    </script>
+</body>
+</html> 

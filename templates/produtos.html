@@ -78,6 +78,8 @@
         </div>
     </div>
 </div>
+<!-- Paginação -->
+<div id="paginacao-produtos" class="d-flex justify-content-center mt-3"></div>
 
 <!-- Modal Adicionar/Editar Produto -->
 <div class="modal fade" id="modalProduto" tabindex="-1" aria-labelledby="modalProdutoLabel" aria-hidden="true">
@@ -499,21 +501,29 @@ function inativarProduto() {
     });
 }
 
-// Função para carregar produtos
-function carregarProdutos() {
-    fetch('/produtos/listar')
+// Variáveis globais de paginação
+let paginaAtual = 1;
+let totalPaginas = 1;
+let termoBusca = '';
+
+function carregarProdutos(pagina = 1) {
+    paginaAtual = pagina;
+    let url = `/produtos/listar?page=${pagina}&per_page=7`;
+    fetch(url)
         .then(res => res.json())
-        .then(produtos => {
+        .then(dados => {
+            const produtos = dados.produtos || [];
+            totalPaginas = dados.total_pages || 1;
+            const totalCount = dados.total_count || 0;
             const tbody = document.getElementById('produtos-body');
             tbody.innerHTML = '';
-
             produtos.forEach(produto => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${produto.identificador_empresa}</td>
-                    <td>${produto.nome_produto}</td>
-                    <td>R$ ${produto.preco.toFixed(2)}</td>
-                    <td>${produto.estoque}</td>
+                    <td>${produto.identificador_empresa || ''}</td>
+                    <td>${produto.nome_produto || produto.nome || ''}</td>
+                    <td>R$ ${(produto.preco || 0).toFixed(2)}</td>
+                    <td>${produto.estoque || 0}</td>
                     <td>${produto.un_medida || 'N/A'}</td>
                     <td>${produto.grupo || 'Sem grupo'}</td>
                     <td>${produto.cod_barras || 'N/A'}</td>
@@ -526,12 +536,33 @@ function carregarProdutos() {
                 `;
                 tbody.appendChild(row);
             });
+            renderizarPaginacaoProdutos(pagina, totalPaginas, totalCount);
         })
         .catch(err => console.error('Erro ao carregar produtos:', err));
 }
 
-// Carregar produtos quando a página carregar
-document.addEventListener('DOMContentLoaded', carregarProdutos);
+function renderizarPaginacaoProdutos(pagina, totalPaginas, totalCount) {
+    const paginacaoDiv = document.getElementById('paginacao-produtos');
+    if (totalPaginas <= 1) {
+        paginacaoDiv.innerHTML = '';
+        return;
+    }
+    let html = `<nav aria-label='Navegação de páginas de produtos'><ul class='pagination justify-content-center'>`;
+    html += `<li class='page-item ${pagina === 1 ? 'disabled' : ''}'>`;
+    html += `<a class='page-link' href='#' onclick='carregarProdutos(${pagina-1})'>Anterior</a></li>`;
+    for (let p = 1; p <= totalPaginas; p++) {
+        html += `<li class='page-item ${p === pagina ? 'active' : ''}'>`;
+        html += `<a class='page-link' href='#' onclick='carregarProdutos(${p})'>${p}</a></li>`;
+    }
+    html += `<li class='page-item ${pagina === totalPaginas ? 'disabled' : ''}'>`;
+    html += `<a class='page-link' href='#' onclick='carregarProdutos(${pagina+1})'>Próxima</a></li>`;
+    html += `</ul><span class='ms-3 text-muted small'>Total: ${totalCount} produtos</span></nav>`;
+    paginacaoDiv.innerHTML = html;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    carregarProdutos(1);
+});
 
 // Template para linha de produto na compra
 function criarLinhaCompra() {
