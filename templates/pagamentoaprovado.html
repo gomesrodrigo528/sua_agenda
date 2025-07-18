@@ -405,233 +405,239 @@
                 {% endwith %}
             </div>
 
-            {% if not empresa_cadastrada %}
             <!-- Formulário de Cadastro da Empresa -->
-            <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="empresaForm" onsubmit="return validarFormularioEmpresa()">
-                <input type="hidden" name="plano" value="{{ plano }}">
+            <div id="empresa-form-container" {% if empresa_cadastrada %}style="display: none;"{% endif %}>
+                <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="empresaForm">
+                    <input type="hidden" name="plano" value="{{ plano }}">
 
-                <div class="form-section">
-                    <div class="form-group">
-                        <label for="nome_empresa">
-                            <i class="bi bi-building"></i>
-                            Nome da Empresa
-                        </label>
-                        <input type="text" id="nome_empresa" name="nome_empresa" class="form-control" required placeholder="Digite o nome da sua empresa" minlength="3" maxlength="100">
-                        <div class="field-error" id="nome_empresa-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tipo_documento">
-                            <i class="bi bi-card-text"></i>
-                            Tipo de Documento
-                        </label>
-                        <div class="document-container">
-                            <div class="document-type">
-                                <select id="tipo_documento" name="tipo_documento">
-                                    <option value="cpf">CPF</option>
-                                    <option value="cnpj">CNPJ</option>
-                                </select>
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="nome_empresa">
+                                <i class="bi bi-building"></i>
+                                Nome da Empresa
+                            </label>
+                            <input type="text" id="nome_empresa" name="nome_empresa" class="form-control" required placeholder="Digite o nome da sua empresa" minlength="3" maxlength="100">
+                            <div class="field-error" id="nome_empresa-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
                             </div>
-                            <div class="document-input">
-                                <input type="text" id="cnpj" name="cnpj" class="form-control" required placeholder="Digite o documento">
-                                <div class="field-error" id="cnpj-error">
-                                    <i class="bi bi-exclamation-circle"></i>
-                                    <span></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tipo_documento">
+                                <i class="bi bi-card-text"></i>
+                                Tipo de Documento
+                            </label>
+                            <div class="document-container">
+                                <div class="document-type">
+                                    <select id="tipo_documento" name="tipo_documento">
+                                        <option value="cpf">CPF</option>
+                                        <option value="cnpj">CNPJ</option>
+                                    </select>
+                                </div>
+                                <div class="document-input">
+                                    <input type="text" id="cnpj" name="cnpj" class="form-control" required placeholder="Digite o documento">
+                                    <div class="field-error" id="cnpj-error">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        <span></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="email">
-                            <i class="bi bi-envelope"></i>
-                            E-mail
-                        </label>
-                        <input type="email" id="email" name="email" class="form-control" required placeholder="sua@empresa.com">
-                        <div class="field-error" id="email-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="descricao">
-                            <i class="bi bi-chat-quote"></i>
-                            Descrição
-                        </label>
-                        <textarea id="descricao" name="descricao" class="form-control" rows="3" required maxlength="30" placeholder="Descreva brevemente sua empresa"></textarea>
-                        <div class="field-error" id="descricao-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="setor">
-                            <i class="bi bi-briefcase"></i>
-                            Setor
-                        </label>
-                        <select id="setor" name="setor" class="form-control" required>
-                            <option value="">Selecione um setor</option>
-                            <option value="Tecnologia">Tecnologia</option>
-                            <option value="Beleza">Beleza</option>
-                            <option value="Barbearia">Barbearia</option>
-                            <option value="Saude">Saúde</option>
-                            <option value="Outro">Outro</option>
-                        </select>
-                        <div class="field-error" id="setor-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="tel_empresa">
-                            <i class="bi bi-telephone"></i>
-                            Telefone
-                        </label>
-                        <input type="text" id="tel_empresa" name="tel_empresa" class="form-control" required placeholder="(00) 00000-0000">
-                        <div class="field-error" id="tel_empresa-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>
-                            <i class="bi bi-geo-alt"></i>
-                            Localização
-                        </label>
-                        <div class="address-container">
-                            <div>
-                                <input type="text" id="cidade" name="cidade" class="form-control" required placeholder="Cidade" minlength="3">
-                                <div class="field-error" id="cidade-error">
-                                    <i class="bi bi-exclamation-circle"></i>
-                                    <span></span>
-                                </div>
-                            </div>
-                            <div>
-                                <input type="text" id="cep" name="cep" class="form-control" required placeholder="CEP">
-                                <div class="field-error" id="cep-error">
-                                    <i class="bi bi-exclamation-circle"></i>
-                                    <span></span>
-                                </div>
+                        <div class="form-group">
+                            <label for="email">
+                                <i class="bi bi-envelope"></i>
+                                E-mail
+                            </label>
+                            <input type="email" id="email" name="email" class="form-control" required placeholder="sua@empresa.com">
+                            <div class="field-error" id="email-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="form-group">
-                        <label for="endereco">
-                            <i class="bi bi-house"></i>
-                            Endereço
-                        </label>
-                        <input type="text" id="endereco" name="endereco" class="form-control" required placeholder="Rua, número, bairro" minlength="5">
-                        <div class="field-error" id="endereco-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
+                        <div class="form-group">
+                            <label for="descricao">
+                                <i class="bi bi-chat-quote"></i>
+                                Descrição
+                            </label>
+                            <textarea id="descricao" name="descricao" class="form-control" rows="3" required maxlength="30" placeholder="Descreva brevemente sua empresa"></textarea>
+                            <div class="field-error" id="descricao-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="setor">
+                                <i class="bi bi-briefcase"></i>
+                                Setor
+                            </label>
+                            <select id="setor" name="setor" class="form-control" required>
+                                <option value="">Selecione um setor</option>
+                                <option value="Tecnologia">Tecnologia</option>
+                                <option value="Beleza">Beleza</option>
+                                <option value="Barbearia">Barbearia</option>
+                                <option value="Saude">Saúde</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                            <div class="field-error" id="setor-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="tel_empresa">
+                                <i class="bi bi-telephone"></i>
+                                Telefone
+                            </label>
+                            <input type="text" id="tel_empresa" name="tel_empresa" class="form-control" required placeholder="(00) 00000-0000">
+                            <div class="field-error" id="tel_empresa-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <i class="bi bi-geo-alt"></i>
+                                Localização
+                            </label>
+                            <div class="address-container">
+                                <div>
+                                    <input type="text" id="cidade" name="cidade" class="form-control" required placeholder="Cidade" minlength="3">
+                                    <div class="field-error" id="cidade-error">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        <span></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <input type="text" id="cep" name="cep" class="form-control" required placeholder="CEP">
+                                    <div class="field-error" id="cep-error">
+                                        <i class="bi bi-exclamation-circle"></i>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endereco">
+                                <i class="bi bi-house"></i>
+                                Endereço
+                            </label>
+                            <input type="text" id="endereco" name="endereco" class="form-control" required placeholder="Rua, número, bairro" minlength="5">
+                            <div class="field-error" id="endereco-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <button type="submit" class="btn-submit">
-                    <i class="bi bi-check-circle"></i>
-                    Cadastrar Empresa
-                </button>
-            </form>
-            {% else %}
+                    <button type="submit" class="btn-submit">
+                        <i class="bi bi-check-circle"></i>
+                        Cadastrar Empresa
+                    </button>
+                </form>
+            </div>
+
             <!-- Formulário de Cadastro do Primeiro Usuário -->
-            <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="usuarioForm" onsubmit="return validarFormularioUsuario()">
-                <input type="hidden" name="plano" value="{{ plano }}">
-                <input type="hidden" name="empresa_id" value="{{ empresa_id }}">
+            <div id="usuario-form-container" {% if not empresa_cadastrada %}style="display: none;"{% endif %}>
+                <form method="POST" action="/pagamentoaprovado/{{ plano }}" id="usuarioForm">
+                    <input type="hidden" name="plano" value="{{ plano }}">
+                    {% if empresa_cadastrada %}
+                    <input type="hidden" name="empresa_id" value="{{ empresa_cadastrada.id }}">
+                    {% endif %}
 
-                <div class="form-section">
-                    <div class="form-group">
-                        <label for="nome_usuario">
-                            <i class="bi bi-person"></i>
-                            Nome do Usuário
-                        </label>
-                        <input type="text" id="nome_usuario" name="nome_usuario" class="form-control" required placeholder="Digite seu nome completo" minlength="3" maxlength="100">
-                        <div class="field-error" id="nome_usuario-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="nome_usuario">
+                                <i class="bi bi-person"></i>
+                                Nome do Usuário
+                            </label>
+                            <input type="text" id="nome_usuario" name="nome_usuario" class="form-control" required placeholder="Digite seu nome completo" minlength="3" maxlength="100">
+                            <div class="field-error" id="nome_usuario-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email_usuario">
+                                <i class="bi bi-envelope"></i>
+                                E-mail
+                            </label>
+                            <input type="email" id="email_usuario" name="email_usuario" class="form-control" required placeholder="seu@email.com">
+                            <div class="field-error" id="email_usuario-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="telefone">
+                                <i class="bi bi-telephone"></i>
+                                Telefone
+                            </label>
+                            <input type="text" id="telefone" name="telefone" class="form-control" required placeholder="(00) 00000-0000">
+                            <div class="field-error" id="telefone-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="senha">
+                                <i class="bi bi-lock"></i>
+                                Senha
+                            </label>
+                            <div class="password-container">
+                                <input type="password" id="senha" name="senha" class="form-control" required minlength="8" placeholder="Digite sua senha">
+                                <button type="button" id="mostrarSenha" class="password-toggle">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div class="password-requirements">
+                                <h5>Requisitos da senha:</h5>
+                                <ul class="requirement-list">
+                                    <li id="req-tamanho">
+                                        <i class="bi bi-circle"></i>
+                                        Mínimo de 8 caracteres
+                                    </li>
+                                    <li id="req-maiuscula">
+                                        <i class="bi bi-circle"></i>
+                                        Pelo menos uma letra maiúscula
+                                    </li>
+                                    <li id="req-minuscula">
+                                        <i class="bi bi-circle"></i>
+                                        Pelo menos uma letra minúscula
+                                    </li>
+                                    <li id="req-numero">
+                                        <i class="bi bi-circle"></i>
+                                        Pelo menos um número
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="field-error" id="senha-error">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span></span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="email_usuario">
-                            <i class="bi bi-envelope"></i>
-                            E-mail
-                        </label>
-                        <input type="email" id="email_usuario" name="email_usuario" class="form-control" required placeholder="seu@email.com">
-                        <div class="field-error" id="email_usuario-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="telefone">
-                            <i class="bi bi-telephone"></i>
-                            Telefone
-                        </label>
-                        <input type="text" id="telefone" name="telefone" class="form-control" required placeholder="(00) 00000-0000">
-                        <div class="field-error" id="telefone-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="senha">
-                            <i class="bi bi-lock"></i>
-                            Senha
-                        </label>
-                        <div class="password-container">
-                            <input type="password" id="senha" name="senha" class="form-control" required minlength="8" placeholder="Digite sua senha">
-                            <button type="button" id="mostrarSenha" class="password-toggle">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </div>
-                        <div class="password-requirements">
-                            <h5>Requisitos da senha:</h5>
-                            <ul class="requirement-list">
-                                <li id="req-tamanho">
-                                    <i class="bi bi-circle"></i>
-                                    Mínimo de 8 caracteres
-                                </li>
-                                <li id="req-maiuscula">
-                                    <i class="bi bi-circle"></i>
-                                    Pelo menos uma letra maiúscula
-                                </li>
-                                <li id="req-minuscula">
-                                    <i class="bi bi-circle"></i>
-                                    Pelo menos uma letra minúscula
-                                </li>
-                                <li id="req-numero">
-                                    <i class="bi bi-circle"></i>
-                                    Pelo menos um número
-                                </li>
-                            </ul>
-                        </div>
-                        <div class="field-error" id="senha-error">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span></span>
-                        </div>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn-submit">
-                    <i class="bi bi-person-plus"></i>
-                    Cadastrar Usuário
-                </button>
-            </form>
-            {% endif %}
+                    <button type="submit" class="btn-submit">
+                        <i class="bi bi-person-plus"></i>
+                        Cadastrar Usuário
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
-<script>window.erroEmpresaCadastrada = {% if erro_empresa_cadastrada %}true{% else %}false{% endif %};</script>
+<script>
+    window.erroEmpresaCadastrada = false;
+</script>
 <script>
         // Funções de validação e interação
         function showLoading() {
@@ -677,6 +683,19 @@
             
             setTimeout(() => {
                 successDiv.remove();
+            }, 5000);
+        }
+
+        function showErrorMessage(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `<i class="bi bi-x-circle-fill"></i>${message}`;
+            
+            const container = document.querySelector('.form-container');
+            container.insertBefore(errorDiv, container.firstChild);
+            
+            setTimeout(() => {
+                errorDiv.remove();
             }, 5000);
         }
 
@@ -1045,7 +1064,106 @@
             showLoading();
             return true;
         }
+
+        // Event listener para interceptar o submit do formulário de empresa
+        document.addEventListener('DOMContentLoaded', function() {
+            const empresaForm = document.getElementById('empresaForm');
+            if (empresaForm) {
+                empresaForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    // Validar formulário
+                    const isValid = await validarFormularioEmpresa();
+                    if (!isValid) {
+                        return false;
+                    }
+                    
+                    // Coletar dados do formulário
+                    const formData = new FormData(this);
+                    const dados = Object.fromEntries(formData.entries());
+                    
+                    try {
+                        showLoading();
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(dados)
+                        });
+                        
+                        const data = await response.json();
+                        hideLoading();
+                        
+                        if (data.success) {
+                            showSuccessMessage('Empresa cadastrada com sucesso! Agora cadastre o usuário responsável.');
+                            // Ocultar formulário de empresa e mostrar formulário de usuário
+                            document.getElementById('empresaForm').parentElement.style.display = 'none';
+                            // Recarregar a página para mostrar o formulário de usuário
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 2000);
+                            // Armazenar ID da empresa para usar no cadastro do usuário
+                            window.empresaId = data.empresa_id;
+                        } else {
+                            showErrorMessage(data.error || 'Erro ao cadastrar empresa.');
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        console.error('Erro ao cadastrar empresa:', error);
+                        showErrorMessage('Erro inesperado ao cadastrar empresa.');
+                    }
+                });
+            }
+            
+            // Event listener para interceptar o submit do formulário de usuário
+            const usuarioForm = document.getElementById('usuarioForm');
+            if (usuarioForm) {
+                usuarioForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    // Validar formulário
+                    const isValid = validarFormularioUsuario();
+                    if (!isValid) {
+                        return false;
+                    }
+                    
+                    // Coletar dados do formulário
+                    const formData = new FormData(this);
+                    const dados = Object.fromEntries(formData.entries());
+                    
+                    try {
+                        showLoading();
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify(dados)
+                        });
+                        
+                        const data = await response.json();
+                        hideLoading();
+                        
+                        if (data.success) {
+                            showSuccessMessage('Usuário cadastrado com sucesso! Você pode fazer login agora.');
+                            // Redirecionar para login após 2 segundos
+                            setTimeout(() => {
+                                window.location.href = '/login';
+                            }, 2000);
+                        } else {
+                            showErrorMessage(data.error || 'Erro ao cadastrar usuário.');
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        console.error('Erro ao cadastrar usuário:', error);
+                        showErrorMessage('Erro inesperado ao cadastrar usuário.');
+                    }
+                });
+            }
+        });
     </script>
+    <script src="/static/scripts/pagamento_aprovado.js"></script>
 </body>
 
 </html>

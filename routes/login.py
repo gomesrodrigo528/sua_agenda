@@ -32,7 +32,6 @@ def login():
     email = request.form.get('email', '').strip()
     senha = request.form.get('senha', '').strip()
 
-    
     if not senha:
         return jsonify(success=False, message='O campo "Senha" é obrigatório.'), 400
 
@@ -45,6 +44,20 @@ def login():
         # Verifica a senha
         if usuario_data.data['senha'] != senha:
             return jsonify(success=False, message='Senha incorreta. Tente novamente.'), 401
+
+        # Buscar dados da empresa, incluindo o campo 'acesso'
+        empresa_id = usuario_data.data['id_empresa']
+        empresa_data = supabase.table('empresa').select('id, nome_empresa, acesso').eq('id', empresa_id).single().execute()
+        if not empresa_data.data:
+            return jsonify(success=False, message='Empresa não encontrada.'), 404
+
+        if not empresa_data.data.get('acesso', True):
+            # Setar cookies mesmo com acesso bloqueado
+            resp = make_response(jsonify(success=False, bloqueio=True, message='Seu acesso está bloqueado. É necessário renovar seu plano para continuar usando o sistema.'))
+            resp.set_cookie('user_id', str(usuario_data.data['id']), max_age=timedelta(days=30))
+            resp.set_cookie('user_name', str(usuario_data.data['nome_usuario']), max_age=timedelta(days=30))
+            resp.set_cookie('empresa_id', str(usuario_data.data['id_empresa']), max_age=timedelta(days=30))
+            return resp, 403
 
         # Login bem-sucedido, cria cookies
         resp = make_response(jsonify(success=True, redirect_url=url_for('agenda_bp.renderizar_agenda')))

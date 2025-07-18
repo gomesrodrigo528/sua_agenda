@@ -367,8 +367,7 @@ def comprar_produtos():
                 "descricao": "Compra de produtos",
                 "status": "pendente",
                 "plano_contas": "compra de produtos para revenda",
-                "data_emissao": dataatual,
-                "data_vencimento": data["data_vencimento"]
+                "data_emissao": dataatual
             }).execute()
         except Exception as e:
             return jsonify({"error": f"Erro ao processar compra: {str(e)}"}), 500

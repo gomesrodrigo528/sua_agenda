@@ -653,6 +653,15 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
     <!-- JS Personalizado -->
     <script src="static/scripts/menu.js"></script>
     <script>
+        // Adiciona fallback para ocultar loading após 15 segundos
+        setTimeout(() => {
+            const loading = document.getElementById('loading');
+            if (loading && loading.style.display !== 'none') {
+                console.warn('Fallback: Ocultando loading após timeout');
+                loading.style.display = 'none';
+            }
+        }, 15000);
+        
         renderMenu('menu-container');
     </script>
     <script src="static/scripts/script.js"></script>

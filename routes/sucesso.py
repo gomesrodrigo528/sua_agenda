@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
 from supabase import create_client
 import os
 import re
 from datetime import datetime, timedelta
+import requests
 
 # Configuração do Supabase
 supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
@@ -41,46 +42,43 @@ def validar_cnpj_cpf(documento):
     return False
 
 def validar_cpf(cpf):
-    """Valida CPF"""
+    cpf = re.sub(r'[^0-9]', '', cpf)
     if len(cpf) != 11 or cpf == cpf[0] * 11:
         return False
-    
-    # Validação do primeiro dígito
-    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
-    resto = 11 - (soma % 11)
-    digito1 = 0 if resto > 9 else resto
-    
-    if int(cpf[9]) != digito1:
-        return False
-    
-    # Validação do segundo dígito
-    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
-    resto = 11 - (soma % 11)
-    digito2 = 0 if resto > 9 else resto
-    
-    return int(cpf[10]) == digito2
+    for i in range(9, 11):
+        soma = sum(int(cpf[num]) * ((i+1) - num) for num in range(0, i))
+        digito = ((soma * 10) % 11) % 10
+        if digito != int(cpf[i]):
+            return False
+    return True
 
 def validar_cnpj(cnpj):
-    """Valida CNPJ"""
-    if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
+    cnpj = re.sub(r'[^0-9]', '', cnpj)
+    if len(cnpj) != 14:
         return False
-    
-    # Validação do primeiro dígito
-    multiplicadores = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(cnpj[i]) * multiplicadores[i] for i in range(12))
-    resto = soma % 11
-    digito1 = 0 if resto < 2 else 11 - resto
-    
-    if int(cnpj[12]) != digito1:
+    if cnpj == cnpj[0] * 14:
         return False
-    
-    # Validação do segundo dígito
-    multiplicadores = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-    soma = sum(int(cnpj[i]) * multiplicadores[i] for i in range(13))
-    resto = soma % 11
-    digito2 = 0 if resto < 2 else 11 - resto
-    
-    return int(cnpj[13]) == digito2
+    def calc_digito(cnpj, peso):
+        soma = sum(int(cnpj[i]) * peso[i] for i in range(len(peso)))
+        resto = soma % 11
+        return '0' if resto < 2 else str(11 - resto)
+    peso1 = [5,4,3,2,9,8,7,6,5,4,3,2]
+    peso2 = [6] + peso1
+    if calc_digito(cnpj, peso1) != cnpj[12]:
+        return False
+    if calc_digito(cnpj, peso2) != cnpj[13]:
+        return False
+    return True
+
+def consultar_receitaws_cnpj(cnpj):
+    cnpj = re.sub(r'[^0-9]', '', cnpj)
+    try:
+        resp = requests.get(f'https://www.receitaws.com.br/v1/cnpj/{cnpj}', timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception as e:
+        print(f'Erro ao consultar ReceitaWS: {e}')
+    return None
 
 def verificar_empresa_existente(email, cnpj):
     """Verifica se a empresa já existe no banco"""
@@ -118,9 +116,14 @@ def verificar_teste_ativo(empresa):
 
 @sucesso_bp.route('/pagamentoaprovado/<plano>', methods=['GET', 'POST'])
 def sucesso(plano):
+    print(f"DEBUG: Acessando rota /pagamentoaprovado/{plano}")
+    
     # Validação de segurança: verificar se o plano é válido
     dias_plano = validar_plano(plano)
+    print(f"DEBUG: Plano '{plano}' - dias_plano: {dias_plano}")
+    
     if dias_plano is None:
+        print(f"DEBUG: Plano inválido '{plano}', redirecionando para /adquirir")
         flash("Plano inválido! Redirecionando para página de planos.", "error")
         return redirect('/adquirir')
     
@@ -128,7 +131,9 @@ def sucesso(plano):
     if plano != 'teste' and request.method == 'GET':
         # Para planos pagos, verificar se veio do MercadoPago
         referer = request.headers.get('Referer', '')
+        print(f"DEBUG: Referer: {referer}")
         if not referer or 'mercadopago' not in referer.lower():
+            print(f"DEBUG: Acesso não autorizado - referer: {referer}")
             flash("Acesso não autorizado. Redirecionando para página de planos.", "error")
             return redirect('/adquirir')
     
@@ -136,18 +141,24 @@ def sucesso(plano):
     empresa_cadastrada = session.get('empresa_cadastrada', {})
     
     if request.method == 'POST':
+        # Verificar se é JSON ou form data
+        if request.is_json:
+            data = request.get_json()
+        else:
+            data = request.form
+        
         # Verificar se é cadastro de empresa ou de usuário
-        if 'nome_empresa' in request.form:
+        if 'nome_empresa' in data:
             # Cadastro da empresa
-            nome_empresa = request.form.get('nome_empresa', '').strip().upper()
-            cnpj = request.form.get('cnpj', '').strip()
-            email = request.form.get('email', '').strip()
-            descricao = request.form.get('descricao', '').strip()
-            setor = request.form.get('setor', '').strip().upper()
-            tel_empresa = request.form.get('tel_empresa', '').strip()
-            endereco = request.form.get('endereco', '').strip()
-            cep = request.form.get('cep', '').strip()
-            cidade = request.form.get('cidade', '').strip().upper()
+            nome_empresa = data.get('nome_empresa', '').strip().upper()
+            cnpj = data.get('cnpj', '').strip()
+            email = data.get('email', '').strip()
+            descricao = data.get('descricao', '').strip()
+            setor = data.get('setor', '').strip().upper()
+            tel_empresa = data.get('tel_empresa', '').strip()
+            endereco = data.get('endereco', '').strip()
+            cep = data.get('cep', '').strip()
+            cidade = data.get('cidade', '').strip().upper()
             
             # Validações de segurança
             if not all([nome_empresa, cnpj, email, descricao, setor, tel_empresa, endereco, cep, cidade]):
@@ -160,30 +171,29 @@ def sucesso(plano):
                 return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
             
             # Validar CNPJ/CPF
-            if not validar_cnpj_cpf(cnpj):
-                print(f"DEBUG: CNPJ/CPF inválido: {cnpj}")
-                # Temporariamente comentar para testar
-                # flash("CNPJ ou CPF inválido.", "error")
-                # return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
-            
+            if len(cnpj) == 14:
+                # if not validar_cnpj(cnpj):
+                #     return jsonify({"success": False, "error": "CNPJ inválido."}), 400
+                # # Consultar ReceitaWS
+                # dados_receita = consultar_receitaws_cnpj(cnpj)
+                # if dados_receita and dados_receita.get('status') == 'OK':
+                #     # Preencher automaticamente os dados se não enviados
+                #     if not nome_empresa:
+                #         nome_empresa = dados_receita.get('nome', '').upper()
+                #     if not endereco:
+                #         endereco = dados_receita.get('logradouro', '')
+                #     if not cidade:
+                #         cidade = dados_receita.get('municipio', '').upper()
+                pass
+            elif len(cnpj) == 11:
+                if not validar_cpf(cnpj):
+                    return jsonify({"success": False, "error": "CPF inválido."}), 400
+            else:
+                return jsonify({"success": False, "error": "CNPJ ou CPF inválido."}), 400
             # Verificar se empresa já existe
             empresa_existente = verificar_empresa_existente(email, cnpj)
-            print(f"DEBUG: Verificando empresa - Email: {email}, CNPJ: {cnpj}")
-            print(f"DEBUG: Empresa existente: {empresa_existente}")
-            
             if empresa_existente:
-                print(f"DEBUG: Empresa encontrada - ID: {empresa_existente.get('id')}")
-                # Se empresa existe e tem teste ativo, permitir acesso
-                if verificar_teste_ativo(empresa_existente):
-                    print(f"DEBUG: Teste ativo encontrado")
-                    flash("Empresa já cadastrada com teste ativo. Você pode continuar usando o sistema.", "info")
-                    session['empresa_cadastrada'] = {"id": empresa_existente['id']}
-                    return render_template('pagamentoaprovado.html', empresa_cadastrada=session['empresa_cadastrada'], plano=plano)
-                else:
-                    print(f"DEBUG: Teste não ativo - exibindo popup de erro")
-                    return render_template('pagamentoaprovado.html', empresa_cadastrada={}, plano=plano, erro_empresa_cadastrada=True)
-            else:
-                print(f"DEBUG: Empresa não encontrada - prosseguindo com cadastro")
+                return jsonify({"success": False, "error": "Empresa já cadastrada."}), 409
             
             # Dados da empresa
             data = {
@@ -202,51 +212,40 @@ def sucesso(plano):
             }
 
             try:
-                print(f"DEBUG: Inserindo empresa no banco")
-                # Inserir os dados da empresa no Supabase
                 response = supabase.table("empresa").insert(data).execute()
-                empresa_id = response.data[0]['id']  # Obter o ID da empresa recém-criada
-                print(f"DEBUG: Empresa inserida com ID: {empresa_id}")
-
-                # Salvar o ID na session para associar ao usuário
+                empresa_id = response.data[0]['id']
                 session['empresa_cadastrada'] = {"id": empresa_id}
-                flash("Empresa cadastrada com sucesso!", "success")
-                print(f"DEBUG: Empresa cadastrada, aguardando cadastro do usuário")
+                return jsonify({"success": True, "empresa_id": empresa_id}), 201
             except Exception as e:
-                print(f"DEBUG: Erro ao cadastrar empresa: {e}")
-                flash(f"Ocorreu um erro ao cadastrar a empresa: {e}", "error")
+                return jsonify({"success": False, "error": str(e)}), 500
 
-        elif 'nome_usuario' in request.form:
+        elif 'nome_usuario' in data:
             # Cadastro do primeiro usuário
-            nome_usuario = request.form.get('nome_usuario', '').strip().upper()
-            email_usuario = request.form.get('email_usuario', '').strip()
-            telefone = request.form.get('telefone', '').strip()
-            senha = request.form.get('senha', '').strip()
+            nome_usuario = data.get('nome_usuario', '').strip().upper()
+            email_usuario = data.get('email_usuario', '').strip()
+            telefone = data.get('telefone', '').strip()
+            senha = data.get('senha', '').strip()
 
             print(f"DEBUG: Cadastro de usuário - Nome: {nome_usuario}, Email: {email_usuario}")
             print(f"DEBUG: Empresa cadastrada na session: {session.get('empresa_cadastrada')}")
 
             # Validações de segurança
             if not all([nome_usuario, email_usuario, telefone, senha]):
-                flash("Todos os campos são obrigatórios.", "error")
-                return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
+                return jsonify({"success": False, "error": "Todos os campos são obrigatórios."}), 400
             
             # Validar email do usuário
             if not validar_email(email_usuario):
-                flash("Formato de email inválido.", "error")
-                return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
+                return jsonify({"success": False, "error": "Formato de email inválido."}), 400
             
             # Validar senha (mínimo 8 caracteres, pelo menos uma maiúscula, uma minúscula e um número)
             if len(senha) < 8 or not re.search(r'[A-Z]', senha) or not re.search(r'[a-z]', senha) or not re.search(r'\d', senha):
-                flash("A senha deve ter pelo menos 8 caracteres, uma letra maiúscula, uma minúscula e um número.", "error")
-                return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
+                return jsonify({"success": False, "error": "A senha deve ter pelo menos 8 caracteres, uma letra maiúscula, uma minúscula e um número."}), 400
 
             try:
                 # Verificar se o usuário já existe
                 response = supabase.table('usuarios').select('*').eq('email', email_usuario).execute()
                 if response.data:
-                    flash("Este email já está cadastrado. Use outro email.", "error")
-                    return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
+                    return jsonify({"success": False, "error": "Este email já está cadastrado. Use outro email."}), 409
                 
                 print(f"DEBUG: Inserindo usuário no banco")
                 # Inserir o usuário associado à empresa recém-cadastrada
@@ -259,14 +258,12 @@ def sucesso(plano):
                 }).execute()
 
                 print(f"DEBUG: Usuário cadastrado com sucesso")
-                flash("Usuário cadastrado com sucesso! Você pode fazer login agora.", "success")
                 session.pop('empresa_cadastrada', None)  # Limpar a session após o cadastro
 
-                # Redirecionar para a rota de login
-                return redirect(url_for('login.login'))
+                return jsonify({"success": True, "message": "Usuário cadastrado com sucesso! Você pode fazer login agora."}), 201
             except Exception as e:
                 print(f"DEBUG: Erro ao cadastrar usuário: {e}")
-                flash(f"Erro ao cadastrar usuário: {e}", "error")
+                return jsonify({"success": False, "error": f"Erro ao cadastrar usuário: {e}"}), 500
 
     return render_template('pagamentoaprovado.html', empresa_cadastrada=empresa_cadastrada, plano=plano)
 

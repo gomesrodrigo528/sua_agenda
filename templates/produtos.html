@@ -60,14 +60,14 @@
             <table class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Identificador</th>
-                        <th>Nome do Produto</th>
+                        <th class="d-none d-md-table-cell">Identificador</th>
+                        <th>Descrição</th>
                         <th>Preço</th>
                         <th>Estoque</th>
-                        <th>Unidade</th>
-                        <th>Grupo</th>
-                        <th>Código de Barra</th>
-                        <th>Preço de Custo</th>
+                        <th class="d-none d-md-table-cell">Unidade</th>
+                        <th class="d-none d-md-table-cell">Grupo</th>
+                        <th class="d-none d-md-table-cell">Código de Barra</th>
+                        <th class="d-none d-md-table-cell">Preço de Custo</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -242,6 +242,18 @@
 {% endblock %}
 
 {% block page_scripts %}
+<style>
+/* Esconde colunas extras em telas menores */
+@media (max-width: 767.98px) {
+    th.d-none, td.d-none {
+        display: none !important;
+    }
+    /* Esconde todos os botões de ação exceto o Ver */
+    #produtos-body .btn:not(.btn-info) {
+        display: none !important;
+    }
+}
+</style>
 <script>
 function mostrarMensagem(titulo, mensagem) {
     document.getElementById('modalMensagemLabel').textContent = titulo || 'Mensagem';
@@ -520,14 +532,14 @@ function carregarProdutos(pagina = 1) {
             produtos.forEach(produto => {
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${produto.identificador_empresa || ''}</td>
-                    <td>${produto.nome_produto || produto.nome || ''}</td>
+                    <td class="d-none d-md-table-cell">${produto.identificador_empresa || ''}</td>
+                    <td>${produto.descricao || produto.nome_produto || produto.nome || ''}</td>
                     <td>R$ ${(produto.preco || 0).toFixed(2)}</td>
                     <td>${produto.estoque || 0}</td>
-                    <td>${produto.un_medida || 'N/A'}</td>
-                    <td>${produto.grupo || 'Sem grupo'}</td>
-                    <td>${produto.cod_barras || 'N/A'}</td>
-                    <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.un_medida || 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.grupo || 'Sem grupo'}</td>
+                    <td class="d-none d-md-table-cell">${produto.cod_barras || 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
                     <td>
                         <button class="btn btn-info btn-sm" onclick="mostrarDetalhesProduto(${JSON.stringify(produto).replace(/\"/g, '&quot;')})">
                             <i class="bi bi-eye"></i> Ver
@@ -617,12 +629,15 @@ function adicionarProdutoCompra() {
 function carregarProdutosSelect(select) {
     fetch('/produtos/listar')
         .then(res => res.json())
-        .then(produtos => {
+        .then(data => {
+            const produtos = data.produtos || [];
+            select.innerHTML = '<option value="">Selecione um produto</option>';
             produtos.forEach(produto => {
                 const option = document.createElement('option');
                 option.value = produto.id;
-                option.textContent = produto.nome_produto;
+                option.textContent = produto.descricao || produto.nome_produto || produto.nome;
                 option.dataset.preco = produto.preco;
+                option.dataset.preco_custo = produto.preco_custo;
                 select.appendChild(option);
             });
         });
@@ -632,8 +647,8 @@ function carregarProdutosSelect(select) {
 function atualizarPrecoProduto(select) {
     const option = select.options[select.selectedIndex];
     const precoInput = select.closest('.produto-compra').querySelector('.preco-input');
-    if (option.dataset.preco) {
-        precoInput.value = option.dataset.preco;
+    if (option.dataset.preco_custo) {
+        precoInput.value = option.dataset.preco_custo;
     }
     calcularTotal();
 }
@@ -779,14 +794,14 @@ function buscarProdutos() {
                 if (!(produto.status === true || produto.status === 'true' || produto.status === 'Ativo' || produto.status === 1)) return;
                 const row = document.createElement('tr');
                 row.innerHTML = `
-                    <td>${produto.identificador_empresa || ''}</td>
-                    <td>${produto.nome_produto || produto.nome || ''}</td>
+                    <td class="d-none d-md-table-cell">${produto.identificador_empresa || ''}</td>
+                    <td>${produto.descricao || produto.nome_produto || produto.nome || ''}</td>
                     <td>R$ ${(produto.preco || 0).toFixed(2)}</td>
                     <td>${produto.estoque || 0}</td>
-                    <td>${produto.un_medida || 'N/A'}</td>
-                    <td>${produto.grupo || 'Sem grupo'}</td>
-                    <td>${produto.cod_barras || 'N/A'}</td>
-                    <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.un_medida || 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.grupo || 'Sem grupo'}</td>
+                    <td class="d-none d-md-table-cell">${produto.cod_barras || 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>
                     <td>
                         <button class="btn btn-info btn-sm" onclick="mostrarDetalhesProduto(${JSON.stringify(produto).replace(/\"/g, '&quot;')})">
                             <i class="bi bi-eye"></i> Ver
@@ -825,10 +840,10 @@ function filtrarProdutos() {
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${produto.identificador_empresa}</td>
-                    <td>${produto.nome_produto}</td>
+                    <td>${produto.descricao}</td>
                     <td>R$ ${produto.preco.toFixed(2)}</td>
                     <td>${produto.estoque}</td>
-                    <td>${produto.un_medida || 'N/A'}</td>
+                    <td class="d-none d-md-table-cell">${produto.un_medida || 'N/A'}</td>
                     <td>${produto.grupo || 'Sem grupo'}</td>
                     <td>${produto.cod_barras || 'N/A'}</td>
                     <td>${produto.preco_custo ? 'R$ ' + produto.preco_custo.toFixed(2) : 'N/A'}</td>

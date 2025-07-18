@@ -1291,4 +1291,35 @@ function getClienteInfo() {
 
 // Ao fazer logout, chame limparClienteLocalStorage();
 
+// Supondo que o formulário de cadastro de empresa tenha id 'form-cadastro-empresa'
+document.addEventListener('DOMContentLoaded', function() {
+    const formEmpresa = document.getElementById('form-cadastro-empresa');
+    if (formEmpresa) {
+        formEmpresa.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            mostrarCarregamento();
+            const dados = new FormData(e.target);
+            const dadosObj = Object.fromEntries(dados.entries());
+            try {
+                const response = await fetch('/api/cadastrar-empresa', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dadosObj)
+                });
+                const data = await response.json();
+                esconderCarregamento();
+                if (data.success) {
+                    mostrarPopup('success', 'Empresa cadastrada com sucesso! Agora cadastre o usuário responsável.', 'Sucesso');
+                    abrirModalCadastroUsuario(data.empresa_id); // Função que abre o modal de usuário
+                } else {
+                    mostrarPopup('error', data.error || 'Erro ao cadastrar empresa.', 'Erro');
+                }
+            } catch (e) {
+                esconderCarregamento();
+                mostrarPopup('error', 'Erro inesperado ao cadastrar empresa.', 'Erro');
+            }
+        });
+    }
+});
+
 

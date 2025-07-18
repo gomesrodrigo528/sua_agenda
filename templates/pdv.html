@@ -7,6 +7,13 @@
     <title>PDV - Sua Agenda</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @media (max-width: 767.98px) {
+            th.col-hide-mobile, td.col-hide-mobile {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 
 <body class="bg-gray-100">
@@ -279,10 +286,10 @@
                         <thead class="bg-gray-50 sticky top-0">
                             <tr>
                                 <th class="p-2 text-left">Nome</th>
-                                <th class="p-2 text-left">Telefone</th>
-                                <th class="p-2 text-left">Email</th>
-                                <th class="p-2 text-left">Endereço</th>
-                                <th class="p-2 w-24"></th>
+                                <th class="p-2 text-left col-hide-mobile">Telefone</th>
+                                <th class="p-2 text-left col-hide-mobile">Email</th>
+                                <th class="p-2 text-left col-hide-mobile">Endereço</th>
+                                <th class="p-2 w-24"> </th>
                             </tr>
                         </thead>
                         <tbody id="listaClientes">
@@ -839,9 +846,9 @@
                         tr.className = 'border-b hover:bg-gray-50 transition-colors';
                         tr.innerHTML = `
                             <td class="p-2">${cliente.nome || '-'}</td>
-                            <td class="p-2">${cliente.telefone || '-'}</td>
-                            <td class="p-2">${cliente.email || '-'}</td>
-                            <td class="p-2">${cliente.endereco || '-'}</td>
+                            <td class="p-2 col-hide-mobile">${cliente.telefone || '-'}</td>
+                            <td class="p-2 col-hide-mobile">${cliente.email || '-'}</td>
+                            <td class="p-2 col-hide-mobile">${cliente.endereco || '-'}</td>
                             <td class="p-2 text-right">
                                 <button onclick='selecionarCliente(${JSON.stringify(cliente)})'
                                     class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors w-full">

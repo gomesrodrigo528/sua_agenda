@@ -162,6 +162,24 @@
     </div>
   </div>
 
+  <!-- Modal de Renovação de Plano -->
+<div class="modal fade" id="modalRenovacao" tabindex="-1" aria-labelledby="modalRenovacaoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="background-color: #1e1e1e; color: white;">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalRenovacaoLabel">Acesso Bloqueado</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" style="background-color: red;"></button>
+      </div>
+      <div class="modal-body">
+        <p id="mensagem-renovacao">Seu acesso está bloqueado. É necessário renovar seu plano para continuar usando o sistema.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" id="btnIrParaPlanos">Renovar Agora</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   <div class="card-container" style="max-width: 400px; width: 100%; margin: auto;">
     <div class="text-center mb-4">
       <img src="/static/img/logo login.png" alt="Logo" style="border: none; height: 100px; width: auto;">
@@ -203,6 +221,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (data.success) {
                 window.location.href = data.redirect_url;
+            } else if (data.bloqueio) {
+                // Exibe o modal de renovação
+                const modalRenovacao = new bootstrap.Modal(document.getElementById('modalRenovacao'));
+                document.getElementById('mensagem-renovacao').textContent = data.message || 'Seu acesso está bloqueado. É necessário renovar seu plano para continuar usando o sistema.';
+                modalRenovacao.show();
+                document.getElementById('btnIrParaPlanos').onclick = function() {
+                    window.location.href = '/planos-renovacao';
+                };
             } else {
                 errorMessages.innerHTML = data.message || "Erro desconhecido.";
                 errorMessages.style.display = "block";

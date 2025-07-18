@@ -28,15 +28,15 @@ def gerar_link_pagamento(plano, tipo="assinatura"):
     # Garantir que todas as URLs estejam presentes
     if tipo == "renovacao":
             back_urls = {
-                "success": "https://sua-agenda-dihe.onrender.com/renovacaoconfirmada{plano}",
-                "failure": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
-                "pending": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
+                "success": f"https://8e4bfe71c016.ngrok-free.app/renovacaoconfirmada/{plano}",
+                "failure": "https://8e4bfe71c016.ngrok-free.app/pagamentonaoaprovado",
+                "pending": "https://8e4bfe71c016.ngrok-free.app/pagamentonaoaprovado",
             }
     else:
         back_urls = {
-            "success": "https://sua-agenda-dihe.onrender.com/pagamentoaprovado/{plano}",
-            "failure": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
-            "pending": "https://sua-agenda-dihe.onrender.com/pagamentonaoaprovado",
+            "success": f"https://8e4bfe71c016.ngrok-free.app/pagamentoaprovado/{plano}",
+            "failure": "https://8e4bfe71c016.ngrok-free.app/pagamentonaoaprovado",
+            "pending": "https://8e4bfe71c016.ngrok-free.app/pagamentonaoaprovado",
         }
 
 

@@ -80,3 +80,8 @@ pywebpush==2.0.3
 
 
 
+
+mercadopago>=2.0.0
+
+
+
