@@ -14,115 +14,102 @@ supabase_key = os.getenv(
 )
 supabase = create_client(supabase_url, supabase_key)
 
-def verificar_tabela_empresa():
-    """Verifica a estrutura da tabela empresa"""
-    print("=== ESTRUTURA DA TABELA EMPRESA ===")
+def verificar_tabelas():
+    print("=== VERIFICAÇÃO DA ESTRUTURA DO BANCO ===")
+    
+    # Lista de tabelas para verificar
+    tabelas = ['vendas', 'venda_itens', 'produtos', 'clientes']
+    
+    for tabela in tabelas:
+        print(f"\n--- Verificando tabela: {tabela} ---")
+        try:
+            # Tenta buscar alguns registros para verificar se a tabela existe
+            response = supabase.table(tabela).select("*").limit(1).execute()
+            print(f"✅ Tabela {tabela} existe")
+            print(f"   Registros encontrados: {len(response.data) if response.data else 0}")
+            
+            # Se há dados, mostra a estrutura do primeiro registro
+            if response.data and len(response.data) > 0:
+                primeiro_registro = response.data[0]
+                print(f"   Estrutura do primeiro registro:")
+                for campo, valor in primeiro_registro.items():
+                    print(f"     {campo}: {type(valor).__name__} = {valor}")
+        except Exception as e:
+            print(f"❌ Erro ao acessar tabela {tabela}: {str(e)}")
+
+def verificar_venda_recente():
+    print("\n=== VERIFICANDO VENDA MAIS RECENTE ===")
     try:
-        # Tentar buscar uma empresa para ver as colunas
-        response = supabase.table('empresa').select('*').limit(1).execute()
-        if response.data:
-            empresa = response.data[0]
-            print("Colunas encontradas:")
-            for coluna in empresa.keys():
-                print(f"  - {coluna}: {type(empresa[coluna]).__name__}")
+        # Busca a venda mais recente
+        vendas = supabase.table("vendas").select("*").order("id", desc=True).limit(1).execute()
+        
+        if vendas.data and len(vendas.data) > 0:
+            venda = vendas.data[0]
+            print(f"Venda mais recente: ID {venda['id']}")
+            print(f"Data: {venda.get('data')}")
+            print(f"Valor: {venda.get('valor')}")
+            print(f"Cliente: {venda.get('id_cliente')}")
+            
+            # Busca os itens desta venda
+            itens = supabase.table("venda_itens").select("*").eq("id_venda", venda['id']).execute()
+            print(f"Itens da venda: {len(itens.data) if itens.data else 0}")
+            
+            if itens.data:
+                for item in itens.data:
+                    print(f"  - Produto ID: {item.get('id_produto')}, Qtd: {item.get('quantidade')}, Valor: {item.get('valor_unitario')}")
+            else:
+                print("  Nenhum item encontrado para esta venda!")
         else:
-            print("Tabela empresa está vazia")
+            print("Nenhuma venda encontrada no banco")
+            
     except Exception as e:
-        print(f"Erro ao verificar tabela empresa: {e}")
+        print(f"Erro ao verificar venda recente: {str(e)}")
 
-def verificar_tabela_usuarios():
-    """Verifica a estrutura da tabela usuarios"""
-    print("\n=== ESTRUTURA DA TABELA USUARIOS ===")
+def testar_insercao_item():
+    print("\n=== TESTANDO INSERÇÃO DE ITEM ===")
     try:
-        # Tentar buscar um usuário para ver as colunas
-        response = supabase.table('usuarios').select('*').limit(1).execute()
-        if response.data:
-            usuario = response.data[0]
-            print("Colunas encontradas:")
-            for coluna in usuario.keys():
-                print(f"  - {coluna}: {type(usuario[coluna]).__name__}")
+        # Busca uma venda existente
+        vendas = supabase.table("vendas").select("id").limit(1).execute()
+        
+        if vendas.data and len(vendas.data) > 0:
+            venda_id = vendas.data[0]['id']
+            
+            # Busca um produto existente
+            produtos = supabase.table("produtos").select("id").limit(1).execute()
+            
+            if produtos.data and len(produtos.data) > 0:
+                produto_id = produtos.data[0]['id']
+                
+                # Tenta inserir um item de teste
+                item_teste = {
+                    "id_venda": venda_id,
+                    "id_produto": produto_id,
+                    "quantidade": 1,
+                    "valor_unitario": 1000,  # 10.00 em centavos
+                    "subtotal": 1000  # 10.00 em centavos
+                }
+                
+                print(f"Tentando inserir item de teste: {item_teste}")
+                response = supabase.table("venda_itens").insert(item_teste).execute()
+                
+                if response.data:
+                    print("✅ Inserção de teste bem-sucedida!")
+                    print(f"Item inserido: {response.data}")
+                    
+                    # Remove o item de teste
+                    supabase.table("venda_itens").delete().eq("id", response.data[0]['id']).execute()
+                    print("Item de teste removido")
+                else:
+                    print("❌ Falha na inserção de teste")
+            else:
+                print("Nenhum produto encontrado para teste")
         else:
-            print("Tabela usuarios está vazia")
+            print("Nenhuma venda encontrada para teste")
+            
     except Exception as e:
-        print(f"Erro ao verificar tabela usuarios: {e}")
-
-def testar_insert_empresa():
-    """Testa um insert simples na tabela empresa"""
-    print("\n=== TESTE INSERT EMPRESA ===")
-    try:
-        dados_teste = {
-            "nome_empresa": "EMPRESA TESTE",
-            "cnpj": "12345678000199",
-            "email_empresa": "teste@empresa.com",
-            "descricao": "Empresa de teste",
-            "tel_empresa": "(11) 99999-9999",
-            "endereco": "Rua Teste, 123",
-            "setor": "TECNOLOGIA",
-            "cep": "01234-567",
-            "dias_restantes": 30,
-            "teste_de_app": True,
-            "cidade": "SAO PAULO"
-        }
-        
-        response = supabase.table("empresa").insert(dados_teste).execute()
-        print(f"✅ Insert empresa bem-sucedido. ID: {response.data[0]['id']}")
-        
-        # Deletar o registro de teste
-        supabase.table("empresa").delete().eq('id', response.data[0]['id']).execute()
-        print("✅ Registro de teste removido")
-        
-    except Exception as e:
-        print(f"❌ Erro no insert empresa: {e}")
-
-def testar_insert_usuario():
-    """Testa um insert simples na tabela usuarios"""
-    print("\n=== TESTE INSERT USUARIO ===")
-    try:
-        # Primeiro, criar uma empresa para associar
-        dados_empresa = {
-            "nome_empresa": "EMPRESA TESTE USUARIO",
-            "cnpj": "98765432000199",
-            "email_empresa": "teste.usuario@empresa.com",
-            "descricao": "Empresa para teste de usuário",
-            "tel_empresa": "(11) 88888-8888",
-            "endereco": "Rua Usuario, 456",
-            "setor": "TECNOLOGIA",
-            "cep": "01234-567",
-            "dias_restantes": 30,
-            "teste_de_app": True,
-            "cidade": "SAO PAULO"
-        }
-        
-        response_empresa = supabase.table("empresa").insert(dados_empresa).execute()
-        empresa_id = response_empresa.data[0]['id']
-        print(f"✅ Empresa criada para teste. ID: {empresa_id}")
-        
-        # Agora testar insert de usuário
-        dados_usuario = {
-            "nome_usuario": "USUARIO TESTE",
-            "email": "usuario@teste.com",
-            "telefone": "(11) 77777-7777",
-            "senha": "senha123",
-            "id_empresa": empresa_id
-        }
-        
-        response_usuario = supabase.table("usuarios").insert(dados_usuario).execute()
-        print(f"✅ Insert usuário bem-sucedido. ID: {response_usuario.data[0]['id']}")
-        
-        # Deletar os registros de teste
-        supabase.table("usuarios").delete().eq('id', response_usuario.data[0]['id']).execute()
-        supabase.table("empresa").delete().eq('id', empresa_id).execute()
-        print("✅ Registros de teste removidos")
-        
-    except Exception as e:
-        print(f"❌ Erro no insert usuário: {e}")
+        print(f"Erro no teste de inserção: {str(e)}")
 
 if __name__ == "__main__":
-    print("Verificando estrutura do banco de dados...")
-    
-    verificar_tabela_empresa()
-    verificar_tabela_usuarios()
-    testar_insert_empresa()
-    testar_insert_usuario()
-    
-    print("\n=== FIM DA VERIFICAÇÃO ===") 
+    verificar_tabelas()
+    verificar_venda_recente()
+    testar_insercao_item() 

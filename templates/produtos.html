@@ -110,7 +110,7 @@
                     </div>
                     <div class="mb-3">
                         <label for="estoque" class="form-label">Estoque</label>
-                        <input type="number" class="form-control" id="estoque" required>
+                        <input type="number" class="form-control" id="estoque" min="0" value="0">
                     </div>
                     <div class="mb-3">
                         <label for="grupo" class="form-label">Grupo</label>
@@ -301,8 +301,8 @@ function salvarProduto() {
         document.getElementById('preco').focus();
         return;
     }
-    if (!estoque || estoque < 0) {
-        mostrarMensagem('Atenção', 'Por favor, insira um estoque válido.');
+    if (estoque === null || estoque === undefined || estoque < 0) {
+        mostrarMensagem('Atenção', 'Por favor, insira um estoque válido (pode ser zero).');
         document.getElementById('estoque').focus();
         return;
     }

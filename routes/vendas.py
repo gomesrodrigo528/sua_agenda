@@ -71,8 +71,8 @@ def vender():
                     "estoque_atual": estoque_atual
                 }), 400
 
-        # Calcula valor total da venda
-        valor_total = sum(p['quantidade'] * p['valor_unitario'] for p in produtos)
+        # Calcula valor total da venda (em centavos)
+        valor_total = sum(int(p['quantidade'] * p['valor_unitario'] * 100) for p in produtos)
 
         # Cria a venda
         response = supabase.table("vendas").insert({
@@ -86,19 +86,27 @@ def vender():
             "meio_pagamento": meio_pagamento
         }).execute()
 
-        supabase.table("venda_itens").insert([
-            {
+        # Insere os itens da venda
+        itens_venda = []
+        for item in produtos:
+            itens_venda.append({
                 "id_venda": response.data[0]['id'],
                 "id_produto": item['id'],
-                "quantidade": item['quantidade'],
-                "valor_unitario": item['valor_unitario'],
-                "subtotal": item['quantidade'] * item['valor_unitario']
-            } for item in produtos
-        ]).execute()
+                "quantidade": int(item['quantidade']),
+                "valor_unitario": int(item['valor_unitario'] * 100),  # Converte para centavos (inteiro)
+                "subtotal": int(item['quantidade'] * item['valor_unitario'] * 100)  # Converte para centavos (inteiro)
+            })
+        
+        # Insere todos os itens da venda
+        response_itens = supabase.table("venda_itens").insert(itens_venda).execute()
+        if not response_itens.data:
+            raise Exception("Erro ao inserir itens da venda")
 
-        supabase.table("produtos").update({
-            "estoque": supabase.table("produtos").select("estoque").eq("id", item['id']).single().execute().data['estoque'] - item['quantidade']
-        }).eq("id", item['id']).execute()
+        # Atualiza o estoque de cada produto
+        for item in produtos:
+            supabase.table("produtos").update({
+                "estoque": supabase.table("produtos").select("estoque").eq("id", item['id']).single().execute().data['estoque'] - item['quantidade']
+            }).eq("id", item['id']).execute()
 
 
         if not response.data or 'id' not in response.data[0]:
@@ -228,8 +236,8 @@ def gerar_cupom_venda_pdf(id_venda):
         for item in itens:
             nome = item['produtos']['nome_produto'][:25]
             qtd = item['quantidade']
-            unit = item['valor_unitario']
-            subtotal = item['subtotal']
+            unit = item['valor_unitario'] / 100  # Converte de centavos para reais
+            subtotal = item['subtotal'] / 100  # Converte de centavos para reais
             total += subtotal
 
             p.drawString(10, y, f"{nome}")
@@ -345,5 +353,59 @@ def listar_vendas_com_filtro():
         return jsonify({"vendas": vendas}), 200
 
     except Exception as e:
-        print(f"Erro em /vendas/listar/filtro: {e}")
+         print(f"Erro em /vendas/listar/filtro: {e}")
+         return jsonify({"error": str(e)}), 500
+
+@vendas_bp.route('/vendas/detalhes/<int:id_venda>', methods=['GET'])
+def detalhes_venda(id_venda):
+    try:
+        if verificar_login():
+            return verificar_login()
+
+        id_empresa = request.cookies.get('empresa_id')
+        if not id_empresa:
+            return jsonify({"error": "Usuário não autenticado"}), 401
+
+        # Busca dados da venda
+        venda = supabase.table("vendas").select("*").eq("id", id_venda).eq("id_empresa", id_empresa).single().execute()
+        if not venda.data:
+            return jsonify({"error": "Venda não encontrada"}), 404
+
+        # Busca dados do cliente
+        cliente = None
+        if venda.data.get('id_cliente'):
+            cliente = supabase.table("clientes").select("*").eq("id", venda.data['id_cliente']).single().execute()
+            cliente = cliente.data if cliente.data else None
+
+        # Busca itens da venda
+        itens = supabase.table("venda_itens").select("*, produtos(nome_produto)").eq("id_venda", id_venda).execute()
+        itens = itens.data if itens.data else []
+
+        # Converte valores de centavos para reais
+        for item in itens:
+            item['valor_unitario'] = item['valor_unitario'] / 100
+            item['subtotal'] = item['subtotal'] / 100
+
+        return jsonify({
+            "venda": {
+                **venda.data,
+                "valor": venda.data['valor'] / 100  # Converte de centavos para reais
+            },
+            "cliente": cliente,
+            "itens": itens
+        }), 200
+
+    except Exception as e:
+        print(f"Erro ao buscar detalhes da venda: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@vendas_bp.route('/vendas/detalhada', methods=['GET'])
+def vendas_detalhada():
+    try:
+        if verificar_login():
+            return verificar_login()
+        
+        return render_template('vendas_detalhada.html')
+    except Exception as e:
+        print(f"Erro ao carregar página de vendas detalhada: {e}")
         return jsonify({"error": str(e)}), 500

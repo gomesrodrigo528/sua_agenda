@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendas Detalhadas - Sua Agenda</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <!-- Cabeçalho -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800">Vendas Detalhadas</h1>
+                <p class="text-gray-600">Análise completa e filtros avançados</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="window.close()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                    <i class="fas fa-times mr-2"></i>Fechar
+                </button>
+                <button onclick="exportarDados()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                    <i class="fas fa-download mr-2"></i>Exportar
+                </button>
+            </div>
+        </div>
+
+        <!-- Filtros Avançados -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Filtros Avançados</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Data Início -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Início</label>
+                    <input type="date" id="dataInicio" class="w-full p-2 border rounded-lg">
+                </div>
+                
+                <!-- Data Fim -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Data Fim</label>
+                    <input type="date" id="dataFim" class="w-full p-2 border rounded-lg">
+                </div>
+                
+                <!-- Cliente -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+                    <select id="filtroCliente" class="w-full p-2 border rounded-lg">
+                        <option value="">Todos os clientes</option>
+                    </select>
+                </div>
+                
+                <!-- Meio de Pagamento -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Meio de Pagamento</label>
+                    <select id="filtroPagamento" class="w-full p-2 border rounded-lg">
+                        <option value="">Todos</option>
+                        <option value="dinheiro">Dinheiro</option>
+                        <option value="pix">PIX</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="prazo">Prazo</option>
+                    </select>
+                </div>
+                
+                <!-- Valor Mínimo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Valor Mínimo</label>
+                    <input type="number" id="valorMinimo" step="0.01" class="w-full p-2 border rounded-lg" placeholder="0.00">
+                </div>
+                
+                <!-- Valor Máximo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Valor Máximo</label>
+                    <input type="number" id="valorMaximo" step="0.01" class="w-full p-2 border rounded-lg" placeholder="999999.99">
+                </div>
+                
+                <!-- Produto -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Produto</label>
+                    <select id="filtroProduto" class="w-full p-2 border rounded-lg">
+                        <option value="">Todos os produtos</option>
+                    </select>
+                </div>
+                
+                <!-- Status -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="filtroStatus" class="w-full p-2 border rounded-lg">
+                        <option value="">Todos</option>
+                        <option value="pago">Pago</option>
+                        <option value="pendente">Pendente</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Botões de Ação -->
+            <div class="flex gap-2 mt-4">
+                <button onclick="aplicarFiltros()" class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600">
+                    <i class="fas fa-search mr-2"></i>Aplicar Filtros
+                </button>
+                <button onclick="limparFiltros()" class="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600">
+                    <i class="fas fa-eraser mr-2"></i>Limpar Filtros
+                </button>
+                <button onclick="carregarDados()" class="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600">
+                    <i class="fas fa-sync mr-2"></i>Atualizar
+                </button>
+            </div>
+        </div>
+
+        <!-- Resumo Estatístico -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-shopping-cart text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Total de Vendas</p>
+                        <p class="text-2xl font-bold text-gray-800" id="totalVendas">0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="fas fa-dollar-sign text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Valor Total</p>
+                        <p class="text-2xl font-bold text-gray-800" id="valorTotal">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-chart-line text-yellow-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Ticket Médio</p>
+                        <p class="text-2xl font-bold text-gray-800" id="ticketMedio">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-4">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i class="fas fa-users text-purple-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Clientes Únicos</p>
+                        <p class="text-2xl font-bold text-gray-800" id="clientesUnicos">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <h3 class="text-lg font-semibold mb-4">Vendas por Período</h3>
+                <canvas id="graficoVendas" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow p-4">
+                <h3 class="text-lg font-semibold mb-4">Vendas por Meio de Pagamento</h3>
+                <canvas id="graficoPagamento" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Tabela de Vendas -->
+        <div class="bg-white rounded-lg shadow">
+            <div class="p-4 border-b">
+                <h2 class="text-xl font-semibold">Lista de Vendas</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="p-3 text-left">Data</th>
+                            <th class="p-3 text-left">Cliente</th>
+                            <th class="p-3 text-left">Produtos</th>
+                            <th class="p-3 text-right">Valor</th>
+                            <th class="p-3 text-left">Pagamento</th>
+                            <th class="p-3 text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaVendas">
+                        <!-- Dados serão carregados via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Paginação -->
+            <div class="p-4 border-t flex justify-between items-center">
+                <div class="text-sm text-gray-600">
+                    Mostrando <span id="inicioPagina">1</span> a <span id="fimPagina">10</span> de <span id="totalRegistros">0</span> vendas
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="paginaAnterior()" id="btnAnterior" class="px-3 py-1 border rounded disabled:opacity-50">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="paginaAtual" class="px-3 py-1">1</span>
+                    <button onclick="proximaPagina()" id="btnProximo" class="px-3 py-1 border rounded disabled:opacity-50">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Detalhes -->
+    <div id="modalDetalhes" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-4xl m-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="text-lg font-semibold">Detalhes da Venda</h3>
+                <button onclick="fecharModalDetalhes()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-4" id="conteudoDetalhes">
+                <!-- Conteúdo será carregado via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let vendas = [];
+        let paginaAtual = 1;
+        const itensPorPagina = 20;
+        let graficoVendas = null;
+        let graficoPagamento = null;
+
+        // Carregar dados quando a página carregar
+        window.addEventListener('DOMContentLoaded', function() {
+            carregarDados();
+            carregarFiltros();
+        });
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', { 
+                style: 'currency', 
+                currency: 'BRL' 
+            });
+        }
+
+        function formatarData(data) {
+            return new Date(data).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        async function carregarDados() {
+            try {
+                const response = await fetch('/vendas/listar');
+                if (!response.ok) throw new Error('Erro ao carregar vendas');
+                
+                vendas = await response.json();
+                atualizarEstatisticas();
+                atualizarGraficos();
+                atualizarTabela();
+            } catch (error) {
+                console.error('Erro ao carregar dados:', error);
+                alert('Erro ao carregar dados das vendas');
+            }
+        }
+
+        async function carregarFiltros() {
+            try {
+                // Carregar clientes
+                const responseClientes = await fetch('/clientes/listar');
+                if (responseClientes.ok) {
+                    const clientes = await responseClientes.json();
+                    const selectCliente = document.getElementById('filtroCliente');
+                    clientes.forEach(cliente => {
+                        const option = document.createElement('option');
+                        option.value = cliente.id;
+                        option.textContent = cliente.nome;
+                        selectCliente.appendChild(option);
+                    });
+                }
+
+                // Carregar produtos
+                const responseProdutos = await fetch('/produtos/listar');
+                if (responseProdutos.ok) {
+                    const produtos = await responseProdutos.json();
+                    const selectProduto = document.getElementById('filtroProduto');
+                    produtos.forEach(produto => {
+                        const option = document.createElement('option');
+                        option.value = produto.id;
+                        option.textContent = produto.nome_produto;
+                        selectProduto.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Erro ao carregar filtros:', error);
+            }
+        }
+
+        function atualizarEstatisticas() {
+            const totalVendas = vendas.length;
+            const valorTotal = vendas.reduce((acc, venda) => acc + (venda.valor || 0), 0);
+            const ticketMedio = totalVendas > 0 ? valorTotal / totalVendas : 0;
+            const clientesUnicos = new Set(vendas.map(v => v.id_cliente).filter(id => id)).size;
+
+            document.getElementById('totalVendas').textContent = totalVendas;
+            document.getElementById('valorTotal').textContent = formatarMoeda(valorTotal);
+            document.getElementById('ticketMedio').textContent = formatarMoeda(ticketMedio);
+            document.getElementById('clientesUnicos').textContent = clientesUnicos;
+        }
+
+        function atualizarGraficos() {
+            // Gráfico de vendas por período
+            const ctxVendas = document.getElementById('graficoVendas').getContext('2d');
+            if (graficoVendas) graficoVendas.destroy();
+            
+            const dadosVendas = agruparVendasPorData();
+            graficoVendas = new Chart(ctxVendas, {
+                type: 'line',
+                data: {
+                    labels: dadosVendas.labels,
+                    datasets: [{
+                        label: 'Vendas',
+                        data: dadosVendas.valores,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de vendas por meio de pagamento
+            const ctxPagamento = document.getElementById('graficoPagamento').getContext('2d');
+            if (graficoPagamento) graficoPagamento.destroy();
+            
+            const dadosPagamento = agruparVendasPorPagamento();
+            graficoPagamento = new Chart(ctxPagamento, {
+                type: 'doughnut',
+                data: {
+                    labels: dadosPagamento.labels,
+                    datasets: [{
+                        data: dadosPagamento.valores,
+                        backgroundColor: [
+                            '#3B82F6',
+                            '#10B981',
+                            '#F59E0B',
+                            '#EF4444',
+                            '#8B5CF6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true
+                }
+            });
+        }
+
+        function agruparVendasPorData() {
+            const vendasPorData = {};
+            vendas.forEach(venda => {
+                const data = new Date(venda.data).toLocaleDateString('pt-BR');
+                vendasPorData[data] = (vendasPorData[data] || 0) + 1;
+            });
+
+            return {
+                labels: Object.keys(vendasPorData),
+                valores: Object.values(vendasPorData)
+            };
+        }
+
+        function agruparVendasPorPagamento() {
+            const vendasPorPagamento = {};
+            vendas.forEach(venda => {
+                const pagamento = venda.meio_pagamento || 'Não informado';
+                vendasPorPagamento[pagamento] = (vendasPorPagamento[pagamento] || 0) + 1;
+            });
+
+            return {
+                labels: Object.keys(vendasPorPagamento),
+                valores: Object.values(vendasPorPagamento)
+            };
+        }
+
+        function atualizarTabela() {
+            const inicio = (paginaAtual - 1) * itensPorPagina;
+            const fim = inicio + itensPorPagina;
+            const vendasPagina = vendas.slice(inicio, fim);
+
+            const tbody = document.getElementById('tabelaVendas');
+            tbody.innerHTML = '';
+
+            vendasPagina.forEach(venda => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-3">${formatarData(venda.data)}</td>
+                    <td class="p-3">${venda.id_cliente || 'Cliente não identificado'}</td>
+                    <td class="p-3">${venda.plano_contas || '-'}</td>
+                    <td class="p-3 text-right">${formatarMoeda(venda.valor || 0)}</td>
+                    <td class="p-3">${venda.meio_pagamento || '-'}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="verDetalhesVenda(${venda.id})" class="text-blue-500 hover:text-blue-700 mr-2">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button onclick="abrirCupom(${venda.id})" class="text-green-500 hover:text-green-700">
+                            <i class="fas fa-receipt"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Atualizar paginação
+            document.getElementById('inicioPagina').textContent = inicio + 1;
+            document.getElementById('fimPagina').textContent = Math.min(fim, vendas.length);
+            document.getElementById('totalRegistros').textContent = vendas.length;
+            document.getElementById('paginaAtual').textContent = paginaAtual;
+            
+            document.getElementById('btnAnterior').disabled = paginaAtual === 1;
+            document.getElementById('btnProximo').disabled = fim >= vendas.length;
+        }
+
+        async function verDetalhesVenda(idVenda) {
+            try {
+                const response = await fetch(`/vendas/detalhes/${idVenda}`);
+                if (!response.ok) throw new Error('Erro ao buscar detalhes');
+                
+                const dados = await response.json();
+                mostrarDetalhesVenda(dados);
+            } catch (error) {
+                console.error('Erro ao buscar detalhes:', error);
+                alert('Erro ao carregar detalhes da venda');
+            }
+        }
+
+        function mostrarDetalhesVenda(dados) {
+            const conteudo = document.getElementById('conteudoDetalhes');
+            
+            const dataVenda = new Date(dados.venda.data);
+            const dataFormatada = dataVenda.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            conteudo.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-4 text-blue-600">Informações da Venda</h4>
+                        <div class="space-y-2">
+                            <p><strong>ID:</strong> ${dados.venda.id}</p>
+                            <p><strong>Data:</strong> ${dataFormatada}</p>
+                            <p><strong>Valor Total:</strong> ${formatarMoeda(dados.venda.valor)}</p>
+                            <p><strong>Meio de Pagamento:</strong> ${dados.venda.meio_pagamento || 'Não informado'}</p>
+                            <p><strong>Observação:</strong> ${dados.venda.observacao || 'Nenhuma'}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-bold text-lg mb-4 text-green-600">Cliente</h4>
+                        ${dados.cliente ? `
+                            <div class="space-y-2">
+                                <p><strong>Nome:</strong> ${dados.cliente.nome_cliente || dados.cliente.nome}</p>
+                                <p><strong>Telefone:</strong> ${dados.cliente.telefone || 'Não informado'}</p>
+                                <p><strong>Email:</strong> ${dados.cliente.email || 'Não informado'}</p>
+                            </div>
+                        ` : '<p class="text-gray-500">Cliente não identificado</p>'}
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h4 class="font-bold text-lg mb-4 text-purple-600">Itens da Venda</h4>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300">
+                            <thead>
+                                <tr class="bg-gray-100">
+                                    <th class="border border-gray-300 p-2 text-left">Produto</th>
+                                    <th class="border border-gray-300 p-2 text-center">Quantidade</th>
+                                    <th class="border border-gray-300 p-2 text-right">Valor Unitário</th>
+                                    <th class="border border-gray-300 p-2 text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${dados.itens.map(item => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="border border-gray-300 p-2">${item.produtos.nome_produto}</td>
+                                        <td class="border border-gray-300 p-2 text-center">${item.quantidade}</td>
+                                        <td class="border border-gray-300 p-2 text-right">${formatarMoeda(item.valor_unitario)}</td>
+                                        <td class="border border-gray-300 p-2 text-right">${formatarMoeda(item.subtotal)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex justify-center gap-4">
+                    <button onclick="abrirCupom(${dados.venda.id})" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+                        <i class="fas fa-receipt mr-2"></i>Ver Cupom
+                    </button>
+                    <button onclick="fecharModalDetalhes()" 
+                            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600">
+                        Fechar
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('modalDetalhes').classList.remove('hidden');
+        }
+
+        function fecharModalDetalhes() {
+            document.getElementById('modalDetalhes').classList.add('hidden');
+        }
+
+        function abrirCupom(idVenda) {
+            window.open(`/venda/${idVenda}/cupom`, '_blank');
+        }
+
+        function aplicarFiltros() {
+            // Implementar lógica de filtros
+            console.log('Aplicando filtros...');
+            // Por enquanto, apenas recarrega os dados
+            carregarDados();
+        }
+
+        function limparFiltros() {
+            document.getElementById('dataInicio').value = '';
+            document.getElementById('dataFim').value = '';
+            document.getElementById('filtroCliente').value = '';
+            document.getElementById('filtroPagamento').value = '';
+            document.getElementById('valorMinimo').value = '';
+            document.getElementById('valorMaximo').value = '';
+            document.getElementById('filtroProduto').value = '';
+            document.getElementById('filtroStatus').value = '';
+        }
+
+        function exportarDados() {
+            // Implementar exportação de dados
+            alert('Funcionalidade de exportação será implementada em breve!');
+        }
+
+        function paginaAnterior() {
+            if (paginaAtual > 1) {
+                paginaAtual--;
+                atualizarTabela();
+            }
+        }
+
+        function proximaPagina() {
+            const maxPaginas = Math.ceil(vendas.length / itensPorPagina);
+            if (paginaAtual < maxPaginas) {
+                paginaAtual++;
+                atualizarTabela();
+            }
+        }
+    </script>
+</body>
+</html> 

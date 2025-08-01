@@ -478,7 +478,7 @@ def listar_produtos_empresa(empresa_id):
             .eq('id_empresa', empresa_id)
             .eq('status', True)
             .neq('grupo', 'uso e consumo')
-            .gt('estoque', 0)
+            # Removido filtro de estoque > 0 para permitir produtos com estoque zero
             .execute()
         )
         produtos = response.data if response.data else []

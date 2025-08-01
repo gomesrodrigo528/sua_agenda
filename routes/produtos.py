@@ -47,15 +47,16 @@ def iserir_produtos():
         id_usuario = request.cookies.get('user_id')
 
         # Validações de campos obrigatórios
-        obrigatorios = ['nome_produto', 'preco', 'estoque', 'un_medida', 'status']
+        obrigatorios = ['nome_produto', 'preco', 'un_medida', 'status']
         for campo in obrigatorios:
             if not data.get(campo):
                 return jsonify({"error": f"O campo '{campo}' é obrigatório."}), 400
         try:
             preco = float(data.get('preco'))
-            estoque = int(data.get('estoque'))
+            estoque = int(data.get('estoque', 0))  # Permite estoque zero
+            preco_custo = float(data.get('preco_custo', 0.0))
         except Exception:
-            return jsonify({"error": "Preço e estoque devem ser numéricos."}), 400
+            return jsonify({"error": "Preço, estoque e preço de custo devem ser numéricos."}), 400
 
         if not id_empresa or not id_usuario:
             return jsonify({"error": "Usuário não autenticado"}), 401
@@ -77,7 +78,7 @@ def iserir_produtos():
             "id_empresa": id_empresa,
             "un_medida": data.get('un_medida'),
             "status": data.get('status'),
-            "preco_custo": data.get('preco_custo', 0.0),
+            "preco_custo": preco_custo,
             "cod_barras": data.get('cod_barra', None),
             "grupo": data.get('grupo', None),
             "UUID_IMG": nome_arquivo if imagem else None
@@ -164,7 +165,7 @@ def editar(id):
         if not data.get('preco_custo'):
             return jsonify({"error": "Preço de custo é obrigatório"}), 400
         if not isinstance(int(data.get('estoque', 0)), (int, float)) or int(data.get('estoque', 0)) < 0:
-            return jsonify({"error": "Estoque inválido"}), 400
+            return jsonify({"error": "Estoque deve ser um número maior ou igual a zero"}), 400
 
         # Busca o produto atual
         produto = supabase.table("produtos").select("*").eq("id", id).execute()
@@ -267,11 +268,12 @@ def buscar_produtos():
         termo = request.args.get('termo', '').strip()
         id_empresa = request.cookies.get('empresa_id')
 
-        # Se o termo for '*', retorna todos os produtos
+        # Se o termo for '*', retorna todos os produtos com estoque > 0 (para PDV)
         if termo == '*':
             response = supabase.table("produtos") \
                 .select("*") \
                 .eq("id_empresa", id_empresa) \
+                .gt("estoque", 0) \
                 .execute()
         else:
             if not termo:
@@ -282,6 +284,7 @@ def buscar_produtos():
                 response = supabase.table("produtos") \
                     .select("*") \
                     .eq("id_empresa", id_empresa) \
+                    .gt("estoque", 0) \
                     .or_(f"cod_barras.eq.{termo},nome_produto.ilike.%{termo}%") \
                     .execute()
             else:
@@ -289,6 +292,7 @@ def buscar_produtos():
                 response = supabase.table("produtos") \
                     .select("*") \
                     .eq("id_empresa", id_empresa) \
+                    .gt("estoque", 0) \
                     .ilike("nome_produto", f"%{termo}%") \
                     .execute()
 
@@ -415,7 +419,7 @@ def listar_produtos_publico(empresa_id):
             .eq('id_empresa', empresa_id)
             .eq('status', True)
             .neq('grupo', 'uso e consumo')
-            .gt('estoque', 0)
+            # Removido filtro de estoque > 0 para permitir produtos com estoque zero
             .execute()
         )
         produtos = response.data if response.data else []
