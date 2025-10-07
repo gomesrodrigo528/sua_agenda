@@ -151,6 +151,43 @@
             from { opacity: 1; }
             to { opacity: 0; }
         }
+        
+        /* Estilos para busca com dropdown */
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .dropdown-item:active {
+            background-color: #e9ecef;
+        }
+        
+        .form-control-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .form-select-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
+        }
+        
+        .modal-lg {
+            max-width: 600px;
+        }
+        
+        .fw-bold {
+            font-weight: 600 !important;
+        }
+        
+        .position-relative .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
     </style>
 
 </head>
@@ -269,67 +306,104 @@
             <!-- Modal de Agendamento -->
             <div class="modal fade" id="agendamentoModal" tabindex="-1" aria-labelledby="agendamentoModalLabel"
                 aria-hidden="true">
-                <div class="modal-dialog">
+                <div class="modal-dialog modal-lg">
                     <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="agendamentoModalLabel">Novo Agendamento</h5>
-                            <button type="button" class="btn-close" onclick="window.location.reload();" aria-label="Close"></button>
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title" id="agendamentoModalLabel">
+                                <i class="bi bi-calendar-plus me-2"></i>Novo Agendamento
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="fecharModalAgendamento()" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body">
-                            <form id="form-agendamento" class="mb-4">
+                        <div class="modal-body p-4">
+                            <form id="form-agendamento" class="needs-validation" novalidate>
                                 <!-- Cliente -->
-                                <div class="row align-items-center mb-3">
-                                    <label for="cliente-agendamento" class="form-label" style="font-weight: bold;" >Cliente</label>
-                                    <div class="d-flex align-items-center">
-                                        <select id="cliente-agendamento" class="form-select" style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);"required>
-                                            <option value="Selecione um cliente">Selecione um cliente</option>
-                                        </select>
-                                        <button type="button" class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal"
-                                            data-bs-target="#addClienteModal">
-                                            <i class="bi bi-person-add"></i>
+                                <div class="mb-4">
+                                    <label for="cliente-busca" class="form-label fw-bold">
+                                        <i class="bi bi-person me-1"></i>Cliente
+                                    </label>
+                                    <div class="position-relative">
+                                        <input type="text" id="cliente-busca" class="form-control form-control-lg" 
+                                               placeholder="Digite o nome do cliente..." 
+                                               autocomplete="off">
+                                        <div id="cliente-dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
+                                            <!-- Opções carregadas dinamicamente -->
+                                        </div>
+                                        <input type="hidden" id="cliente-id" name="cliente_id">
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <small class="text-muted">Digite o nome do cliente para buscar</small>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addClienteModal">
+                                            <i class="bi bi-person-plus me-1"></i>Novo Cliente
                                         </button>
                                     </div>
                                 </div>
-                                <!-- Compromisso -->
-                                <div class="row align-items-center mb-3">
-                                    <label for="servico-agendamento" class="form-label" style="font-weight: bold;">Compromisso</label>
-                                    <div class="d-flex align-items-center">
-                                        <select id="servico-agendamento" class="form-select" style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
-                                            <option value="">Selecione um compromisso</option>
-                                        </select>
-                                        <button type="button" class="btn btn-primary btn-sm ms-2" data-bs-toggle="modal"
-                                            data-bs-target="#addServiceModal">
-                                            <i class="bi bi-node-plus-fill"></i>
+
+                                <!-- Serviço -->
+                                <div class="mb-4">
+                                    <label for="servico-busca" class="form-label fw-bold">
+                                        <i class="bi bi-briefcase me-1"></i>Serviço
+                                    </label>
+                                    <div class="position-relative">
+                                        <input type="text" id="servico-busca" class="form-control form-control-lg" 
+                                               placeholder="Digite o nome do serviço..." 
+                                               autocomplete="off">
+                                        <div id="servico-dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
+                                            <!-- Opções carregadas dinamicamente -->
+                                        </div>
+                                        <input type="hidden" id="servico-id" name="servico_id">
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-2">
+                                        <small class="text-muted">Digite para buscar serviços</small>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                                            <i class="bi bi-plus-circle me-1"></i>Novo Serviço
                                         </button>
                                     </div>
                                 </div>
+
                                 <!-- Profissional -->
-                                <div class="row align-items-center mb-3">
-                                    <label for="usuario-agendamento" class="form-label" style="font-weight: bold;">Profissional</label>
-                                    <select id="usuario-agendamento" class="form-select"  style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                <div class="mb-4">
+                                    <label for="usuario-agendamento" class="form-label fw-bold">
+                                        <i class="bi bi-person-badge me-1"></i>Profissional
+                                    </label>
+                                    <select id="usuario-agendamento" class="form-select form-select-lg" required>
                                         <option value="">Selecione um profissional</option>
                                     </select>
                                 </div>
-                                <!-- Descrição -->
-                                <div class="mb-3">
-                                    <label for="descricao-agendamento" class="form-label" style="font-weight: bold;">Descrição</label>
-                                    <textarea id="descricao-agendamento" name="descricao" class="form-control" rows="3"
-                                        placeholder="Adicione detalhes sobre o compromisso"  style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);"></textarea>
-                                </div>
+
                                 <!-- Data e Horário -->
-                                <div class="row mb-3">
+                                <div class="row mb-4">
                                     <div class="col-md-6">
-                                        <label for="data-agendamento" class="form-label bold-label" style="font-weight: bold;">Data</label>
-                                        <input type="date" id="data-agendamento" class="form-control" style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                        <label for="data-agendamento" class="form-label fw-bold">
+                                            <i class="bi bi-calendar-event me-1"></i>Data
+                                        </label>
+                                        <input type="date" id="data-agendamento" class="form-control form-control-lg" required>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="hora-agendamento" class="form-label" style="font-weight: bold;">Horário</label>
-                                        <input type="time" id="hora-agendamento" class="form-control"  style="box-shadow:2px 2px 5px  rgba(0, 0, 0, 0.6);" required>
+                                        <label for="hora-agendamento" class="form-label fw-bold">
+                                            <i class="bi bi-clock me-1"></i>Horário
+                                        </label>
+                                        <input type="time" id="hora-agendamento" class="form-control form-control-lg" required>
                                     </div>
                                 </div>
-                                <!-- Botão de Enviar -->
-                                <button type="submit" class="btn btn-success">Agendar</button>
-                                <button type="button" class="btn btn-danger" onclick="window.location.reload();">Cancelar</button>
+
+                                <!-- Descrição -->
+                                <div class="mb-4">
+                                    <label for="descricao-agendamento" class="form-label fw-bold">
+                                        <i class="bi bi-chat-text me-1"></i>Descrição
+                                    </label>
+                                    <textarea id="descricao-agendamento" name="descricao" class="form-control" rows="3"
+                                        placeholder="Adicione detalhes sobre o compromisso..."></textarea>
+                                </div>
+
+                                <!-- Botões -->
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <button type="button" class="btn btn-outline-secondary me-md-2" onclick="fecharModalAgendamento()">
+                                        <i class="bi bi-x-circle me-1"></i>Cancelar
+                                    </button>
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-check-circle me-1"></i>Agendar
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -364,14 +438,27 @@
             </div>
 
             <div id="list-container" style="box-shadow:transparent; background-color:transparent; border: none;">
-                <div>
+                <!-- Header moderno para mobile -->
+                <div class="mobile-header d-md-none">
+                    <h1><i class="bi bi-calendar3 me-2"></i>Agenda</h1>
+                </div>
+                
+                <!-- Filtro moderno -->
+                <div class="filter-container">
                     <select id="filter">
-                        <option value="day">Hoje</option>
-                        <option value="week">Semana</option>
-                        <option value="month">Mês</option>
+                        <option value="day">📅 Hoje</option>
+                        <option value="week">📆 Semana</option>
+                        <option value="month">🗓️ Mês</option>
                     </select>
                 </div>
+                
+                <!-- Lista de agendamentos -->
                 <ul id="appointment-list"></ul>
+                
+                <!-- Botão flutuante para novo agendamento (mobile) -->
+                <button class="btn-novo-agendamento d-md-none" onclick="abrirModalAgendamento()" title="Novo Agendamento">
+                    <i class="bi bi-plus"></i>
+                </button>
             </div>
 
         </div>
@@ -645,6 +732,7 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
 
 
     <script src="static/scripts/agenda.js"></script>
+    <script src="static/scripts/busca_agendamento.js"></script>
     <!-- Bootstrap JS e Dependências -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>

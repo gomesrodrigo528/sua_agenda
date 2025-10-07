@@ -1,0 +1,557 @@
+/* Dashboard CSS - Mobile First */
+
+.dashboard-container {
+    padding: 0;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+/* Header do Dashboard */
+.dashboard-header {
+    background: #007bff;
+    color: white;
+    padding: 20px;
+    margin: -15px -15px 20px -15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header-content h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.header-content h1 i {
+    margin-right: 8px;
+}
+
+.header-date {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+.refresh-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.refresh-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.refresh-btn i {
+    font-size: 1.2rem;
+}
+
+/* Grid de Métricas */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.metric-card.primary {
+    border-left: 4px solid #007bff;
+}
+
+.metric-card.success {
+    border-left: 4px solid #28a745;
+}
+
+.metric-card.info {
+    border-left: 4px solid #17a2b8;
+}
+
+.metric-card.warning {
+    border-left: 4px solid #ffc107;
+}
+
+.metric-icon {
+    margin-right: 15px;
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+.metric-card.primary .metric-icon {
+    color: #007bff;
+}
+
+.metric-card.success .metric-icon {
+    color: #28a745;
+}
+
+.metric-card.info .metric-icon {
+    color: #17a2b8;
+}
+
+.metric-card.warning .metric-icon {
+    color: #ffc107;
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.metric-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1.2;
+}
+
+.metric-subtitle {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 2px;
+}
+
+/* Seções do Dashboard */
+.dashboard-section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.section-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.section-header h3 i {
+    margin-right: 8px;
+    color: #007bff;
+}
+
+.btn-link {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.btn-link:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
+
+/* Lista de Atendimentos */
+.atendimentos-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.atendimento-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    transition: background 0.2s;
+}
+
+.atendimento-item:hover {
+    background: #e9ecef;
+}
+
+.atendimento-horario {
+    background: #007bff;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-right: 12px;
+    min-width: 60px;
+    text-align: center;
+}
+
+.atendimento-info {
+    flex: 1;
+}
+
+.atendimento-cliente {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 2px;
+}
+
+.atendimento-servico {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.atendimento-status {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.atendimento-status.pendente {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.atendimento-status.concluido {
+    background: #d4edda;
+    color: #155724;
+}
+
+/* Lista de Serviços */
+.servicos-list {
+    max-height: 250px;
+    overflow-y: auto;
+}
+
+.servico-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    background: #f8f9fa;
+}
+
+.servico-nome {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.servico-count {
+    background: #007bff;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Grid Financeiro */
+.financeiro-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+}
+
+.financeiro-item {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.financeiro-label {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+}
+
+.financeiro-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.financeiro-subtitle {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+/* Gráfico */
+.chart-container {
+    position: relative;
+    height: 200px;
+    margin-top: 10px;
+}
+
+/* Ações Rápidas */
+.acoes-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+}
+
+.acao-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #495057;
+    transition: all 0.3s;
+    border: 1px solid #dee2e6;
+}
+
+.acao-btn:hover {
+    background: #007bff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.acao-btn i {
+    font-size: 1.5rem;
+    margin-bottom: 8px;
+}
+
+.acao-btn span {
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+}
+
+/* Loading */
+.loading-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #6c757d;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-right: 10px;
+}
+
+.spinner-large {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #007bff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.loading-content {
+    text-align: center;
+    color: #6c757d;
+}
+
+.loading-content p {
+    margin-top: 15px;
+    font-size: 1rem;
+}
+
+/* Estados vazios */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Responsividade - Tablet */
+@media (min-width: 768px) {
+    .dashboard-container {
+        padding: 0 20px;
+    }
+    
+    .dashboard-header {
+        margin: -20px -20px 30px -20px;
+        padding: 25px 30px;
+    }
+    
+    .header-content h1 {
+        font-size: 1.8rem;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 20px;
+    }
+    
+    .metric-card {
+        padding: 25px;
+    }
+    
+    .metric-value {
+        font-size: 1.6rem;
+    }
+    
+    .acoes-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+    
+    .financeiro-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* Responsividade - Desktop */
+@media (min-width: 1024px) {
+    .dashboard-container {
+        max-width: 1200px;
+        padding: 0 30px;
+    }
+    
+    .dashboard-header {
+        margin: -30px -30px 40px -30px;
+        padding: 30px 40px;
+    }
+    
+    .header-content h1 {
+        font-size: 2rem;
+    }
+    
+    .metrics-grid {
+        gap: 25px;
+    }
+    
+    .metric-card {
+        padding: 30px;
+    }
+    
+    .metric-value {
+        font-size: 1.8rem;
+    }
+    
+    .dashboard-section {
+        padding: 30px;
+    }
+    
+    .section-header h3 {
+        font-size: 1.3rem;
+    }
+    
+    .chart-container {
+        height: 250px;
+    }
+}
+
+/* Animações */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.metric-card,
+.dashboard-section {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.metric-card:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.metric-card:nth-child(3) {
+    animation-delay: 0.2s;
+}
+
+.metric-card:nth-child(4) {
+    animation-delay: 0.3s;
+}
+
+.dashboard-section:nth-child(2) {
+    animation-delay: 0.4s;
+}
+
+.dashboard-section:nth-child(3) {
+    animation-delay: 0.5s;
+}
+
+.dashboard-section:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+.dashboard-section:nth-child(5) {
+    animation-delay: 0.7s;
+}
+
+.dashboard-section:nth-child(6) {
+    animation-delay: 0.8s;
+}

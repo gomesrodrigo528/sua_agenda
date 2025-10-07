@@ -196,30 +196,64 @@ document.addEventListener('DOMContentLoaded', async function () {
     async function renderAppointments(view) {
         try {
             const data = await fetchData('/agenda/data');
+            // Obter data local correta usando Intl.DateTimeFormat
             const now = new Date();
+            const localDate = new Intl.DateTimeFormat('pt-BR', {
+                timeZone: 'America/Sao_Paulo',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(now);
+            
+            // Converter formato brasileiro (DD/MM/YYYY) para ISO (YYYY-MM-DD)
+            const [day, month, year] = localDate.split('/');
+            const today = `${year}-${month}-${day}`;
+            
             let filteredAppointments;
     
+            console.log('Dados recebidos:', data);
+            console.log('Filtro aplicado:', view);
+            console.log('Data atual (UTC):', now.toISOString().split('T')[0]);
+            console.log('Data atual (Brasil):', today);
+    
             if (view === 'day') {
-                const today = now.toISOString().split('T')[0];
-                filteredAppointments = data.filter(event => event.data === today);
+                console.log('Filtrando para hoje:', today);
+                filteredAppointments = data.filter(event => {
+                    console.log('Comparando:', event.data, 'com', today);
+                    return event.data === today;
+                });
+                console.log('Agendamentos de hoje encontrados:', filteredAppointments.length);
             } else if (view === 'week') {
-                const weekStart = new Date(now);
-                weekStart.setDate(now.getDate() - now.getDay());
+                const todayDate = new Date(today + 'T00:00:00');
+                const weekStart = new Date(todayDate);
+                weekStart.setDate(todayDate.getDate() - todayDate.getDay());
                 weekStart.setHours(0, 0, 0, 0);
     
                 const weekEnd = new Date(weekStart);
                 weekEnd.setDate(weekStart.getDate() + 6);
+                weekEnd.setHours(23, 59, 59, 999);
     
+                console.log('Filtrando para semana:', weekStart.toISOString().split('T')[0], 'até', weekEnd.toISOString().split('T')[0]);
                 filteredAppointments = data.filter(event => {
                     const eventDate = new Date(event.data + 'T00:00:00');
-                    return eventDate >= weekStart && eventDate <= weekEnd;
+                    const isInWeek = eventDate >= weekStart && eventDate <= weekEnd;
+                    console.log('Evento:', event.data, 'está na semana?', isInWeek);
+                    return isInWeek;
                 });
+                console.log('Agendamentos da semana encontrados:', filteredAppointments.length);
             } else if (view === 'month') {
-                const month = now.getMonth();
+                const todayDate = new Date(today + 'T00:00:00');
+                const month = todayDate.getMonth();
+                const year = todayDate.getFullYear();
+                
+                console.log('Filtrando para mês:', month + 1, '/', year);
                 filteredAppointments = data.filter(event => {
                     const eventDate = new Date(event.data + 'T00:00:00');
-                    return eventDate.getMonth() === month && eventDate.getFullYear() === now.getFullYear();
+                    const isInMonth = eventDate.getMonth() === month && eventDate.getFullYear() === year;
+                    console.log('Evento:', event.data, 'está no mês?', isInMonth);
+                    return isInMonth;
                 });
+                console.log('Agendamentos do mês encontrados:', filteredAppointments.length);
             }
     
             // Ordena os agendamentos por data e horário
@@ -279,22 +313,51 @@ document.addEventListener('DOMContentLoaded', async function () {
                         textColor = 'black';
                     }
     
+                    // Define o status e badge
+                    let statusBadge = '';
+                    let statusClass = '';
+                    
+                    if (event.status === 'cancelado') {
+                        statusBadge = '<span class="status-badge status-cancelado">Cancelado</span>';
+                        statusClass = 'cancelled';
+                    } else if (event.status === 'finalizado') {
+                        statusBadge = '<span class="status-badge status-finalizado">Finalizado</span>';
+                        statusClass = 'completed';
+                    } else {
+                        statusBadge = '<span class="status-badge status-ativo">Ativo</span>';
+                        statusClass = 'active';
+                    }
+
                     return `
-                    <div class="appointment-details">
-                        <li class="appointment-item" style="background-color: ${backgroundColor}; color: ${textColor}; margin-top: 20px; ${isContaReceber ? 'font-weight: bold; border: 2px solid orange;' : ''}">
-                            <div>
-                                <strong>${event.cliente_nome} - ${event.servico_nome}</strong> ${isContaReceber ? '<span style="color: orange;">💰 Conta a Receber</span>' : ''}<br>
-                                <span><strong>Data:</strong> ${eventDate.toLocaleDateString()} às ${event.horario}</span>
+                    <li class="appointment-item ${statusClass}">
+                        <div class="appointment-info">
+                            <div class="appointment-header">
+                                <strong>${event.cliente_nome}</strong>
+                                ${statusBadge}
                             </div>
-                            <div class="button-group-2">
-                                ${!isContaReceber ? `<button class="btn btn-danger btn-cancelar" data-id="${event.id}">Cancelar</button>` : ''}
-                                ${!isContaReceber ? `<button class="btn btn-success btn-finalizar" data-id="${event.id}" data-valor="${event.servico_preco || 0}">Finalizar</button>` : ''}
-                                <a class="btn btn-success btn-sm whatsapp-button d-flex align-items-center" target="_blank" href="${linkWhatsApp}">
-                                    <i class="bi bi-whatsapp me-1"></i> Whatsapp
-                                </a>
+                            <div class="appointment-service">
+                                <i class="bi bi-briefcase me-1"></i>${event.servico_nome}
                             </div>
-                        </li>
-                    </div>
+                            <div class="appointment-datetime">
+                                <i class="bi bi-calendar-event me-1"></i>${eventDate.toLocaleDateString('pt-BR')} às ${event.horario}
+                            </div>
+                            ${event.descricao ? `<div class="appointment-description"><i class="bi bi-chat-text me-1"></i>${event.descricao}</div>` : ''}
+                            ${isContaReceber ? '<div class="appointment-payment"><i class="bi bi-currency-dollar me-1"></i>💰 Conta a Receber</div>' : ''}
+                        </div>
+                        <div class="button-group-2">
+                            ${event.status !== 'cancelado' && event.status !== 'finalizado' ? `
+                                <button class="btn btn-danger btn-cancelar" data-id="${event.id}">
+                                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                                </button>
+                                <button class="btn btn-success btn-finalizar" data-id="${event.id}" data-valor="${event.servico_preco || 0}">
+                                    <i class="bi bi-check-circle me-1"></i>Finalizar
+                                </button>
+                            ` : ''}
+                            <a class="btn btn-success btn-sm whatsapp-button d-flex align-items-center" target="_blank" href="${linkWhatsApp}">
+                                <i class="bi bi-whatsapp me-1"></i>WhatsApp
+                            </a>
+                        </div>
+                    </li>
                     `;
                 } catch (error) {
                     console.error('Erro ao buscar nome do usuário:', error.message);

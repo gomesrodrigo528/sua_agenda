@@ -68,6 +68,11 @@ function renderMenu(containerId) {
                 <ul class="nav flex-column mt-4">
                     <img src="${logo}" id="logo" alt="Logo da Empresa" style="max-width: 100%; height: 180px;">
 
+                    <!-- Dashboard -->
+                    <li class="nav-item mb-3">
+                        <a href="/dashboard" class="nav-link text-white"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    </li>
+
                     <!-- Ações principais -->
                     <li class="nav-item mb-3">
                         <a href="/agenda" class="nav-link text-white"><i class="bi bi-calendar3"></i> Agenda</a>
@@ -161,6 +166,11 @@ function renderDefaultMenu(container, isPDV) {
     <nav id="menu-lateral" class="text-white p-3" style="${menuStyle}">
         <ul class="nav flex-column mt-4">
             <img src="/static/img/logo.png" id="logo" alt="Logo da Empresa" style="max-width: 100%; height: 180px;">
+
+            <!-- Dashboard -->
+            <li class="nav-item mb-3">
+                <a href="/dashboard" class="nav-link text-white"><i class="bi bi-speedometer2"></i> Dashboard</a>
+            </li>
 
             <!-- Ações principais -->
             <li class="nav-item mb-3">

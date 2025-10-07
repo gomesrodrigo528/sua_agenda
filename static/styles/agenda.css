@@ -253,7 +253,7 @@ button:hover {
     }
 }
 
-/* Para dispositivos móveis */
+/* Para dispositivos móveis - Layout Moderno */
 @media (max-width: 768px) {
     #calendar-container {
         display: none;
@@ -263,22 +263,283 @@ button:hover {
         position: fixed;
         top: 20px;
         left: 20px;
-        z-index: 10; /* Valor menor para permitir sobreposição */
+        z-index: 10;
         background-color: #030213;
         color: #fff;
         border: none;
-        padding: 10px 15px;
+        padding: 12px 16px;
         cursor: pointer;
-        border-radius: 5px;
+        border-radius: 12px;
         font-size: 1.2rem;
-        display: block; /* Exibe o botão apenas em telas menores */
+        display: block;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        transition: all 0.3s ease;
     }
+
+    #toggle-menu:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    }
+
     #list-container {
         display: block;
+        padding: 20px 16px;
+        background: #f9f9f9;
+        min-height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     body {
         overflow: auto;
+        background: #f9f9f9;
+    }
+
+    /* Header moderno para mobile */
+    .mobile-header {
+        background: #007bff;
+        color: white;
+        padding: 20px 16px;
+        margin: -20px -16px 20px -16px;
+        border-radius: 0 0 24px 24px;
+        box-shadow: 0 8px 32px rgba(0, 123, 255, 0.3);
+    }
+
+    .mobile-header h1 {
+        margin: 0;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    /* Cards de agendamento modernos */
+    #appointment-list li {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        list-style: none;
+    }
+
+    #appointment-list li::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: #007bff;
+    }
+
+    #appointment-list li:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Estrutura do card de agendamento */
+    .appointment-info {
+        margin-bottom: 16px;
+    }
+
+    .appointment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .appointment-header strong {
+        color: #2d3748;
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+    }
+
+    .appointment-service,
+    .appointment-datetime,
+    .appointment-description,
+    .appointment-payment {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        color: #4a5568;
+        font-size: 14px;
+    }
+
+    .appointment-service i,
+    .appointment-datetime i,
+    .appointment-description i,
+    .appointment-payment i {
+        color: #007bff;
+        margin-right: 8px;
+        width: 16px;
+    }
+
+    .appointment-payment {
+        color: #f6ad55;
+        font-weight: 600;
+    }
+
+    /* Botões modernos */
+    .button-group-2 {
+        margin-top: 20px;
+        gap: 12px;
+    }
+
+    .button-group-2 .btn {
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 12px 16px;
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-cancelar {
+        background: #dc3545;
+        color: white;
+    }
+
+    .btn-finalizar {
+        background: #28a745;
+        color: white;
+    }
+
+    .btn-primary {
+        background: #007bff;
+        color: white;
+    }
+
+    .button-group-2 .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Filtro moderno */
+    .filter-container {
+        margin: 20px 0;
+        position: relative;
+    }
+
+    select#filter {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: 500;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    select#filter:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    /* Botão de novo agendamento moderno */
+    .btn-novo-agendamento {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background: #007bff;
+        color: white;
+        border: none;
+        font-size: 24px;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+
+    .btn-novo-agendamento:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+    }
+
+    /* Status badges modernos */
+    .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-ativo {
+        background: #28a745;
+        color: white;
+    }
+
+    .status-cancelado {
+        background: #dc3545;
+        color: white;
+    }
+
+    .status-finalizado {
+        background: #6c757d;
+        color: white;
+    }
+
+    /* Melhorias no modal */
+    .modal-content {
+        border-radius: 20px;
+        border: none;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-header {
+        background: #007bff;
+        color: white;
+        border-radius: 20px 20px 0 0;
+        border: none;
+    }
+
+    /* Animações suaves */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    #appointment-list li {
+        animation: fadeInUp 0.5s ease-out;
+    }
+
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #007bff;
+        border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #0056b3;
     }
 }
 
