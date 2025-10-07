@@ -1,4 +1,5 @@
 from flask import Flask, redirect, url_for
+from config import Config
 
 # Iniciar o agendador
 from waitress import serve
@@ -23,11 +24,20 @@ from routes.vendas import vendas_bp
 from routes.contas_receber import contas_receber_bp
 from routes.contas_pagar import contas_pagar_bp
 from routes.push import push_bp
+from routes.dashboard import dashboard_bp
 import os
 
 # Configuração do Flask
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
+app.config.from_object(Config)
+
+# Validar variáveis de ambiente obrigatórias
+try:
+    Config.validate_required_env()
+except ValueError as e:
+    print(f"ERRO: {e}")
+    print("Certifique-se de configurar todas as variáveis de ambiente obrigatórias.")
+    exit(1)
 
 # Registrando os Blueprints
 app.register_blueprint(renovacao_bp)
@@ -51,10 +61,11 @@ app.register_blueprint(vendas_bp)
 app.register_blueprint(contas_receber_bp)
 app.register_blueprint(contas_pagar_bp)
 app.register_blueprint(push_bp)
+app.register_blueprint(dashboard_bp)
 
 @app.route("/")
 def inicio():
-    return redirect(url_for('agenda_bp.renderizar_agenda'))
+    return redirect(url_for('dashboard.dashboard'))
 
 
 #if __name__ == '__main__':
