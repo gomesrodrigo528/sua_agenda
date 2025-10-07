@@ -4,20 +4,12 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask import jsonify, request, make_response, url_for
 from datetime import timedelta
 
-from supabase import create_client
+from supabase_config import supabase
+from utils.security import PasswordManager, EmailValidator
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
-from werkzeug.security import check_password_hash
-
-# Configuração do Supabase
-supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
-supabase_key = os.getenv(
-    'SUPABASE_KEY',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
-)
-supabase = create_client(supabase_url, supabase_key)
 
 login_bp = Blueprint('login', __name__)
 
@@ -41,9 +33,17 @@ def login():
         if not usuario_data.data:
             return jsonify(success=False, message='Email não encontrado. Verifique o email e tente novamente.'), 404
 
-        # Verifica a senha
-        if usuario_data.data['senha'] != senha:
-            return jsonify(success=False, message='Senha incorreta. Tente novamente.'), 401
+        # Verifica a senha usando hash ou texto claro
+        senha_banco = usuario_data.data['senha']
+        
+        # Se a senha está em hash, usar PasswordManager
+        if senha_banco.startswith('$2b$') or senha_banco.startswith('scrypt:'):
+            if not PasswordManager.verify_password(senha, senha_banco):
+                return jsonify(success=False, message='Senha incorreta. Tente novamente.'), 401
+        else:
+            # Se a senha está em texto claro, comparar diretamente
+            if senha_banco != senha:
+                return jsonify(success=False, message='Senha incorreta. Tente novamente.'), 401
 
         # Buscar dados da empresa, incluindo o campo 'acesso'
         empresa_id = usuario_data.data['id_empresa']
@@ -114,9 +114,17 @@ def login_cliente():
             return jsonify(success=False, message='Há um problema com seu cadastro. Existem múltiplos usuários com este email. Contate o suporte.'), 409
         usuario_cliente = usuarios_cliente.data[0]
 
-        # Verificar senha (comparação direta)
-        if usuario_cliente['senha'] != senha:
-            return jsonify(success=False, message='Senha incorreta, tente novamente.'), 401
+        # Verificar senha usando hash ou texto claro
+        senha_banco = usuario_cliente['senha']
+        
+        # Se a senha está em hash, usar PasswordManager
+        if senha_banco.startswith('$2b$') or senha_banco.startswith('scrypt:'):
+            if not PasswordManager.verify_password(senha, senha_banco):
+                return jsonify(success=False, message='Senha incorreta, tente novamente.'), 401
+        else:
+            # Se a senha está em texto claro, comparar diretamente
+            if senha_banco != senha:
+                return jsonify(success=False, message='Senha incorreta, tente novamente.'), 401
 
         # Buscar dados do cliente comercial vinculado
         clientes_resp = supabase.table('clientes').select('id, nome_cliente, telefone, id_empresa').eq('id_usuario_cliente', usuario_cliente['id']).execute()

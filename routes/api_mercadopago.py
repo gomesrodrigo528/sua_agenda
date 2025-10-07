@@ -1,8 +1,9 @@
 import mercadopago
+from config import Config
 
 
 def gerar_link_pagamento(plano, tipo="assinatura"):
-    sdk = mercadopago.SDK("TEST-1242682277274715-060519-40f45c2b119be74c36a87e6263c9f5e5-1360530545")
+    sdk = mercadopago.SDK(Config.MERCADOPAGO_ACCESS_TOKEN)
 
     planos = {
         "mensal": {

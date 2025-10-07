@@ -1,5 +1,5 @@
 from flask import Blueprint
-from supabase import create_client
+from supabase_config import supabase
 import os
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -8,13 +8,7 @@ import time
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo  # Utiliza zoneinfo para timezone
 
-# Configuração do Supabase
-supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
-supabase_key = os.getenv(
-    'SUPABASE_KEY',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
-)
-supabase = create_client(supabase_url, supabase_key)
+
 
 # Criação do Blueprint
 lembrete_email_bp = Blueprint('lembrete_email_bp', __name__)
@@ -50,8 +44,20 @@ def verificar_agendamentos():
                     if agora <= data_horario <= tempo_limite and not agendamento.get('notificado'):
                         print(f"Verificação agendada para agendamento ID {agendamento['id']}.")
 
-                        # Busca informações do cliente e usuário
-                        cliente = supabase.table('clientes').select('nome_cliente, email').eq('id', agendamento['cliente_id']).execute().data[0]
+                        # Busca informações do cliente e usuário - CORRIGIDO
+                        cliente_response = supabase.table('clientes').select('nome_cliente, id_usuario_cliente').eq('id', agendamento['cliente_id']).execute()
+                        cliente = cliente_response.data[0] if cliente_response.data else None
+                        
+                        # Buscar email do cliente em usuarios_clientes
+                        email_cliente = None
+                        if cliente and cliente.get('id_usuario_cliente'):
+                            try:
+                                usuario_cliente_response = supabase.table('usuarios_clientes').select('email').eq('id', cliente['id_usuario_cliente']).execute()
+                                if usuario_cliente_response.data:
+                                    email_cliente = usuario_cliente_response.data[0]['email']
+                            except Exception as e:
+                                print(f"Erro ao buscar email do cliente: {e}")
+                        
                         usuario = supabase.table('usuarios').select('nome_usuario, email').eq('id', agendamento['usuario_id']).execute().data[0]
                         empresa = supabase.table('empresa').select('email, senha_app').eq('id', agendamento['id_empresa']).execute().data[0]
 
@@ -75,8 +81,9 @@ def verificar_agendamentos():
                             f"Atenciosamente,\nEquipe {empresa['email']}"
                         )
 
-                        # Enviar e-mails
-                        enviar_email(cliente['email'], assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
+                        # Enviar e-mails - CORRIGIDO
+                        if email_cliente:
+                            enviar_email(email_cliente, assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
                         enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
 
                         # Atualizar status de notificação

@@ -1,19 +1,12 @@
 from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for
-from supabase import create_client
+from supabase_config import supabase
+from utils.email_service import EmailService
+from routes.push import agendar_notificacao_push, cancelar_notificacao_push, agendar_notificacao_push_cliente, cancelar_notificacao_push_cliente
 import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime
-
-#ta em branco a linha que ta dando erro
-# Configuração do Supabase
-supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
-supabase_key = os.getenv(
-    'SUPABASE_KEY',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
-)
-supabase = create_client(supabase_url, supabase_key)
 
 # Criação do Blueprint
 agenda_bp = Blueprint('agenda_bp', __name__)
@@ -160,10 +153,55 @@ def agendar():
         Equipe de Agendamento.
         """
 
-        # Enviar os e-mails (apenas se o email do cliente existir)
+        # Preparar dados para email
+        dados_email = {
+            "servico": nome_servico,
+            "data": dados['data'],
+            "horario": dados['horario'],
+            "cliente": cliente['nome_cliente'],
+            "profissional": usuario['nome_usuario'],
+            "descricao": descricao,
+            "email_cliente": email_cliente,
+            "email_profissional": usuario['email']
+        }
+
+        # Enviar e-mails usando o novo serviço
+        email_enviado_cliente = False
+        email_enviado_profissional = False
+
         if email_cliente:
-            enviar_email(email_cliente, assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
-        enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
+            email_enviado_cliente = EmailService.enviar_agendamento_cliente(
+                dados_email, empresa['email'], empresa['senha_app']
+            )
+
+        email_enviado_profissional = EmailService.enviar_agendamento_profissional(
+            dados_email, empresa['email'], empresa['senha_app']
+        )
+
+        # Enviar notificação push para o profissional
+        try:
+            agendar_notificacao_push(
+                dados["usuario_id"],
+                response.data[0]["id"],
+                dados['data'],
+                dados['horario'],
+                nome_servico
+            )
+        except Exception as e:
+            print(f"Erro ao enviar notificação push: {e}")
+
+        # Enviar notificação push para o cliente (se tiver id_usuario_cliente)
+        if cliente and cliente.get('id_usuario_cliente'):
+            try:
+                agendar_notificacao_push_cliente(
+                    cliente['id_usuario_cliente'],
+                    response.data[0]["id"],
+                    dados['data'],
+                    dados['horario'],
+                    nome_servico
+                )
+            except Exception as e:
+                print(f"Erro ao enviar notificação push para cliente: {e}")
 
         return jsonify({"message": "Agendamento realizado com sucesso e e-mails enviados!"}), 201
     else:
@@ -233,15 +271,22 @@ def listar_agendamentos():
         })
     return jsonify(agendamentos), 200
 
-# Rota para retornar os clientes
+# Rota para retornar os clientes com busca
 @agenda_bp.route('/api/clientes', methods=['GET'])
 def listar_clientes():
     if verificar_login():
         return verificar_login()
 
     empresa_id = obter_id_empresa()
+    busca = request.args.get('busca', '').strip()
 
-    response = supabase.table("clientes").select("id, nome_cliente,telefone").eq("id_empresa", empresa_id).execute()
+    if busca:
+        # Busca apenas por nome_cliente (telefone é numérico)
+        response = supabase.table("clientes").select("id, nome_cliente, telefone").eq("id_empresa", empresa_id).ilike("nome_cliente", f"%{busca}%").order("nome_cliente").limit(20).execute()
+    else:
+        # Retorna apenas os primeiros 20 clientes se não houver busca
+        response = supabase.table("clientes").select("id, nome_cliente, telefone").eq("id_empresa", empresa_id).order("nome_cliente").limit(20).execute()
+    
     return jsonify(response.data), 200
 
 # Rota para retornar os profissionais (usuários)
@@ -256,15 +301,22 @@ def listar_usuarios():
     return jsonify(response.data), 200
 
 
-# Rota para retornar os serviços
+# Rota para retornar os serviços com busca
 @agenda_bp.route('/api/servicos', methods=['GET'])
 def listar_servicos():
     if verificar_login():
         return verificar_login()
 
     empresa_id = obter_id_empresa()
+    busca = request.args.get('busca', '').strip()
 
-    response = supabase.table("servicos").select("id, nome_servico").eq("id_empresa", empresa_id).execute()
+    if busca:
+        # Busca com ilike para nome_servico
+        response = supabase.table("servicos").select("id, nome_servico, preco").eq("id_empresa", empresa_id).ilike("nome_servico", f"%{busca}%").order("nome_servico").limit(20).execute()
+    else:
+        # Retorna apenas os primeiros 20 serviços se não houver busca
+        response = supabase.table("servicos").select("id, nome_servico, preco").eq("id_empresa", empresa_id).order("nome_servico").limit(20).execute()
+    
     return jsonify(response.data), 200
 
 # Rota para checar a disponibilidade de horário
@@ -326,40 +378,105 @@ def cancelar_agendamento(id):
 
         agendamento = agendamento.data[0]
 
-        # Buscar informações adicionais
-        cliente = supabase.table("clientes").select("email, nome_cliente").eq("id", agendamento["cliente_id"]).execute().data[0]
-        usuario = supabase.table("usuarios").select("email, nome_usuario").eq("id", agendamento["usuario_id"]).execute().data[0]
-        servico = supabase.table("servicos").select("nome_servico").eq("id", agendamento["servico_id"]).execute().data[0]
-        empresa = supabase.table("empresa").select("email, senha_app").eq("id", empresa_id).execute().data[0]
+        # Buscar informações adicionais com tratamento de erro
+        try:
+            cliente_response = supabase.table("clientes").select("nome_cliente, id_usuario_cliente").eq("id", agendamento["cliente_id"]).execute()
+            cliente = cliente_response.data[0] if cliente_response.data else None
+            
+            # Buscar email do cliente na tabela usuarios_clientes
+            email_cliente = None
+            if cliente and cliente.get('id_usuario_cliente'):
+                usuario_cliente_response = supabase.table("usuarios_clientes").select("email").eq("id", cliente['id_usuario_cliente']).execute()
+                if usuario_cliente_response.data:
+                    email_cliente = usuario_cliente_response.data[0]['email']
+            
+            usuario_response = supabase.table("usuarios").select("email, nome_usuario").eq("id", agendamento["usuario_id"]).execute()
+            usuario = usuario_response.data[0] if usuario_response.data else None
+            
+            servico_response = supabase.table("servicos").select("nome_servico").eq("id", agendamento["servico_id"]).execute()
+            servico = servico_response.data[0] if servico_response.data else None
+            
+            empresa_response = supabase.table("empresa").select("email, senha_app").eq("id", empresa_id).execute()
+            empresa = empresa_response.data[0] if empresa_response.data else None
+            
+        except Exception as e:
+            print(f"Erro ao buscar dados relacionados: {e}")
+            return jsonify({"error": "Erro ao buscar informações do agendamento."}), 500
 
-        # Remover o agendamento no banco
-        supabase.table("agenda").delete().match({"id": id, "id_empresa": empresa_id}).execute()
+        if not all([cliente, usuario, servico, empresa]):
+            return jsonify({"error": "Dados incompletos para cancelamento."}), 400
 
-        # Preparar e-mails
-        assunto_cliente = "Cancelamento de Agendamento"
-        mensagem_cliente = f"""
-        Olá {cliente['nome_cliente']},
-        Seu agendamento foi cancelado.
-        - Serviço: {servico['nome_servico']}
-        - Data: {agendamento['data']}
-        - Horário: {agendamento['horario']}
-        """
+        # Atualizar status para cancelado em vez de deletar
+        update_response = supabase.table("agenda").update({
+            "status": "cancelado"
+        }).eq("id", id).eq("id_empresa", empresa_id).execute()
 
-        assunto_usuario = "Cancelamento de Agendamento"
-        mensagem_usuario = f"""
-        Olá {usuario['nome_usuario']},
-        O seguinte agendamento foi cancelado:
-        - Cliente: {cliente['nome_cliente']}
-        - Serviço: {servico['nome_servico']}
-        - Data: {agendamento['data']}
-        - Horário: {agendamento['horario']}
-        """
+        if not update_response.data:
+            return jsonify({"error": "Erro ao atualizar status do agendamento."}), 500
 
-        # Enviar e-mails
-        enviar_email(cliente['email'], assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
-        enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
+        # Preparar dados para email
+        dados_email = {
+            "servico": servico['nome_servico'],
+            "data": agendamento['data'],
+            "horario": agendamento['horario'],
+            "cliente": cliente['nome_cliente'],
+            "profissional": usuario['nome_usuario'],
+            "descricao": agendamento.get('descricao', ''),
+            "email_cliente": email_cliente,
+            "email_profissional": usuario['email']
+        }
 
-        return jsonify({"message": "Agendamento cancelado com sucesso e e-mails enviados!"}), 200
+        # Enviar e-mails usando o novo serviço
+        email_enviado_cliente = False
+        email_enviado_profissional = False
+
+        if email_cliente:
+            email_enviado_cliente = EmailService.enviar_cancelamento_cliente(
+                dados_email, empresa['email'], empresa['senha_app']
+            )
+
+        if usuario['email']:
+            email_enviado_profissional = EmailService.enviar_cancelamento_profissional(
+                dados_email, empresa['email'], empresa['senha_app']
+            )
+
+        # Enviar notificação push para o profissional sobre o cancelamento
+        try:
+            cancelar_notificacao_push(
+                agendamento["usuario_id"],
+                id,
+                agendamento['data'],
+                agendamento['horario'],
+                servico['nome_servico']
+            )
+        except Exception as e:
+            print(f"Erro ao enviar notificação push de cancelamento: {e}")
+
+        # Enviar notificação push para o cliente sobre o cancelamento (se tiver id_usuario_cliente)
+        if cliente and cliente.get('id_usuario_cliente'):
+            try:
+                cancelar_notificacao_push_cliente(
+                    cliente['id_usuario_cliente'],
+                    id,
+                    agendamento['data'],
+                    agendamento['horario'],
+                    servico['nome_servico']
+                )
+            except Exception as e:
+                print(f"Erro ao enviar notificação push de cancelamento para cliente: {e}")
+
+        # Retornar sucesso mesmo se alguns emails falharem
+        mensagem = "Agendamento cancelado com sucesso!"
+        if email_enviado_cliente and email_enviado_profissional:
+            mensagem += " E-mails enviados para cliente e profissional."
+        elif email_enviado_cliente:
+            mensagem += " E-mail enviado para cliente."
+        elif email_enviado_profissional:
+            mensagem += " E-mail enviado para profissional."
+        else:
+            mensagem += " (E-mails não puderam ser enviados)"
+
+        return jsonify({"message": mensagem}), 200
     except Exception as e:
         print(f"Erro ao cancelar agendamento: {e}")
         return jsonify({"error": "Erro ao cancelar agendamento."}), 500

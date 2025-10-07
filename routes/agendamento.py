@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request, render_template, redirect, url_for
-from supabase import create_client
+from supabase_config import supabase
+from utils.email_service import EmailService
+from routes.push import agendar_notificacao_push, cancelar_notificacao_push, agendar_notificacao_push_cliente, cancelar_notificacao_push_cliente
 import os
 from datetime import datetime
 import smtplib
@@ -7,13 +9,7 @@ from zoneinfo import ZoneInfo
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# Configuração do Supabase
-supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
-supabase_key = os.getenv(
-    'SUPABASE_KEY',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
-)
-supabase = create_client(supabase_url, supabase_key)
+
 
 # Criação do Blueprint
 agendamento_bp = Blueprint('agendamento_bp', __name__)
@@ -235,6 +231,31 @@ def agendar_cliente():
             enviar_email(usuario['email'], assunto_usuario, mensagem_usuario, empresa['email'], empresa['senha_app'])
         except Exception as e:
             print(f"Erro ao enviar email para usuário: {e}")
+        
+        # Enviar notificação push para o profissional
+        try:
+            agendar_notificacao_push(
+                dados["usuario_id"],
+                response.data[0]["id"],
+                dados['data'],
+                dados['horario'],
+                nome_servico
+            )
+        except Exception as e:
+            print(f"Erro ao enviar notificação push: {e}")
+        
+        # Enviar notificação push para o cliente (se estiver logado)
+        if id_usuario_cliente:
+            try:
+                agendar_notificacao_push_cliente(
+                    id_usuario_cliente,
+                    response.data[0]["id"],
+                    dados['data'],
+                    dados['horario'],
+                    nome_servico
+                )
+            except Exception as e:
+                print(f"Erro ao enviar notificação push para cliente: {e}")
         
         print("=== AGENDAMENTO CRIADO COM SUCESSO ===")
         print("Retornando status 201 com mensagem de sucesso")
@@ -599,25 +620,94 @@ def cancelar_agendamento(agendamento_id):
         supabase.table('agenda').update({
             'status': 'cancelado'
         }).eq('id', agendamento_id).execute()
-        # Buscar dados para e-mail
-        cliente = supabase.table('clientes').select('nome_cliente, id_usuario_cliente').eq('id', agendamento.data['cliente_id']).single().execute().data
-        usuario_cliente = supabase.table('usuarios_clientes').select('email').eq('id', cliente['id_usuario_cliente']).single().execute().data if cliente and cliente.get('id_usuario_cliente') else None
-        usuario = supabase.table('usuarios').select('email, nome_usuario').eq('id', agendamento.data['usuario_id']).single().execute().data
-        servico = supabase.table('servicos').select('nome_servico').eq('id', agendamento.data['servico_id']).single().execute().data
-        # Enviar e-mail para cliente
-        assunto_cliente = f'Agendamento Cancelado - {servico["nome_servico"]}'
-        mensagem_cliente = f"""
-        Olá {cliente['nome_cliente']},\n\nSeu agendamento para o serviço '{servico['nome_servico']}' foi cancelado.\nJustificativa: {justificativa}\n\nSe tiver dúvidas, entre em contato com o profissional.\n"""
-        # Enviar e-mail para profissional
-        assunto_prof = f'Agendamento Cancelado - {servico["nome_servico"]}'
-        mensagem_prof = f"""
-        Olá {usuario['nome_usuario']},\n\nO cliente {cliente['nome_cliente']} cancelou o agendamento do serviço '{servico['nome_servico']}'.\nJustificativa: {justificativa}\n\nVerifique sua agenda.\n"""
-        # Envio de e-mail (reutiliza função existente)
-        empresa = supabase.table('empresa').select('email, senha_app').eq('id', agendamento.data['id_empresa']).single().execute().data
+        # Buscar dados para e-mail com tratamento de erro
+        try:
+            cliente_response = supabase.table('clientes').select('nome_cliente, id_usuario_cliente').eq('id', agendamento.data['cliente_id']).single().execute()
+            cliente = cliente_response.data if cliente_response.data else None
+            
+            usuario_cliente_response = supabase.table('usuarios_clientes').select('email').eq('id', cliente['id_usuario_cliente']).single().execute() if cliente and cliente.get('id_usuario_cliente') else None
+            usuario_cliente = usuario_cliente_response.data if usuario_cliente_response and usuario_cliente_response.data else None
+            
+            usuario_response = supabase.table('usuarios').select('email, nome_usuario').eq('id', agendamento.data['usuario_id']).single().execute()
+            usuario = usuario_response.data if usuario_response.data else None
+            
+            servico_response = supabase.table('servicos').select('nome_servico').eq('id', agendamento.data['servico_id']).single().execute()
+            servico = servico_response.data if servico_response.data else None
+            
+            empresa_response = supabase.table('empresa').select('email, senha_app').eq('id', agendamento.data['id_empresa']).single().execute()
+            empresa = empresa_response.data if empresa_response.data else None
+            
+        except Exception as e:
+            print(f"Erro ao buscar dados relacionados: {e}")
+            return jsonify({'error': 'Erro ao buscar informações do agendamento.'}), 500
+
+        if not all([cliente, usuario, servico, empresa]):
+            return jsonify({'error': 'Dados incompletos para cancelamento.'}), 400
+
+        # Preparar dados para email
+        dados_email = {
+            "servico": servico['nome_servico'],
+            "data": agendamento.data['data'],
+            "horario": agendamento.data['horario'],
+            "cliente": cliente['nome_cliente'],
+            "profissional": usuario['nome_usuario'],
+            "descricao": agendamento.data.get('descricao', ''),
+            "justificativa": justificativa,
+            "email_cliente": usuario_cliente['email'] if usuario_cliente else None,
+            "email_profissional": usuario['email']
+        }
+
+        # Enviar e-mails usando o novo serviço
+        email_enviado_cliente = False
+        email_enviado_profissional = False
+
         if usuario_cliente and usuario_cliente.get('email'):
-            enviar_email(usuario_cliente['email'], assunto_cliente, mensagem_cliente, empresa['email'], empresa['senha_app'])
-        enviar_email(usuario['email'], assunto_prof, mensagem_prof, empresa['email'], empresa['senha_app'])
-        return jsonify({'message': 'Agendamento cancelado e e-mails enviados.'})
+            email_enviado_cliente = EmailService.enviar_cancelamento_cliente(
+                dados_email, empresa['email'], empresa['senha_app']
+            )
+
+        if usuario['email']:
+            email_enviado_profissional = EmailService.enviar_cancelamento_profissional(
+                dados_email, empresa['email'], empresa['senha_app']
+            )
+
+        # Enviar notificação push para o profissional sobre o cancelamento
+        try:
+            cancelar_notificacao_push(
+                agendamento.data['usuario_id'],
+                agendamento_id,
+                agendamento.data['data'],
+                agendamento.data['horario'],
+                servico['nome_servico']
+            )
+        except Exception as e:
+            print(f"Erro ao enviar notificação push de cancelamento: {e}")
+
+        # Enviar notificação push para o cliente sobre o cancelamento (se tiver id_usuario_cliente)
+        if cliente and cliente.get('id_usuario_cliente'):
+            try:
+                cancelar_notificacao_push_cliente(
+                    cliente['id_usuario_cliente'],
+                    agendamento_id,
+                    agendamento.data['data'],
+                    agendamento.data['horario'],
+                    servico['nome_servico']
+                )
+            except Exception as e:
+                print(f"Erro ao enviar notificação push de cancelamento para cliente: {e}")
+
+        # Retornar sucesso mesmo se alguns emails falharem
+        mensagem = "Agendamento cancelado com sucesso!"
+        if email_enviado_cliente and email_enviado_profissional:
+            mensagem += " E-mails enviados para cliente e profissional."
+        elif email_enviado_cliente:
+            mensagem += " E-mail enviado para cliente."
+        elif email_enviado_profissional:
+            mensagem += " E-mail enviado para profissional."
+        else:
+            mensagem += " (E-mails não puderam ser enviados)"
+
+        return jsonify({'message': mensagem})
     except Exception as e:
         print('Erro ao cancelar agendamento:', str(e))
         return jsonify({'error': 'Erro ao cancelar agendamento.'}), 500

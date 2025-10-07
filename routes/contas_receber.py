@@ -8,19 +8,14 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from flask import current_app as app
 from datetime import datetime
-from supabase import create_client, Client
+from supabase_config import supabase
 
 import os
 
 
 contas_receber_bp = Blueprint('contas_receber_bp', __name__)
 
-supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
-supabase_key = os.getenv(
-    'SUPABASE_KEY',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4'
-)
-supabase=create_client(supabase_url,supabase_key)
+
 
 def verificar_login():
     if not request.cookies.get('user_id') or not request.cookies.get('empresa_id'):

@@ -1,7 +1,7 @@
 from flask import Flask, Blueprint, render_template, request, redirect, url_for
 from flask import flash, session
 from flask import current_app as app
-from supabase import create_client, Client
+from supabase_config import supabase
 import os
 import datetime
 

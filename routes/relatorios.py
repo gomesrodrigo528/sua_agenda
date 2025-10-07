@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, jsonify, request, redirect, url_for, flash
-from supabase import create_client
+from supabase_config import supabase
 import os
 
 # Configuração do Supabase
-supabase_url = 'https://gccxbkoejigwkqwyvcav.supabase.co'
-supabase_key = os.getenv('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjY3hia29lamlnd2txd3l2Y2F2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzM2OTg5OTYsImV4cCI6MjA0OTI3NDk5Nn0.ADRY3SLagP-NjhAAvRRP8A4Ogvo7AbWvcW-J5gAbyr4')
-supabase = create_client(supabase_url, supabase_key)
+
+
+
 
 # Definição do Blueprint para rotas de relatórios
 relatorios_bp = Blueprint('relatorios', __name__)
