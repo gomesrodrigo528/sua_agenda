@@ -1,23 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends "base.html" %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AGENDA</title>
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- CSS Personalizado -->
-    <link rel="stylesheet" href="/static/styles/style.css">
-    <link rel="stylesheet" href="/static/styles/agenda.css">
-    <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#ffffff">
-    <link rel="icon" href="/static/img/icone-mobile.png">
+{% block title %}Agenda - Sua Agenda{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/agenda.css">
+<link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="/static/img/icone-mobile.png">
     
     <!-- Estilos para Popups -->
     <style>
+        /* Tela de carregamento - Ultra máxima prioridade */
+        #loading-screen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            background-color: rgba(0, 0, 0, 0.9) !important;
+            justify-content: center !important;
+            align-items: center !important;
+            z-index: 999999 !important;
+            flex-direction: column !important;
+        }
+        
+        /* Quando visível, usar display flex */
+        #loading-screen[style*="flex"] {
+            display: flex !important;
+        }
+        
+        #loading-screen .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        #loading-screen p {
+            color: white;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
         .popup-overlay {
             position: fixed;
             top: 0;
@@ -171,8 +203,85 @@
             padding: 0.75rem 1rem;
         }
         
-        .modal-lg {
-            max-width: 600px;
+        .modal-md {
+            max-width: 500px;
+        }
+        
+        @media (max-width: 768px) {
+            .modal-md {
+                max-width: 95%;
+                margin: 10px auto;
+            }
+        }
+        
+        /* Modal deve sobrepor tudo EXCETO tela de carregamento */
+        #agendamentoModal {
+            z-index: 9998 !important;
+        }
+        
+        #agendamentoModal .modal-dialog {
+            z-index: 9999 !important;
+        }
+        
+        #agendamentoModal .modal-content {
+            z-index: 10000 !important;
+        }
+        
+        /* Backdrop do modal */
+        .modal-backdrop {
+            z-index: 9997 !important;
+        }
+        
+        /* Modal de detalhes do agendamento - Máxima prioridade */
+        #agendamentoDetalhesModal {
+            z-index: 10010 !important;
+        }
+        
+        #agendamentoDetalhesModal .modal-dialog {
+            z-index: 10011 !important;
+        }
+        
+        #agendamentoDetalhesModal .modal-content {
+            z-index: 10012 !important;
+        }
+        
+        /* Modal de pagamento - Alta prioridade */
+        #pagamentoModal {
+            z-index: 10005 !important;
+        }
+        
+        #pagamentoModal .modal-dialog {
+            z-index: 10006 !important;
+        }
+        
+        #pagamentoModal .modal-content {
+            z-index: 10007 !important;
+        }
+        
+        /* Modal de mensagem - Média prioridade */
+        #modalMensagem {
+            z-index: 10003 !important;
+        }
+        
+        #modalMensagem .modal-dialog {
+            z-index: 10004 !important;
+        }
+        
+        #modalMensagem .modal-content {
+            z-index: 10005 !important;
+        }
+        
+        /* Modais de cadastro - Média prioridade */
+        #addServiceModal, #addClienteModal {
+            z-index: 10001 !important;
+        }
+        
+        #addServiceModal .modal-dialog, #addClienteModal .modal-dialog {
+            z-index: 10002 !important;
+        }
+        
+        #addServiceModal .modal-content, #addClienteModal .modal-content {
+            z-index: 10003 !important;
         }
         
         .fw-bold {
@@ -189,35 +298,18 @@
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
     </style>
+{% endblock %}
 
-</head>
+{% block content %}
 
-<body>
-
-    <div id="loading">Carregando...</div>
-
-
-
-    <!-- Modal de Notificações -->
-    <div class="modal fade" id="notificacaoModal" tabindex="-1" aria-labelledby="notificacaoModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="notificacaoModalLabel">Notificações</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" style="text-align: center;">
-                    <form style="background-color: transparent;" method="POST"
-                        action="{{ url_for('agenda_bp.verificar_notificacoes') }}">
-                        <p>Você tem <strong id="total-nao-vistos"></strong> novos agendamentos.</p>
-                        <button type="submit" class="btn btn-success">OK</button>
-                    </form>
-                </div>
-
-            </div>
-        </div>
+    <div id="loading-screen" style="display: none;">
+        <div class="spinner"></div>
+        <p>Processando agendamento...</p>
     </div>
+
+
+
+    <!-- Modal de Notificações - REMOVIDO (agora usando barra superior) -->
 
     <!-- Modal Global de Mensagens -->
     <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
@@ -237,43 +329,9 @@
         </div>
     </div>
 
-    <!-- Pop-up de Notificação Simples -->
-    <div id="popup" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive"
-        aria-atomic="true"
-        style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1050; display: none;">
-        <div class="d-flex">
-            <div class="toast-body">
+    <!-- Conteúdo Principal da Agenda -->
 
-                <h5 style="text-align: center;">Nenhum novo agendamento.</h3>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                aria-label="Close"></button>
-        </div>
-    </div>
-    <div id="nomeUsuario"></div>
-
-
-    <div class="d-flex" style="flex: 1; width: 100%;">
-        <!-- Menu Lateral -->
-        <div id="menu-container"></div>
-
-
-        <!-- Conteúdo Principal -->
-        <div class="container mt-4 flex-grow-1">
-
-
-            <!-- Botão de alternância do menu lateral -->
-            <button id="toggle-menu" class="d-block d-md-none"
-                style="background-color: transparent; border: none; font-size: 2rem; color: black; ;">
-                ☰
-            </button>
-
-
-            <!-- Botão para exibir o formulário -->
-            <button type="button" id="btn-agendar" class="btn btn-primary mb-4" data-bs-toggle="modal"
-                data-bs-target="#agendamentoModal">
-                Novo Agendamento
-            </button>
+            <!-- Botão para exibir o formulário - REMOVIDO -->
 
 
 
@@ -297,16 +355,12 @@
                     </div>
                 </div>
             </div>
-            <div id="loading-screen" style="display: none;">
-                <div class="spinner"></div>
-                <p>Carregando...</p>
-            </div>
 
 
             <!-- Modal de Agendamento -->
             <div class="modal fade" id="agendamentoModal" tabindex="-1" aria-labelledby="agendamentoModalLabel"
                 aria-hidden="true">
-                <div class="modal-dialog modal-lg">
+                <div class="modal-dialog modal-md">
                     <div class="modal-content">
                         <div class="modal-header bg-primary text-white">
                             <h5 class="modal-title" id="agendamentoModalLabel">
@@ -314,15 +368,15 @@
                             </h5>
                             <button type="button" class="btn-close btn-close-white" onclick="fecharModalAgendamento()" aria-label="Close"></button>
                         </div>
-                        <div class="modal-body p-4">
+                        <div class="modal-body p-3">
                             <form id="form-agendamento" class="needs-validation" novalidate>
                                 <!-- Cliente -->
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <label for="cliente-busca" class="form-label fw-bold">
                                         <i class="bi bi-person me-1"></i>Cliente
                                     </label>
                                     <div class="position-relative">
-                                        <input type="text" id="cliente-busca" class="form-control form-control-lg" 
+                                        <input type="text" id="cliente-busca" class="form-control" 
                                                placeholder="Digite o nome do cliente..." 
                                                autocomplete="off">
                                         <div id="cliente-dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
@@ -339,12 +393,12 @@
                                 </div>
 
                                 <!-- Serviço -->
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <label for="servico-busca" class="form-label fw-bold">
                                         <i class="bi bi-briefcase me-1"></i>Serviço
                                     </label>
                                     <div class="position-relative">
-                                        <input type="text" id="servico-busca" class="form-control form-control-lg" 
+                                        <input type="text" id="servico-busca" class="form-control" 
                                                placeholder="Digite o nome do serviço..." 
                                                autocomplete="off">
                                         <div id="servico-dropdown" class="dropdown-menu w-100" style="max-height: 200px; overflow-y: auto; display: none;">
@@ -361,37 +415,37 @@
                                 </div>
 
                                 <!-- Profissional -->
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <label for="usuario-agendamento" class="form-label fw-bold">
                                         <i class="bi bi-person-badge me-1"></i>Profissional
                                     </label>
-                                    <select id="usuario-agendamento" class="form-select form-select-lg" required>
+                                    <select id="usuario-agendamento" class="form-select" required>
                                         <option value="">Selecione um profissional</option>
                                     </select>
                                 </div>
 
                                 <!-- Data e Horário -->
-                                <div class="row mb-4">
+                                <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label for="data-agendamento" class="form-label fw-bold">
                                             <i class="bi bi-calendar-event me-1"></i>Data
                                         </label>
-                                        <input type="date" id="data-agendamento" class="form-control form-control-lg" required>
+                                        <input type="date" id="data-agendamento" class="form-control" required>
                                     </div>
                                     <div class="col-md-6">
                                         <label for="hora-agendamento" class="form-label fw-bold">
                                             <i class="bi bi-clock me-1"></i>Horário
                                         </label>
-                                        <input type="time" id="hora-agendamento" class="form-control form-control-lg" required>
+                                        <input type="time" id="hora-agendamento" class="form-control" required>
                                     </div>
                                 </div>
 
                                 <!-- Descrição -->
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <label for="descricao-agendamento" class="form-label fw-bold">
                                         <i class="bi bi-chat-text me-1"></i>Descrição
                                     </label>
-                                    <textarea id="descricao-agendamento" name="descricao" class="form-control" rows="3"
+                                    <textarea id="descricao-agendamento" name="descricao" class="form-control" rows="2"
                                         placeholder="Adicione detalhes sobre o compromisso..."></textarea>
                                 </div>
 
@@ -427,10 +481,8 @@
             </div>
 
 
-            <!-- Botão para alternar filtro de agendamentos -->
+            <!-- Botão para atualizar agenda -->
             <div class="mb-3 d-flex gap-2 justify-content-center">
-                <button id="btnMeusAgendamentos" class="btn btn-outline-primary active" type="button">Meus agendamentos</button>
-                <button id="btnTodosAgendamentos" class="btn btn-outline-secondary" type="button">Todos</button>
                 <button id="btnRefreshAgenda" class="btn btn-outline-success" type="button" title="Atualizar dados">
                     <i class="bi bi-arrow-clockwise"></i>
                 </button>
@@ -441,11 +493,6 @@
             </div>
 
             <div id="list-container" style="box-shadow:transparent; background-color:transparent; border: none;">
-                <!-- Header moderno para mobile -->
-                <div class="mobile-header d-md-none">
-                    <h1><i class="bi bi-calendar3 me-2"></i>Agenda</h1>
-                </div>
-                
                 <!-- Filtro moderno -->
                 <div class="filter-container">
                     <select id="filter">
@@ -458,18 +505,8 @@
                 <!-- Lista de agendamentos -->
                 <ul id="appointment-list"></ul>
                 
-                <!-- Botão flutuante para novo agendamento (mobile) -->
-                <button class="btn-novo-agendamento d-md-none" onclick="abrirModalAgendamento()" title="Novo Agendamento">
-                    <i class="bi bi-plus"></i>
-                </button>
+                <!-- Botão flutuante para novo agendamento (mobile) - REMOVIDO -->
             </div>
-
-        </div>
-    </div>
-
-
-
-
 
     <!-- Modal -->
     <div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel"
@@ -713,25 +750,7 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
         });
     </script>
     
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const totalNaoVistos = {{ total_nao_vistos }};
-
-            if (totalNaoVistos > 0) {
-                // Exibe o modal com notificações
-                document.getElementById("total-nao-vistos").textContent = totalNaoVistos;
-                const notificacaoModal = new bootstrap.Modal(document.getElementById("notificacaoModal"));
-                notificacaoModal.show();
-            } else {
-                // Exibe o pop-up por 3 segundos
-                const popup = document.getElementById("popup");
-                popup.style.display = "block";
-                setTimeout(() => {
-                    popup.style.display = "none";
-                }, 3000);
-            }
-        });
-    </script>
+    <!-- Script de notificações removido - agora usando barra superior -->
 
 
     <script src="static/scripts/agenda.js"></script>
@@ -746,18 +765,22 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
     <script>
         // Adiciona fallback para ocultar loading após 15 segundos
         setTimeout(() => {
-            const loading = document.getElementById('loading');
+            const loading = document.getElementById('loading-screen');
             if (loading && loading.style.display !== 'none') {
                 console.warn('Fallback: Ocultando loading após timeout');
                 loading.style.display = 'none';
             }
         }, 15000);
-        
-        renderMenu('menu-container');
     </script>
     <script src="static/scripts/script.js"></script>
 
     <script>
+        // Função para abrir o modal de agendamento
+        function abrirModalAgendamento() {
+            const modal = new bootstrap.Modal(document.getElementById('agendamentoModal'));
+            modal.show();
+        }
+        
         fetch('/api/usuarios')
             .then(response => {
                 if (!response.ok) {
@@ -784,14 +807,14 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
 
     </script>
 
-    <!-- Botão flutuante de vendas -->
+    <!-- Botão flutuante de novo agendamento -->
     <style>
-    #btn-vendas-flutuante {
+    #btn-agendamento-flutuante {
         position: fixed;
         bottom: 32px;
         right: 32px;
         z-index: 9999;
-        background: linear-gradient(135deg, #2ecc40 80%, #27ae60 100%);
+        background: linear-gradient(135deg, #007bff 80%, #0056b3 100%);
         border: none;
         outline: none;
         cursor: pointer;
@@ -804,11 +827,11 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
         justify-content: center;
         transition: box-shadow 0.2s, transform 0.2s;
     }
-    #btn-vendas-flutuante:hover {
+    #btn-agendamento-flutuante:hover {
         box-shadow: 0 8px 32px rgba(0,0,0,0.28);
         transform: scale(1.08);
     }
-    #btn-vendas-flutuante .cifrao {
+    #btn-agendamento-flutuante .icone {
         color: #fff;
         font-size: 2.2rem;
         font-weight: bold;
@@ -816,9 +839,9 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
         line-height: 1;
     }
     </style>
-    <a id="btn-vendas-flutuante" href="/vendas" title="Ir para vendas">
-        <span class="cifrao">&#36;</span>
-    </a>
+    <button id="btn-agendamento-flutuante" onclick="abrirModalAgendamento()" title="Novo Agendamento">
+        <i class="bi bi-calendar-plus icone"></i>
+    </button>
 
     <!-- Popup de Sucesso -->
     <div id="popup-success" class="popup-overlay">
@@ -878,7 +901,21 @@ function mostrarMensagem(titulo, mensagem, tipo = 'info') {
     </div>
 
     <script src="/static/scripts/push_register.js"></script>
+{% endblock %}
 
-</body>
-
-</html>
+{% block page_scripts %}
+    <script src="static/scripts/agenda.js"></script>
+    <script src="static/scripts/busca_agendamento.js"></script>
+    <!-- Biblioteca FullCalendar -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script>
+        // Adiciona fallback para ocultar loading após 15 segundos
+        setTimeout(() => {
+            const loading = document.getElementById('loading-screen');
+            if (loading && loading.style.display !== 'none') {
+                console.warn('Fallback: Ocultando loading após timeout');
+                loading.style.display = 'none';
+            }
+        }, 15000);
+    </script>
+{% endblock %}

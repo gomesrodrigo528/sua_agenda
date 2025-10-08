@@ -4,163 +4,623 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="/static/styles/relatorios.css">
-<link rel="stylesheet" href="/static/styles/users.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid">
     
-    
-    <div class="text-center mb-4">
-        <h1 class="display-5">Dashboard de Relatórios</h1>
-        <p class="text-muted">Visualize informações importantes sobre sua operação.</p>
+    <!-- Header Minimalista -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="fw-normal text-dark mb-1">Relatórios</h2>
+            <p class="text-muted small mb-0">Gere e exporte relatórios da sua operação</p>
+        </div>
     </div>
     
-    <!-- Sub-Abas -->
-    <ul class="nav nav-pills mb-4" id="myTab" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="financeiro-tab" data-bs-toggle="tab" href="#financeiro" role="tab">Financeiro</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="atendimentos-tab" data-bs-toggle="tab" href="#atendimentos" role="tab">Atendimentos</a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="usuarios-tab" data-bs-toggle="tab" href="#usuarios" role="tab">Desempenho de Usuários</a>
-        </li>
-        <!-- Nova Aba de Gráficos -->
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="graficos-tab" data-bs-toggle="tab" href="#graficos" role="tab">Gráficos</a>
-        </li>
-    </ul>
+    <!-- Filtros Simples -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label for="dataInicio" class="form-label small text-muted">Data Início</label>
+            <input type="date" class="form-control form-control-sm" id="dataInicio" name="dataInicio">
+        </div>
+        <div class="col-md-3">
+            <label for="dataFim" class="form-label small text-muted">Data Fim</label>
+            <input type="date" class="form-control form-control-sm" id="dataFim" name="dataFim">
+        </div>
+        <div class="col-md-3">
+            <label for="usuarioFiltro" class="form-label small text-muted">Usuário</label>
+            <select class="form-select form-select-sm" id="usuarioFiltro" name="usuarioFiltro">
+                <option value="">Todos</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="aplicarFiltros()">
+                Aplicar
+            </button>
+        </div>
+    </div>
     
-    <!-- Conteúdo das Sub-Abas -->
-    <div class="tab-content">
-        <div class="tab-pane fade show active" id="financeiro" role="tabpanel">
-            <div id="cardsContainerFinanceiro" class="row"></div>
-        </div>
-        <div class="tab-pane fade" id="atendimentos" role="tabpanel">
-            <div id="cardsContainerAtendimentos" class="row"></div>
-        </div>
-        <div class="tab-pane fade" id="usuarios" role="tabpanel">
-            <div id="cardsContainerUsuarios" class="row"></div>
-        </div>
-        <!-- Conteúdo dos Gráficos -->
-        <div class="tab-pane fade" id="graficos" role="tabpanel">
-            <div class="row mt-5">
-                <div class="col-md-6">
-                    <h3>Faturamento por Usuário</h3>
-                    <canvas id="graficoFaturamento"></canvas>
+    <!-- Cards de Resumo Minimalistas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-2">
+                                <i class="bi bi-calendar-check text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="small text-muted">Agendamentos</div>
+                            <div class="fw-semibold" id="totalAgendamentos">0</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <h3>Evolução de Atendimentos</h3>
-                    <canvas id="graficoAtendimentos"></canvas>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-2">
+                                <i class="bi bi-currency-dollar text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="small text-muted">Faturamento</div>
+                            <div class="fw-semibold" id="faturamentoTotal">R$ 0,00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 rounded-circle p-2">
+                                <i class="bi bi-people text-info"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="small text-muted">Clientes</div>
+                            <div class="fw-semibold" id="clientesAtendidos">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-2">
+                                <i class="bi bi-clock text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <div class="small text-muted">Tempo Médio</div>
+                            <div class="fw-semibold" id="tempoMedio">0 min</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <!-- Abas Minimalistas -->
+    <ul class="nav nav-pills nav-fill mb-3" id="relatoriosTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="financeiro-tab" data-bs-toggle="tab" data-bs-target="#financeiro" type="button" role="tab">
+                Financeiro
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="atendimentos-tab" data-bs-toggle="tab" data-bs-target="#atendimentos" type="button" role="tab">
+                Atendimentos
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="clientes-tab" data-bs-toggle="tab" data-bs-target="#clientes" type="button" role="tab">
+                Clientes
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="servicos-tab" data-bs-toggle="tab" data-bs-target="#servicos" type="button" role="tab">
+                Serviços
+            </button>
+        </li>
+    </ul>
+    
+    <!-- Conteúdo das Abas -->
+    <div class="tab-content" id="relatoriosTabContent">
+        
+        <!-- Aba Financeiro -->
+        <div class="tab-pane fade show active" id="financeiro" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-normal">Relatório Financeiro</h6>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="exportarRelatorio('financeiro', 'excel')">
+                                Excel
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportarRelatorio('financeiro', 'pdf')">
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <canvas id="graficoFinanceiro" height="250"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th class="small text-muted">Período</th>
+                                            <th class="small text-muted text-end">Valor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaFinanceiro">
+                                        <!-- Dados carregados dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba Atendimentos -->
+        <div class="tab-pane fade" id="atendimentos" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-normal">Relatório de Atendimentos</h6>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="exportarRelatorio('atendimentos', 'excel')">
+                                Excel
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportarRelatorio('atendimentos', 'pdf')">
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <canvas id="graficoAtendimentos" height="250"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th class="small text-muted">Data</th>
+                                            <th class="small text-muted text-end">Atendimentos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaAtendimentos">
+                                        <!-- Dados carregados dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba Clientes -->
+        <div class="tab-pane fade" id="clientes" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-normal">Relatório de Clientes</h6>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="exportarRelatorio('clientes', 'excel')">
+                                Excel
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportarRelatorio('clientes', 'pdf')">
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <canvas id="graficoClientes" height="250"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th class="small text-muted">Cliente</th>
+                                            <th class="small text-muted text-end">Atendimentos</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaClientes">
+                                        <!-- Dados carregados dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Aba Serviços -->
+        <div class="tab-pane fade" id="servicos" role="tabpanel">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-normal">Relatório de Serviços</h6>
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-success btn-sm" onclick="exportarRelatorio('servicos', 'excel')">
+                                Excel
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="exportarRelatorio('servicos', 'pdf')">
+                                PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <canvas id="graficoServicos" height="250"></canvas>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-borderless">
+                                    <thead>
+                                        <tr>
+                                            <th class="small text-muted">Serviço</th>
+                                            <th class="small text-muted text-end">Quantidade</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaServicos">
+                                        <!-- Dados carregados dinamicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
 </div>
 {% endblock %}
 
 {% block page_scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-// Variáveis para armazenar os dados passados pelo Flask
-const financeiroData = {{ financeiro | tojson }}; 
-const atendimentosData = {{ atendimentos | tojson }}; 
-const financeiroUsuarioData = {{ financeiro_usuario | tojson }};
-
-if (typeof financeiroData === 'undefined' || typeof atendimentosData === 'undefined' || typeof financeiroUsuarioData === 'undefined') {
-    console.error('Erro: Dados financeiros ou de atendimentos não estão definidos.');
-    return;
-}
-
-// Variáveis para os elementos das abas
-const tabLinks = document.querySelectorAll('#myTab .nav-link');
-const tabPanes = document.querySelectorAll('.tab-pane');
-
-function alternarAbas(event) {
-    event.preventDefault();
-
-    tabLinks.forEach(link => link.classList.remove('active'));
-    tabPanes.forEach(pane => pane.classList.remove('show', 'active'));
-
-    const targetTab = event.target;
-    targetTab.classList.add('active');
-    const targetPane = document.querySelector(targetTab.getAttribute('href'));
-    targetPane.classList.add('show', 'active');
-}
-
-tabLinks.forEach(link => {
-    link.addEventListener('click', alternarAbas);
+    // Configurar datas padrão (últimos 30 dias)
+    const hoje = new Date();
+    const trintaDiasAtras = new Date(hoje.getTime() - (30 * 24 * 60 * 60 * 1000));
+    
+    document.getElementById('dataInicio').value = trintaDiasAtras.toISOString().split('T')[0];
+    document.getElementById('dataFim').value = hoje.toISOString().split('T')[0];
+    
+    // Carregar usuários no filtro
+    carregarUsuarios();
+    
+    // Carregar dados iniciais
+    aplicarFiltros();
 });
 
-// Carregar os dados nos cards
-carregarDadosNosCards(financeiroData, atendimentosData, financeiroUsuarioData);
-inicializarGraficos(financeiroUsuarioData, atendimentosData);
-});
-
-function criarCard(titulo, valor, containerId, cor) {
-const container = document.getElementById(containerId);
-const card = document.createElement('div');
-card.className = `card col-md-4 mb-4 ${cor}`;
-card.innerHTML = `
-    <div class="card-body">
-        <h5 class="card-title">${titulo}</h5>
-        <p class="card-text">${valor}</p>
-    </div>`;
-container.appendChild(card);
+// Função para carregar usuários no filtro
+async function carregarUsuarios() {
+    try {
+        const response = await fetch('/api/usuarios');
+        const usuarios = await response.json();
+        
+        const selectUsuario = document.getElementById('usuarioFiltro');
+        usuarios.forEach(usuario => {
+            const option = document.createElement('option');
+            option.value = usuario.id;
+            option.textContent = usuario.nome_usuario;
+            selectUsuario.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+    }
 }
 
-function carregarDadosNosCards(financeiroData, atendimentosData, financeiroUsuarioData) {
-const financeiroTotal = Object.values(financeiroData).reduce((acc, val) => acc + val, 0);
-const atendimentosTotal = Object.values(atendimentosData).reduce((acc, val) => acc + val, 0);
-
-// Cards Financeiro
-criarCard('Faturamento Total', `R$ ${financeiroTotal.toFixed(2)}`, 'cardsContainerFinanceiro', 'card-financeiro');
-
-// Cards Atendimentos
-criarCard('Atendimentos Totais', atendimentosTotal, 'cardsContainerAtendimentos', 'card-atendimento');
-
-// Cards de Usuários
-for (const [usuario, valor] of Object.entries(financeiroUsuarioData)) {
-    criarCard(` ${usuario}`, `R$ ${valor.toFixed(2)}`, 'cardsContainerUsuarios', 'card-usuario');
+// Função para aplicar filtros
+async function aplicarFiltros() {
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+    const usuarioId = document.getElementById('usuarioFiltro').value;
+    
+    try {
+        // Mostrar loading
+        mostrarLoading();
+        
+        // Buscar dados com filtros
+        const params = new URLSearchParams({
+            data_inicio: dataInicio,
+            data_fim: dataFim,
+            usuario_id: usuarioId
+        });
+        
+        const response = await fetch(`/api/relatorios?${params}`);
+        const dados = await response.json();
+        
+        // Atualizar cards de resumo
+        atualizarCardsResumo(dados.resumo);
+        
+        // Atualizar gráficos e tabelas
+        atualizarGraficoFinanceiro(dados.financeiro);
+        atualizarGraficoAtendimentos(dados.atendimentos);
+        atualizarGraficoClientes(dados.clientes);
+        atualizarGraficoServicos(dados.servicos);
+        
+        // Esconder loading
+        esconderLoading();
+        
+    } catch (error) {
+        console.error('Erro ao aplicar filtros:', error);
+        esconderLoading();
+        mostrarAlerta('Erro ao carregar dados dos relatórios', 'error');
+    }
 }
+
+// Função para atualizar cards de resumo
+function atualizarCardsResumo(resumo) {
+    document.getElementById('totalAgendamentos').textContent = resumo.total_agendamentos || 0;
+    document.getElementById('faturamentoTotal').textContent = `R$ ${(resumo.faturamento_total || 0).toFixed(2)}`;
+    document.getElementById('clientesAtendidos').textContent = resumo.clientes_atendidos || 0;
+    document.getElementById('tempoMedio').textContent = `${resumo.tempo_medio || 0} min`;
 }
 
-function inicializarGraficos(financeiroUsuarioData, atendimentosData) {
-const ctxFaturamento = document.getElementById('graficoFaturamento').getContext('2d');
-const ctxAtendimentos = document.getElementById('graficoAtendimentos').getContext('2d');
+// Função para atualizar gráfico financeiro
+function atualizarGraficoFinanceiro(dados) {
+    const ctx = document.getElementById('graficoFinanceiro').getContext('2d');
+    
+    // Destruir gráfico anterior se existir
+    if (window.graficoFinanceiro) {
+        window.graficoFinanceiro.destroy();
+    }
+    
+    window.graficoFinanceiro = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: dados.labels || [],
+            datasets: [{
+                label: 'Faturamento',
+                data: dados.valores || [],
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toFixed(2);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Atualizar tabela
+    atualizarTabelaFinanceiro(dados);
+}
 
-// Gráfico de Faturamento por Usuário
-new Chart(ctxFaturamento, {
+// Função para atualizar gráfico de atendimentos
+function atualizarGraficoAtendimentos(dados) {
+    const ctx = document.getElementById('graficoAtendimentos').getContext('2d');
+    
+    if (window.graficoAtendimentos) {
+        window.graficoAtendimentos.destroy();
+    }
+    
+    window.graficoAtendimentos = new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: Object.keys(financeiroUsuarioData),
+            labels: dados.labels || [],
         datasets: [{
-            label: 'Faturamento por Usuário',
-            data: Object.values(financeiroUsuarioData),
-            backgroundColor: '#6f42c1',
-            borderColor: '#6f42c1',
+                label: 'Atendimentos',
+                data: dados.valores || [],
+                backgroundColor: '#007bff',
+                borderColor: '#007bff',
             borderWidth: 1
         }]
-    }
-});
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    atualizarTabelaAtendimentos(dados);
+}
 
-// Gráfico de Evolução de Atendimentos
-new Chart(ctxAtendimentos, {
-    type: 'line',
-    data: {
-        labels: Object.keys(atendimentosData),
-        datasets: [{
-            label: 'Atendimentos',
-            data: Object.values(atendimentosData),
-            fill: false,
-            borderColor: '#28a745',
-            tension: 0.1
-        }]
+// Função para atualizar gráfico de clientes
+function atualizarGraficoClientes(dados) {
+    const ctx = document.getElementById('graficoClientes').getContext('2d');
+    
+    if (window.graficoClientes) {
+        window.graficoClientes.destroy();
     }
-});
+    
+    window.graficoClientes = new Chart(ctx, {
+        type: 'doughnut',
+    data: {
+            labels: dados.labels || [],
+        datasets: [{
+                data: dados.valores || [],
+                backgroundColor: [
+                    '#28a745', '#007bff', '#ffc107', '#dc3545', '#6f42c1',
+                    '#20c997', '#fd7e14', '#6c757d', '#e83e8c', '#17a2b8'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    atualizarTabelaClientes(dados);
+}
+
+// Função para atualizar gráfico de serviços
+function atualizarGraficoServicos(dados) {
+    const ctx = document.getElementById('graficoServicos').getContext('2d');
+    
+    if (window.graficoServicos) {
+        window.graficoServicos.destroy();
+    }
+    
+    window.graficoServicos = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: dados.labels || [],
+            datasets: [{
+                data: dados.valores || [],
+                backgroundColor: [
+                    '#28a745', '#007bff', '#ffc107', '#dc3545', '#6f42c1',
+                    '#20c997', '#fd7e14', '#6c757d', '#e83e8c', '#17a2b8'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    atualizarTabelaServicos(dados);
+}
+
+// Funções para atualizar tabelas
+function atualizarTabelaFinanceiro(dados) {
+    const tbody = document.getElementById('tabelaFinanceiro');
+    tbody.innerHTML = '';
+    
+    dados.labels.forEach((label, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = label;
+        row.insertCell(1).textContent = `R$ ${(dados.valores[index] || 0).toFixed(2)}`;
+    });
+}
+
+function atualizarTabelaAtendimentos(dados) {
+    const tbody = document.getElementById('tabelaAtendimentos');
+    tbody.innerHTML = '';
+    
+    dados.labels.forEach((label, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = label;
+        row.insertCell(1).textContent = dados.valores[index] || 0;
+    });
+}
+
+function atualizarTabelaClientes(dados) {
+    const tbody = document.getElementById('tabelaClientes');
+    tbody.innerHTML = '';
+    
+    dados.labels.forEach((label, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = label;
+        row.insertCell(1).textContent = dados.valores[index] || 0;
+    });
+}
+
+function atualizarTabelaServicos(dados) {
+    const tbody = document.getElementById('tabelaServicos');
+    tbody.innerHTML = '';
+    
+    dados.labels.forEach((label, index) => {
+        const row = tbody.insertRow();
+        row.insertCell(0).textContent = label;
+        row.insertCell(1).textContent = dados.valores[index] || 0;
+    });
+}
+
+// Função para exportar relatórios
+function exportarRelatorio(tipo, formato) {
+    const dataInicio = document.getElementById('dataInicio').value;
+    const dataFim = document.getElementById('dataFim').value;
+    const usuarioId = document.getElementById('usuarioFiltro').value;
+    
+    const params = new URLSearchParams({
+        tipo: tipo,
+        formato: formato,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+        usuario_id: usuarioId
+    });
+    
+    // Abrir nova janela para download
+    window.open(`/api/relatorios/exportar?${params}`, '_blank');
+}
+
+// Funções de loading
+function mostrarLoading() {
+    // Implementar loading se necessário
+}
+
+function esconderLoading() {
+    // Implementar esconder loading se necessário
+}
+
+// Função para mostrar alertas
+function mostrarAlerta(mensagem, tipo = 'info') {
+    // Implementar sistema de alertas se necessário
+    console.log(`${tipo.toUpperCase()}: ${mensagem}`);
 }
 </script>
 {% endblock %}
