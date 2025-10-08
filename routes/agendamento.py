@@ -184,7 +184,7 @@ def agendar_cliente():
 
     if response.data:
         print(f"Agendamento criado com sucesso: Cliente {nome_cliente} ({email_cliente}) - Serviço: {nome_servico} - Profissional: {nome_usuario} - Data: {dados['data']} - Horário: {dados['horario']}")
-        empresa = supabase.table('empresa').select("email, senha_app").eq('id', id_empresa).execute().data[0]
+        empresa = supabase.table('empresa').select("email, senha_app, envia_email").eq('id', id_empresa).execute().data[0]
         usuario = supabase.table("usuarios").select("email, nome_usuario").eq("id", dados["usuario_id"]).execute().data[0]
         servico = supabase.table("servicos").select("nome_servico").eq("id", dados["servico_id"]).execute().data[0]
         nome_servico = servico["nome_servico"]

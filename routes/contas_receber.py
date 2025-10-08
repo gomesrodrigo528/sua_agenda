@@ -8,6 +8,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 from flask import current_app as app
 from datetime import datetime
+from utils.servico_financeiro import obter_servico_padrao_financeiro
 from supabase_config import supabase
 
 import os
@@ -88,6 +89,11 @@ def vendaprazo():
 
   
 
+        # Obter serviço padrão para contas a receber
+        servico_id = obter_servico_padrao_financeiro(supabase, id_empresa, "conta_receber")
+        if not servico_id:
+            return jsonify({'error': 'Não foi possível criar serviço padrão para conta a receber'}), 500
+        
         # Inserção no agendamento
         insert_agendamento_pagamento = supabase.table("agenda").insert({
             "data": data['data_vencimento'],
@@ -96,7 +102,7 @@ def vendaprazo():
             "usuario_id": data['id_usuario'],
             "cliente_id": data['id_cliente'],
             "descricao": "Referente a venda n° " + str(data['id_venda']),
-            "servico_id": "145",
+            "servico_id": servico_id,
             "status": "ativo",
             "conta_receber": True
         }).execute()
@@ -139,11 +145,16 @@ def baixar(id):
         # Atualiza a conta a receber para baixada
         supabase.table("contas_receber").update({"baixa": True, "status": "Recebido"}).eq("id", id).execute()
 
+        # Obter serviço padrão para contas a receber
+        servico_id = obter_servico_padrao_financeiro(supabase, id_empresa, "conta_receber")
+        if not servico_id:
+            return jsonify({'error': 'Não foi possível criar serviço padrão para conta a receber'}), 500
+        
         # Registra a entrada no financeiro
         supabase.table("financeiro_entrada").insert({
             "id_empresa": id_empresa,
             "motivo": "Referente a venda a prazo n° " + str(data.get('id_venda', '')),
-            "id_servico": "145",
+            "id_servico": servico_id,
             "data": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             "valor_entrada": data.get('valor', 0),
             "meio_pagamento": pagamento,
@@ -215,6 +226,11 @@ def incluir_conta_receber():
         
         response = supabase.table('contas_receber').insert(insert_data).execute()
         
+        # Obter serviço padrão para contas a receber
+        servico_id = obter_servico_padrao_financeiro(supabase, id_empresa, "conta_receber")
+        if not servico_id:
+            return jsonify({'error': 'Não foi possível criar serviço padrão para conta a receber'}), 500
+        
         # Cria agendamento para a data de vencimento
         insert_agendamento = supabase.table("agenda").insert({
             "data": data_vencimento,
@@ -223,7 +239,7 @@ def incluir_conta_receber():
             "usuario_id": id_usuario,
             "cliente_id": id_cliente if id_cliente else None,
             "descricao": f"Vencimento: {descricao} - R$ {valor:.2f}",
-            "servico_id": "145",  # ID padrão para contas a receber
+            "servico_id": servico_id,
             "status": "ativo"
         }).execute()
         

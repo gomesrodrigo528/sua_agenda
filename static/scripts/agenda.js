@@ -78,35 +78,109 @@ document.addEventListener('DOMContentLoaded', async function () {
     // Botões de filtro
     const btnMeus = document.getElementById('btnMeusAgendamentos');
     const btnTodos = document.getElementById('btnTodosAgendamentos');
+    const btnRefresh = document.getElementById('btnRefreshAgenda');
+    
     if (btnMeus && btnTodos) {
         btnMeus.addEventListener('click', function () {
             filtroAgendamento = 'meus';
             btnMeus.classList.add('active');
             btnTodos.classList.remove('active');
-            calendar.refetchEvents();
-            renderAppointments(filter.value);
+            limparCacheERecarregar();
         });
         btnTodos.addEventListener('click', function () {
             filtroAgendamento = 'todos';
             btnTodos.classList.add('active');
             btnMeus.classList.remove('active');
-            calendar.refetchEvents();
-            renderAppointments(filter.value);
+            limparCacheERecarregar();
+        });
+    }
+    
+    // Botão de refresh manual
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', function () {
+            console.log('🔄 Refresh manual solicitado pelo usuário');
+            limparCacheERecarregar();
+            
+            // Feedback visual
+            const icon = btnRefresh.querySelector('i');
+            icon.style.transform = 'rotate(360deg)';
+            icon.style.transition = 'transform 0.5s ease';
+            
+            setTimeout(() => {
+                icon.style.transform = 'rotate(0deg)';
+            }, 500);
         });
     }
 
-    const cachedData = {};
+    let cachedData = {};
 
-    async function fetchData(url) {
+    async function fetchData(url, forceRefresh = false) {
         // Adiciona o filtro na URL
         const urlComFiltro = url.includes('?') ? `${url}&filtro=${filtroAgendamento}` : `${url}?filtro=${filtroAgendamento}`;
-        if (cachedData[urlComFiltro]) {
-            return cachedData[urlComFiltro];
+        
+        // Se forçar refresh ou não há cache, buscar dados
+        if (forceRefresh || !cachedData[urlComFiltro]) {
+            const response = await fetch(urlComFiltro);
+            const data = await response.json();
+            cachedData[urlComFiltro] = data;
+            return data;
         }
-        const response = await fetch(urlComFiltro);
-        const data = await response.json();
-        cachedData[urlComFiltro] = data;
-        return data;
+        
+        return cachedData[urlComFiltro];
+    }
+    
+    // Função para limpar cache e recarregar dados
+    function limparCacheERecarregar() {
+        cachedData = {};
+        calendar.refetchEvents();
+        renderAppointments(filter.value, true);
+    }
+    
+    // Função global para ser chamada de outros scripts
+    window.limparCacheAgenda = function() {
+        console.log('🔄 Limpando cache da agenda...');
+        limparCacheERecarregar();
+    };
+    
+    // Função para abrir modal de agendamento com data pré-selecionada
+    function abrirModalAgendamentoComData(dataStr) {
+        console.log('📅 Abrindo modal de agendamento para data:', dataStr);
+        
+        // Verificar se o modal existe
+        const modal = document.getElementById('agendamentoModal');
+        if (!modal) {
+            console.error('Modal de agendamento não encontrado');
+            return;
+        }
+        
+        // Preencher o campo de data
+        const dataInput = document.getElementById('data-agendamento');
+        if (dataInput) {
+            dataInput.value = dataStr;
+        }
+        
+        // Limpar outros campos
+        const clienteInput = document.getElementById('cliente-busca');
+        const clienteIdInput = document.getElementById('cliente-id');
+        const servicoInput = document.getElementById('servico-busca');
+        const servicoIdInput = document.getElementById('servico-id');
+        const usuarioSelect = document.getElementById('usuario-agendamento');
+        const horaInput = document.getElementById('hora-agendamento');
+        const descricaoInput = document.getElementById('descricao-agendamento');
+        
+        if (clienteInput) clienteInput.value = '';
+        if (clienteIdInput) clienteIdInput.value = '';
+        if (servicoInput) servicoInput.value = '';
+        if (servicoIdInput) servicoIdInput.value = '';
+        if (usuarioSelect) usuarioSelect.value = '';
+        if (horaInput) horaInput.value = '';
+        if (descricaoInput) descricaoInput.value = '';
+        
+        // Abrir o modal usando Bootstrap
+        const bootstrapModal = new bootstrap.Modal(modal);
+        bootstrapModal.show();
+        
+        console.log('✅ Modal de agendamento aberto com data:', dataStr);
     }
 
     const calendar = new FullCalendar.Calendar(calendarEl, {
@@ -175,6 +249,12 @@ document.addEventListener('DOMContentLoaded', async function () {
                 mostrarPopup('warning', 'Este agendamento já foi finalizado e não pode ser modificado.', 'Aviso');
             }
         },
+        
+        // Evento para clicar em um dia vazio e abrir modal de agendamento
+        dateClick: function (info) {
+            console.log('Data clicada:', info.dateStr);
+            abrirModalAgendamentoComData(info.dateStr);
+        },
         eventDidMount: function (info) {
             const eventEl = info.el;
             const now = new Date();
@@ -193,9 +273,9 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     calendar.render();
 
-    async function renderAppointments(view) {
+    async function renderAppointments(view, forceRefresh = false) {
         try {
-            const data = await fetchData('/agenda/data');
+            const data = await fetchData('/agenda/data', forceRefresh);
             // Obter data local correta usando Intl.DateTimeFormat
             const now = new Date();
             const localDate = new Intl.DateTimeFormat('pt-BR', {
@@ -474,13 +554,18 @@ function mostrarModalPagamento(agendamentoId, valorServico = 0) {
                 </div>
                 <div class="mb-3">
                     <label for="meio-pagamento" class="form-label">Meio de Pagamento</label>
-                    <select class="form-control" id="meio-pagamento" required>
+                    <select class="form-control" id="meio-pagamento" required onchange="toggleDataVencimento()">
                         <option value="Cartão de Crédito">Cartão de Crédito</option>
                         <option value="Cartão de Débito">Cartão de Débito</option>
                         <option value="Dinheiro">Dinheiro</option>
                         <option value="Pix">Pix</option>
+                        <option value="prazo">Pagamento a Prazo</option>
                         <option value="Outro">sem custo</option>
                     </select>
+                </div>
+                <div class="mb-3" id="data-vencimento-container" style="display: none;">
+                    <label for="data-vencimento" class="form-label">Data de Vencimento</label>
+                    <input type="date" class="form-control" id="data-vencimento">
                 </div>
                 <button type="submit" class="btn btn-success">finalizar</button>
             </form>
@@ -491,15 +576,36 @@ function mostrarModalPagamento(agendamentoId, valorServico = 0) {
 
         const valor = document.getElementById('valor-pagamento').value;
         const meioPagamento = document.getElementById('meio-pagamento').value;
+        const dataVencimento = document.getElementById('data-vencimento').value;
 
-        finalizarAgendamento(agendamentoId, valor, meioPagamento);
+        // Validação para pagamento a prazo
+        if (meioPagamento === 'prazo' && !dataVencimento) {
+            alert('Data de vencimento é obrigatória para pagamento a prazo');
+            return;
+        }
+
+        finalizarAgendamento(agendamentoId, valor, meioPagamento, dataVencimento);
         modalPagamento.hide();
     });
 
     modalPagamento.show();
 }
 
-function finalizarAgendamento(agendamentoId, valor, meioPagamento) {
+// Função para mostrar/ocultar campo de data de vencimento
+function toggleDataVencimento() {
+    const meioPagamento = document.getElementById('meio-pagamento').value;
+    const dataVencimentoContainer = document.getElementById('data-vencimento-container');
+    
+    if (meioPagamento === 'prazo') {
+        dataVencimentoContainer.style.display = 'block';
+        document.getElementById('data-vencimento').required = true;
+    } else {
+        dataVencimentoContainer.style.display = 'none';
+        document.getElementById('data-vencimento').required = false;
+    }
+}
+
+function finalizarAgendamento(agendamentoId, valor, meioPagamento, dataVencimento = null) {
     mostrarCarregamento();
     fetch(`/api/agendamento/finalizar/${agendamentoId}`, {
         method: 'POST',
@@ -509,6 +615,7 @@ function finalizarAgendamento(agendamentoId, valor, meioPagamento) {
         body: JSON.stringify({
             valor: parseFloat(valor),
             meio_pagamento: meioPagamento,
+            data_vencimento: dataVencimento
         }),
     })
         .then(response => response.json())
@@ -603,123 +710,9 @@ function cancelarAgendamento(id) {
 }
 
 function carregarDados() {
-    fetch('/api/clientes')
-        .then(response => response.json())
-        .then(data => {
-            const clienteSelect = document.getElementById('cliente-agendamento');
-            data.forEach(cliente => {
-                const option = document.createElement('option');
-                option.value = cliente.id;
-                option.textContent = cliente.nome_cliente;
-                clienteSelect.appendChild(option);
-            });
-        });
-
-    fetch('/api/usuarios')
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Erro na requisição: ${response.status} - ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            const usuarioSelect = document.getElementById('usuario-agendamento');
-            if (usuarioSelect) {
-                data.forEach(usuario => {
-                    const option = document.createElement('option');
-                    option.value = usuario.id;
-                    option.textContent = usuario.nome_usuario;
-                    usuarioSelect.appendChild(option);
-                });
-            } else {
-                console.error('Elemento select com ID "usuario-agendamento" não encontrado.');
-            }
-        })
-        .catch(error => {
-            console.error('Erro ao buscar ou processar os usuários:', error.message);
-        });
-
-    fetch('/api/servicos')
-        .then(response => response.json())
-        .then(data => {
-            const servicoSelect = document.getElementById('servico-agendamento');
-            data.forEach(servico => {
-                const option = document.createElement('option');
-                option.value = servico.id;
-                option.textContent = servico.nome_servico;
-                servicoSelect.appendChild(option);
-            });
-        });
+    // Esta função não é mais necessária pois o modal usa busca dinâmica
+    // Os dados são carregados pelo arquivo busca_agendamento.js
+    console.log('carregarDados() não é mais necessária - usando busca dinâmica');
 }
 
-document.getElementById('form-agendamento').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const cliente = document.getElementById('cliente-agendamento').value;
-    const usuario = document.getElementById('usuario-agendamento').value;
-    const servico = document.getElementById('servico-agendamento').value;
-    const data = document.getElementById('data-agendamento').value;
-    const horario = document.getElementById('hora-agendamento').value;
-    const descricao = document.getElementById('descricao-agendamento').value;
-
-    const dadosAgendamento = {
-        cliente_id: cliente,
-        usuario_id: usuario,
-        servico_id: servico,
-        data: data,
-        horario: horario,
-        descricao: descricao
-    };
-
-    mostrarCarregamento();
-    fetch('/api/agendar', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(dadosAgendamento)
-    })
-        .then(response => response.json())
-        .then(data => {
-            esconderCarregamento();
-            if (data.message) {
-                // Mostra popup de sucesso com a mensagem do backend
-                mostrarPopup('success', data.message, 'Sucesso!');
-                // Configura o botão OK para fazer reload
-                const confirmBtn = document.querySelector('#popup-success .popup-btn');
-                confirmBtn.onclick = () => {
-                    fecharPopup('popup-success');
-                    location.reload();
-                };
-            } else if (data.error) {
-                // Mostra popup de erro com a mensagem do backend
-                mostrarPopup('error', data.error, 'Erro');
-                // Configura o botão OK para fazer reload
-                const confirmBtn = document.querySelector('#popup-error .popup-btn');
-                confirmBtn.onclick = () => {
-                    fecharPopup('popup-error');
-                    location.reload();
-                };
-            } else {
-                // Fallback para erro genérico
-                mostrarPopup('error', 'Erro ao criar agendamento.', 'Erro');
-                const confirmBtn = document.querySelector('#popup-error .popup-btn');
-                confirmBtn.onclick = () => {
-                    fecharPopup('popup-error');
-                    location.reload();
-                };
-            }
-        })
-        .catch(error => {
-            esconderCarregamento();
-            console.error('Erro ao enviar os dados do agendamento:', error);
-            mostrarPopup('error', 'Erro ao criar agendamento.', 'Erro');
-            const confirmBtn = document.querySelector('#popup-error .popup-btn');
-            confirmBtn.onclick = () => {
-                fecharPopup('popup-error');
-                location.reload();
-            };
-        });
-});
-
-carregarDados();
+// Função carregarDados() removida - agora gerenciada por busca_agendamento.js

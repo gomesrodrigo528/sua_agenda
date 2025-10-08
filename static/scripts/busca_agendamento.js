@@ -2,19 +2,24 @@
 let timeoutClientes = null;
 let timeoutServicos = null;
 
-// Função para fechar o modal de agendamento
+// Função simples para fechar o modal
 function fecharModalAgendamento() {
-    const modal = bootstrap.Modal.getInstance(document.getElementById('agendamentoModal'));
+    const modal = document.getElementById('agendamentoModal');
     if (modal) {
-        modal.hide();
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        
+        // Remover backdrop se existir
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
     }
-    // Limpar formulário
-    document.getElementById('form-agendamento').reset();
-    document.getElementById('cliente-id').value = '';
-    document.getElementById('servico-id').value = '';
-    document.getElementById('cliente-dropdown').style.display = 'none';
-    document.getElementById('servico-dropdown').style.display = 'none';
 }
+
+// Tornar função global
+window.fecharModalAgendamento = fecharModalAgendamento;
 
 // Função para buscar clientes
 async function buscarClientes(termo) {
@@ -260,7 +265,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     confirmBtn.onclick = () => {
                         fecharPopup('popup-success');
                         fecharModalAgendamento();
-                        location.reload();
+                        // Limpar cache e recarregar dados em vez de reload completo
+                        if (typeof window.limparCacheAgenda === 'function') {
+                            window.limparCacheAgenda();
+                        } else {
+                            location.reload(); // Fallback se a função não existir
+                        }
                     };
                 } else if (data.error) {
                     mostrarPopup('error', data.error, 'Erro');

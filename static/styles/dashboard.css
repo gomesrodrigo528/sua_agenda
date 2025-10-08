@@ -288,7 +288,17 @@
     padding: 15px;
     background: #f8f9fa;
     border-radius: 8px;
+    border-left: 4px solid #007bff;
 }
+
+.financeiro-item:nth-child(1) { border-left-color: #28a745; } /* Contas a Receber */
+.financeiro-item:nth-child(2) { border-left-color: #20c997; } /* Contas Recebidas */
+.financeiro-item:nth-child(3) { border-left-color: #dc3545; } /* Contas a Pagar */
+.financeiro-item:nth-child(4) { border-left-color: #fd7e14; } /* Contas Pagas */
+.financeiro-item:nth-child(5) { border-left-color: #28a745; } /* Entradas */
+.financeiro-item:nth-child(6) { border-left-color: #dc3545; } /* Saídas */
+.financeiro-item:nth-child(7) { border-left-color: #007bff; } /* Saldo */
+.financeiro-item:nth-child(8) { border-left-color: #6c757d; } /* Clientes Novos */
 
 .financeiro-label {
     font-size: 0.8rem;
@@ -461,7 +471,7 @@
     }
     
     .financeiro-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(4, 1fr);
         gap: 20px;
     }
 }

@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 from supabase_config import supabase
+from utils.servico_financeiro import obter_servico_padrao_financeiro
 import os
 import datetime
 
@@ -145,6 +146,11 @@ def incluir_conta_pagar():
             'status': status
         }).execute()
         
+        # Obter serviço padrão para contas a pagar
+        servico_id = obter_servico_padrao_financeiro(supabase, id_empresa, "conta_pagar")
+        if not servico_id:
+            return jsonify({'error': 'Não foi possível criar serviço padrão para conta a pagar'}), 500
+        
         # Cria agendamento para a data de vencimento
         insert_agendamento = supabase.table("agenda").insert({
             "data": data_vencimento,
@@ -153,7 +159,7 @@ def incluir_conta_pagar():
             "usuario_id": id_usuario,
             "cliente_id": None,  # Contas a pagar não têm cliente
             "descricao": f"Vencimento: {descricao} - R$ {valor:.2f}",
-            "servico_id": "146",  # ID padrão para contas a pagar
+            "servico_id": servico_id,
             "status": "ativo"
         }).execute()
         
@@ -161,7 +167,7 @@ def incluir_conta_pagar():
         if insert_agendamento.data:
             id_agendamento = insert_agendamento.data[0]['id']
             supabase.table("contas_pagar").update({
-                "id_agendamento": id_agendamento
+                "id_agendamento_pagamento": id_agendamento
             }).eq("id", response.data[0]['id']).execute()
         
         return jsonify({'message': 'Conta a pagar cadastrada com sucesso!'}), 201

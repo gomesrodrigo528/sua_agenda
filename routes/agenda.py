@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request, render_template, session, redirect, url_for
 from supabase_config import supabase
 from utils.email_service import EmailService
+from utils.servico_financeiro import obter_servico_padrao_financeiro
 from routes.push import agendar_notificacao_push, cancelar_notificacao_push, agendar_notificacao_push_cliente, cancelar_notificacao_push_cliente
 import os
 import smtplib
@@ -12,9 +13,8 @@ from datetime import datetime
 agenda_bp = Blueprint('agenda_bp', __name__)
 
 def verificar_login():
-    if not request.cookies.get('user_id') or not request.cookies.get('empresa_id'):
-        return redirect(url_for('login.login'))  # Redireciona para a página de login se não estiver autenticado
-    return None
+    """Verifica se o usuário está logado - retorna True se não estiver logado"""
+    return not request.cookies.get('user_id') or not request.cookies.get('empresa_id')
     
 # Validação de Login
 def obter_id_usuario():
@@ -73,13 +73,13 @@ def enviar_email(destinatario, assunto, mensagem, email_remetente, senha_remeten
 @agenda_bp.route('/api/agendar', methods=['POST'])
 def agendar():
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     dados = request.get_json()
     empresa_id = obter_id_empresa()
 
     if not empresa_id:
-        return redirect(url_for('login.login'))
+        return jsonify({'error': 'Empresa não identificada'}), 401
 
     # Inserindo no banco de dados com status "ativo"
     response = supabase.table("agenda").insert({
@@ -95,7 +95,7 @@ def agendar():
     }).execute()
 
     if response.data:
-        empresa = supabase.table('empresa').select("email, senha_app").eq('id', empresa_id).execute().data[0]
+        empresa = supabase.table('empresa').select("email, senha_app, envia_email").eq('id', empresa_id).execute().data[0]
         # Buscar nome_cliente e id_usuario_cliente
         cliente = supabase.table("clientes").select("nome_cliente, id_usuario_cliente").eq("id", dados["cliente_id"]).execute().data[0]
         
@@ -165,18 +165,22 @@ def agendar():
             "email_profissional": usuario['email']
         }
 
-        # Enviar e-mails usando o novo serviço
+        # Enviar e-mails usando o novo serviço (apenas se a empresa permitir)
         email_enviado_cliente = False
         email_enviado_profissional = False
 
-        if email_cliente:
-            email_enviado_cliente = EmailService.enviar_agendamento_cliente(
+        # Verificar se a empresa permite envio de emails
+        if empresa.get('envia_email', True):  # Default True para compatibilidade
+            if email_cliente:
+                email_enviado_cliente = EmailService.enviar_agendamento_cliente(
+                    dados_email, empresa['email'], empresa['senha_app']
+                )
+
+            email_enviado_profissional = EmailService.enviar_agendamento_profissional(
                 dados_email, empresa['email'], empresa['senha_app']
             )
-
-        email_enviado_profissional = EmailService.enviar_agendamento_profissional(
-            dados_email, empresa['email'], empresa['senha_app']
-        )
+        else:
+            print(f"[EMAIL] Envio de emails desabilitado para a empresa {empresa_id}")
 
         # Enviar notificação push para o profissional
         try:
@@ -220,14 +224,14 @@ def obter_id_empresa():
 @agenda_bp.route('/agenda/data', methods=['GET'])
 def listar_agendamentos():
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     empresa_id = obter_id_empresa()
     usuario_id = obter_id_usuario()
     filtro = request.args.get('filtro', 'meus')
 
     if not empresa_id or not usuario_id:
-        return redirect(url_for('login.login'))
+        return jsonify({'error': 'Dados de autenticação incompletos'}), 401
     # Obtém informações da empresa logada
     response_empresa = supabase.table("empresa").select("nome_empresa").eq("id", empresa_id).execute()
 
@@ -275,9 +279,12 @@ def listar_agendamentos():
 @agenda_bp.route('/api/clientes', methods=['GET'])
 def listar_clientes():
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     empresa_id = obter_id_empresa()
+    if not empresa_id:
+        return jsonify({'error': 'Empresa não identificada'}), 401
+
     busca = request.args.get('busca', '').strip()
 
     if busca:
@@ -293,9 +300,11 @@ def listar_clientes():
 @agenda_bp.route('/api/usuarios', methods=['GET'])
 def listar_usuarios():
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     empresa_id = obter_id_empresa()
+    if not empresa_id:
+        return jsonify({'error': 'Empresa não identificada'}), 401
 
     response = supabase.table("usuarios").select("id, nome_usuario").eq("id_empresa", empresa_id).execute()
     return jsonify(response.data), 200
@@ -305,9 +314,12 @@ def listar_usuarios():
 @agenda_bp.route('/api/servicos', methods=['GET'])
 def listar_servicos():
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     empresa_id = obter_id_empresa()
+    if not empresa_id:
+        return jsonify({'error': 'Empresa não identificada'}), 401
+
     busca = request.args.get('busca', '').strip()
 
     if busca:
@@ -323,9 +335,11 @@ def listar_servicos():
 @agenda_bp.route('/api/checagem-horario/<int:usuario_id>/<string:data>/<string:horario>', methods=['GET'])
 def checar_horario(usuario_id, data, horario):
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     empresa_id = obter_id_empresa()
+    if not empresa_id:
+        return jsonify({'error': 'Empresa não identificada'}), 401
 
     response = supabase.table("agenda").select("*").eq("usuario_id", usuario_id).eq("data", data).eq("horario", horario).eq("id_empresa", empresa_id).execute()
     
@@ -359,13 +373,12 @@ def renderizar_agenda():
 @agenda_bp.route('/api/agendamento/<int:id>', methods=['DELETE'])
 def cancelar_agendamento(id):
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     # Obter ID da empresa e usuário a partir dos cookies
     empresa_id = obter_id_empresa()
-
     if not empresa_id:
-        return jsonify({"error": "Empresa não encontrada na sessão."}), 401
+        return jsonify({'error': 'Empresa não identificada'}), 401
 
     try:
         # Buscar informações do agendamento antes de removê-lo
@@ -396,7 +409,7 @@ def cancelar_agendamento(id):
             servico_response = supabase.table("servicos").select("nome_servico").eq("id", agendamento["servico_id"]).execute()
             servico = servico_response.data[0] if servico_response.data else None
             
-            empresa_response = supabase.table("empresa").select("email, senha_app").eq("id", empresa_id).execute()
+            empresa_response = supabase.table("empresa").select("email, senha_app, envia_email").eq("id", empresa_id).execute()
             empresa = empresa_response.data[0] if empresa_response.data else None
             
         except Exception as e:
@@ -426,19 +439,23 @@ def cancelar_agendamento(id):
             "email_profissional": usuario['email']
         }
 
-        # Enviar e-mails usando o novo serviço
+        # Enviar e-mails usando o novo serviço (apenas se a empresa permitir)
         email_enviado_cliente = False
         email_enviado_profissional = False
 
-        if email_cliente:
-            email_enviado_cliente = EmailService.enviar_cancelamento_cliente(
-                dados_email, empresa['email'], empresa['senha_app']
-            )
+        # Verificar se a empresa permite envio de emails
+        if empresa.get('envia_email', True):  # Default True para compatibilidade
+            if email_cliente:
+                email_enviado_cliente = EmailService.enviar_cancelamento_cliente(
+                    dados_email, empresa['email'], empresa['senha_app']
+                )
 
-        if usuario['email']:
-            email_enviado_profissional = EmailService.enviar_cancelamento_profissional(
-                dados_email, empresa['email'], empresa['senha_app']
-            )
+            if usuario['email']:
+                email_enviado_profissional = EmailService.enviar_cancelamento_profissional(
+                    dados_email, empresa['email'], empresa['senha_app']
+                )
+        else:
+            print(f"[EMAIL] Envio de emails desabilitado para a empresa {empresa_id}")
 
         # Enviar notificação push para o profissional sobre o cancelamento
         try:
@@ -485,12 +502,13 @@ def cancelar_agendamento(id):
 @agenda_bp.route('/api/agendamento/finalizar/<int:id>', methods=['POST'])
 def finalizar_agendamento(id):
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     dados = request.get_json()
     print("JSON recebido:", dados)
     valor = dados.get("valor")
     meio_pagamento = dados.get("meio_pagamento")
+    data_vencimento = dados.get("data_vencimento")
     empresa_id = obter_id_empresa()
     usuario = obter_id_usuario()
 
@@ -498,9 +516,9 @@ def finalizar_agendamento(id):
         return jsonify({"error": "Empresa não encontrada na sessão."}), 401
 
     try:
-        # Verificar se o agendamento existe
+        # Verificar se o agendamento existe e buscar dados completos
         agendamento = supabase.table("agenda")\
-            .select("id", "cliente_id", "usuario_id", "servico_id")\
+            .select("id, cliente_id, usuario_id, servico_id, data, horario, descricao")\
             .eq("id", id).eq("id_empresa", empresa_id).execute()
 
         print("agendamento dados", agendamento)
@@ -511,12 +529,24 @@ def finalizar_agendamento(id):
         agendamento_data = agendamento.data[0]
         cliente_id = agendamento_data["cliente_id"]
         servico_id = agendamento_data["servico_id"]
+        
+        # Buscar dados do serviço para obter o valor
+        servico_response = supabase.table("servicos").select("nome_servico, preco").eq("id", servico_id).execute()
+        servico_data = servico_response.data[0] if servico_response.data else None
+        
+        # Usar valor do serviço se não foi informado valor personalizado
+        valor_final = valor if valor and valor > 0 else (servico_data['preco'] if servico_data else 0)
+        
+        # Formatar data para descrição
+        data_agendamento = datetime.strptime(agendamento_data['data'], '%Y-%m-%d').strftime('%d/%m/%Y')
+        nome_servico = servico_data['nome_servico'] if servico_data else 'Serviço'
+        descricao_agendamento = f"Atendimento finalizado em {data_agendamento} - {nome_servico}"
 
         # Finalizar o agendamento
         supabase.table("finalizados").insert({
             "id_agenda": id,
             "meio_pagamento": meio_pagamento,
-            "valor": valor,
+            "valor": valor_final,
             "data_hora_finalizacao": datetime.now().isoformat(),
             "id_empresa": empresa_id
         }).execute()
@@ -526,24 +556,59 @@ def finalizar_agendamento(id):
             "status": "finalizado"
         }).eq("id", id).eq("id_empresa", empresa_id).execute()
 
-        # Lançar no financeiro
-        supabase.table("financeiro_entrada").insert({
-            "id_agenda": id,
-            "valor_entrada": valor,
-            "data": datetime.now().isoformat(),
-            "id_usuario": usuario,
-            "meio_pagamento": meio_pagamento,
-            "motivo": "Agendamento finalizado",
-            "id_empresa": empresa_id,
-            "id_cliente": cliente_id,
-            "id_servico": servico_id
-        }).execute()
+        # Se for pagamento a prazo, criar conta a receber
+        if meio_pagamento == 'prazo' and data_vencimento:
+            # Obter serviço padrão para contas a receber
+            servico_id_financeiro = obter_servico_padrao_financeiro(supabase, empresa_id, "conta_receber")
+            if not servico_id_financeiro:
+                return jsonify({'error': 'Não foi possível criar serviço padrão para conta a receber'}), 500
+            
+            # Criar agendamento para data de vencimento
+            insert_agendamento_pagamento = supabase.table("agenda").insert({
+                "data": data_vencimento,
+                "horario": "12:00",
+                "id_empresa": empresa_id,
+                "usuario_id": usuario,
+                "cliente_id": cliente_id,
+                "descricao": descricao_agendamento,
+                "servico_id": servico_id_financeiro,
+                "status": "ativo",
+                "conta_receber": True
+            }).execute()
 
-        return jsonify({"message": "Agendamento finalizado com sucesso!"}), 200
+            id_agendamento_pagamento = insert_agendamento_pagamento.data[0]['id']
 
-    except Exception as e:
-        print(f"Erro ao finalizar agendamento: {e}")
-        return jsonify({"error": "Erro ao finalizar agendamento."}), 500
+            # Criar conta a receber
+            supabase.table("contas_receber").insert({
+                "id_empresa": empresa_id,
+                "id_cliente": cliente_id,
+                "id_usuario": usuario,
+                "valor": valor_final,
+                "descricao": descricao_agendamento,
+                "plano_contas": "Agendamento a prazo",
+                "data_emissao": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "data_vencimento": data_vencimento,
+                "id_agendamento_pagamento": id_agendamento_pagamento,
+                "status": "Pendente",
+                "baixa": False
+            }).execute()
+
+            return jsonify({"message": "Agendamento finalizado e conta a receber criada com sucesso!"}), 200
+        else:
+            # Lançar no financeiro (pagamento à vista)
+            supabase.table("financeiro_entrada").insert({
+                "id_agenda": id,
+                "valor_entrada": valor_final,
+                "data": datetime.now().isoformat(),
+                "id_usuario": usuario,
+                "meio_pagamento": meio_pagamento,
+                "motivo": descricao_agendamento,
+                "id_empresa": empresa_id,
+                "id_cliente": cliente_id,
+                "id_servico": servico_id
+            }).execute()
+
+            return jsonify({"message": "Agendamento finalizado com sucesso!"}), 200
 
     except Exception as e:
         print(f"Erro ao finalizar agendamento: {e}")
@@ -596,7 +661,7 @@ def verificar_notificacoes():
 def obter_dados_usuario_logado():
     """Retorna os dados do usuário logado."""
     if verificar_login():
-        return verificar_login()
+        return jsonify({'error': 'Usuário não autenticado'}), 401
 
     usuario_id = obter_id_usuario()
     if not usuario_id:

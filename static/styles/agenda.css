@@ -1,3 +1,22 @@
+/* Estilos para indicar que os dias são clicáveis */
+.fc-daygrid-day {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.fc-daygrid-day:hover {
+    background-color: rgba(0, 123, 255, 0.1) !important;
+}
+
+.fc-daygrid-day-number {
+    cursor: pointer;
+}
+
+/* Estilo para dias com agendamentos */
+.fc-daygrid-day.fc-day-today {
+    background-color: rgba(0, 123, 255, 0.05) !important;
+}
+
 /* Estilos padrão */
 body {
     font-family: 'Arial', sans-serif;

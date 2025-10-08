@@ -121,7 +121,7 @@ def vender():
                     "data_vencimento": vencimento,
                     "id_cliente": id_cliente,
                     "id_usuario": id_usuario,
-                    "valor": valor_total
+                    "valor": valor_total / 100  # Converte de centavos para reais
                 },
                 cookies=request.cookies
             )
@@ -133,7 +133,7 @@ def vender():
             # Registra a entrada no financeiro (somente se não for prazo)
             supabase.table("financeiro_entrada").insert({
                 "data": datetime.now().isoformat(),
-                "valor_entrada": valor_total,
+                "valor_entrada": valor_total / 100,  # Converte de centavos para reais
                 "motivo": "Venda de Produtos",
                 "id_empresa": id_empresa,
                 "id_usuario": id_usuario,

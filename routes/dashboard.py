@@ -86,14 +86,26 @@ def api_dashboard_dados():
         proximos_atendimentos = []
         try:
             agora = datetime.now()
+            hoje = date.today()
+            
+            # Calcular próximas 3 horas (considerando mudança de dia)
             proximas_3h = agora + timedelta(hours=3)
             
-            # Primeiro buscar os agendamentos
-            agendamentos = supabase.table('agenda').select(
-                'id, horario, descricao, status, cliente_id, servico_id'
-            ).eq('id_empresa', empresa_id).eq('data', str(hoje)).gte(
-                'horario', agora.strftime('%H:%M:%S')
-            ).lte('horario', proximas_3h.strftime('%H:%M:%S')).order('horario').limit(5).execute()
+            # Se passar da meia-noite, buscar até o final do dia
+            if proximas_3h.date() > hoje:
+                # Buscar agendamentos até o final do dia
+                agendamentos = supabase.table('agenda').select(
+                    'id, horario, descricao, status, cliente_id, servico_id'
+                ).eq('id_empresa', empresa_id).eq('data', str(hoje)).eq('status', 'ativo').gte(
+                    'horario', agora.strftime('%H:%M:%S')
+                ).order('horario').limit(5).execute()
+            else:
+                # Buscar agendamentos nas próximas 3 horas
+                agendamentos = supabase.table('agenda').select(
+                    'id, horario, descricao, status, cliente_id, servico_id'
+                ).eq('id_empresa', empresa_id).eq('data', str(hoje)).eq('status', 'ativo').gte(
+                    'horario', agora.strftime('%H:%M:%S')
+                ).lte('horario', proximas_3h.strftime('%H:%M:%S')).order('horario').limit(5).execute()
             
             if agendamentos.data:
                 # Processar cada agendamento para buscar dados relacionados
@@ -168,18 +180,67 @@ def api_dashboard_dados():
         except Exception as e:
             print(f"Erro ao buscar clientes novos: {e}")
         
-        # 7. CONTAS A RECEBER (pendentes)
+        # 7. CONTAS A RECEBER (pendentes e pagas)
         contas_pendentes = 0
         valor_pendente = 0
+        contas_pagas = 0
+        valor_recebido = 0
         try:
-            contas = supabase.table('contas_receber').select('valor').eq('id_empresa', empresa_id).eq('baixa', False).execute()
-            if contas.data:
-                contas_pendentes = len(contas.data)
-                valor_pendente = sum(float(conta['valor']) for conta in contas.data if conta['valor'])
+            # Contas pendentes
+            contas_pend = supabase.table('contas_receber').select('valor').eq('id_empresa', empresa_id).eq('baixa', False).execute()
+            if contas_pend.data:
+                contas_pendentes = len(contas_pend.data)
+                valor_pendente = sum(float(conta['valor']) for conta in contas_pend.data if conta['valor'])
+            
+            # Contas pagas
+            contas_pagas_data = supabase.table('contas_receber').select('valor').eq('id_empresa', empresa_id).eq('baixa', True).execute()
+            if contas_pagas_data.data:
+                contas_pagas = len(contas_pagas_data.data)
+                valor_recebido = sum(float(conta['valor']) for conta in contas_pagas_data.data if conta['valor'])
         except Exception as e:
             print(f"Erro ao buscar contas a receber: {e}")
         
-        # 8. META DO MÊS (se configurada) - CORRIGIDO
+        # 8. CONTAS A PAGAR (pendentes e pagas)
+        contas_pagar_pendentes = 0
+        valor_pagar_pendente = 0
+        contas_pagar_pagas = 0
+        valor_pago = 0
+        try:
+            # Contas a pagar pendentes
+            contas_pagar_pend = supabase.table('contas_pagar').select('valor').eq('id_empresa', empresa_id).eq('baixa', False).execute()
+            if contas_pagar_pend.data:
+                contas_pagar_pendentes = len(contas_pagar_pend.data)
+                valor_pagar_pendente = sum(float(conta['valor']) for conta in contas_pagar_pend.data if conta['valor'])
+            
+            # Contas a pagar pagas
+            contas_pagar_pagas_data = supabase.table('contas_pagar').select('valor').eq('id_empresa', empresa_id).eq('baixa', True).execute()
+            if contas_pagar_pagas_data.data:
+                contas_pagar_pagas = len(contas_pagar_pagas_data.data)
+                valor_pago = sum(float(conta['valor']) for conta in contas_pagar_pagas_data.data if conta['valor'])
+        except Exception as e:
+            print(f"Erro ao buscar contas a pagar: {e}")
+        
+        # 9. ENTRADAS E SAÍDAS DO MÊS
+        entradas_mes = 0
+        saidas_mes = 0
+        saldo_mes = 0
+        try:
+            # Entradas do mês
+            entradas_data = supabase.table('financeiro_entrada').select('valor_entrada').eq('id_empresa', empresa_id).gte('data', f"{inicio_mes} 00:00:00").lt('data', f"{hoje} 23:59:59").execute()
+            if entradas_data.data:
+                entradas_mes = sum(float(entrada['valor_entrada']) for entrada in entradas_data.data if entrada['valor_entrada'])
+            
+            # Saídas do mês
+            saidas_data = supabase.table('financeiro_saida').select('valor_saida').eq('id_empresa', empresa_id).gte('data', f"{inicio_mes} 00:00:00").lt('data', f"{hoje} 23:59:59").execute()
+            if saidas_data.data:
+                saidas_mes = sum(float(saida['valor_saida']) for saida in saidas_data.data if saida['valor_saida'])
+            
+            # Calcular saldo
+            saldo_mes = entradas_mes - saidas_mes
+        except Exception as e:
+            print(f"Erro ao buscar entradas e saídas: {e}")
+        
+        # 10. META DO MÊS (se configurada) - CORRIGIDO
         meta_mes = 0
         try:
             # Como não temos meta_mensal na tabela empresa, vamos usar um valor padrão
@@ -201,8 +262,21 @@ def api_dashboard_dados():
             'proximos_atendimentos': proximos_atendimentos,
             'servicos_populares': servicos_populares,
             'clientes_novos': clientes_novos,
+            # Contas a receber
             'contas_pendentes': contas_pendentes,
             'valor_pendente': valor_pendente,
+            'contas_pagas': contas_pagas,
+            'valor_recebido': valor_recebido,
+            # Contas a pagar
+            'contas_pagar_pendentes': contas_pagar_pendentes,
+            'valor_pagar_pendente': valor_pagar_pendente,
+            'contas_pagar_pagas': contas_pagar_pagas,
+            'valor_pago': valor_pago,
+            # Entradas e saídas
+            'entradas_mes': entradas_mes,
+            'saidas_mes': saidas_mes,
+            'saldo_mes': saldo_mes,
+            # Meta
             'meta_mes': meta_mes,
             'percentual_meta': percentual_meta,
             'hoje': hoje.strftime('%d/%m/%Y')
