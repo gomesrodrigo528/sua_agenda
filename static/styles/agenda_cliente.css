@@ -371,8 +371,8 @@ body {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0,0,0,0.7);
-    z-index: 9999;
+    background: rgba(0,0,0,0.9);
+    z-index: 999999 !important;
     display: none;
     align-items: center;
     justify-content: center;

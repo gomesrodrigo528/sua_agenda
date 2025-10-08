@@ -246,6 +246,12 @@ function renderDefaultMenu(container, isPDV) {
 function setupMenu() {
     const menuLateral = document.getElementById("menu-lateral");
     const toggleMenu = document.getElementById("toggle-menu");
+    
+    // Verificar se o botão existe antes de adicionar event listener
+    if (!toggleMenu) {
+        console.warn('Botão toggle-menu não encontrado (removido para mobile)');
+        return;
+    }
     const menuContainer = document.getElementById("menu-container");
 
     // Função para fechar o menu
@@ -261,7 +267,9 @@ function setupMenu() {
     // Fechar o menu ao clicar fora dele
     document.addEventListener("click", function (event) {
         // Verifica se o clique foi fora do menu lateral e do botão de alternância
-        if (!menuLateral.contains(event.target) && !toggleMenu.contains(event.target) && !menuContainer.contains(event.target)) {
+        if (!menuLateral.contains(event.target) && 
+            (!toggleMenu || !toggleMenu.contains(event.target)) && 
+            !menuContainer.contains(event.target)) {
             closeMenu();
         }
     });

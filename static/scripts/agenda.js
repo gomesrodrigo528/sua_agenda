@@ -71,31 +71,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     const listContainer = document.getElementById('list-container');
     const appointmentList = document.getElementById('appointment-list');
     const filter = document.getElementById('filter');
-    let filtroAgendamento = 'meus'; // padrão: meus agendamentos
+    const filtroAgendamento = 'meus'; // filtro fixo: meus agendamentos
 
     await buscarUsuarioLogado(); // Busca o usuário logado uma vez antes de renderizar
 
-    // Botões de filtro
-    const btnMeus = document.getElementById('btnMeusAgendamentos');
-    const btnTodos = document.getElementById('btnTodosAgendamentos');
-    const btnRefresh = document.getElementById('btnRefreshAgenda');
-    
-    if (btnMeus && btnTodos) {
-        btnMeus.addEventListener('click', function () {
-            filtroAgendamento = 'meus';
-            btnMeus.classList.add('active');
-            btnTodos.classList.remove('active');
-            limparCacheERecarregar();
-        });
-        btnTodos.addEventListener('click', function () {
-            filtroAgendamento = 'todos';
-            btnTodos.classList.add('active');
-            btnMeus.classList.remove('active');
-            limparCacheERecarregar();
-        });
-    }
-    
     // Botão de refresh manual
+    const btnRefresh = document.getElementById('btnRefreshAgenda');
     if (btnRefresh) {
         btnRefresh.addEventListener('click', function () {
             console.log('🔄 Refresh manual solicitado pelo usuário');

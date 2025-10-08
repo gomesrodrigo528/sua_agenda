@@ -3,10 +3,10 @@
   background-color: rgb(3, 2, 19);
   box-shadow: 2px 2px 8px 0px gray;
   position: fixed;
-  top: 0;
+  top: 60px; /* Ajustado para ficar abaixo da barra superior */
   left: 0;
   width: 250px; /* Ajuste a largura conforme necessário */
-  height: 100vh; /* Altura total da tela */
+  height: calc(100vh - 60px); /* Altura total menos a barra superior */
   background-color: #343a40; /* Mantenha a cor da empresa ou defina outra */
   overflow-y: auto; /* Permite rolagem vertical no menu, caso necessário */
   z-index: 1000; /* Garante que o menu fique acima do conteúdo */
@@ -122,7 +122,7 @@ h3 {
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 9999;
+  z-index: 999999 !important;
 }
 
 .spinner {
@@ -196,10 +196,10 @@ h3 {
   /* Menu lateral - responsivo */
   #menu-lateral {
     position: fixed;
-    top: 0;
+    top: 60px; /* Ajustado para ficar abaixo da barra superior */
     left: -250px; /* Escondido por padrão */
     width: 250px;
-    height: 100%;
+    height: calc(100vh - 60px); /* Altura total menos a barra superior */
     background-color:#030213;
     box-shadow: 2px 2px 8px 0px gray;
     transition: left 0.3s ease; /* Animação suave ao abrir/fechar */
@@ -214,7 +214,7 @@ h3 {
 
   /* Botão de alternância do menu */
   #toggle-menu {
-    top: 20px;
+    top: 80px; /* Ajustado para ficar abaixo da barra superior */
     left: 20px;
     z-index: 1100;
     background-color: #030213;
@@ -247,7 +247,7 @@ h3 {
 
   .btnVoltar{
     position: fixed;
-    top: 20px;
+    top: 80px; /* Ajustado para ficar abaixo da barra superior */
     left: 20px;
     z-index: 1100;
     background-color: #030213;

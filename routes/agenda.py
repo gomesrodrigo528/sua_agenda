@@ -678,3 +678,75 @@ def obter_dados_usuario_logado():
         }), 200
     else:
         return jsonify({"erro": "Dados do usuário não encontrados"}), 404
+
+@agenda_bp.route('/api/notificacoes/agendamentos', methods=['GET'])
+def obter_agendamentos_nao_vistos():
+    """Retorna os agendamentos não vistos do usuário logado."""
+    if verificar_login():
+        return jsonify({'error': 'Usuário não autenticado'}), 401
+
+    usuario_id = obter_id_usuario()
+    if not usuario_id:
+        return jsonify({"erro": "Usuário não encontrado nos cookies"}), 401
+
+    try:
+        # Busca agendamentos não vistos
+        response = supabase.table('agenda').select('id, data, horario, descricao, cliente_id, servico_id').eq('usuario_id', usuario_id).eq('visto', False).eq('status', 'ativo').order('data', desc=False).order('horario', desc=False).execute()
+
+        agendamentos = []
+        if response.data:
+            for agendamento in response.data:
+                # Buscar dados do cliente
+                cliente_nome = 'Cliente não identificado'
+                if agendamento.get('cliente_id'):
+                    cliente_response = supabase.table('clientes').select('nome_cliente').eq('id', agendamento['cliente_id']).execute()
+                    if cliente_response.data:
+                        cliente_nome = cliente_response.data[0]['nome_cliente']
+                
+                # Buscar dados do serviço
+                servico_nome = 'Serviço não identificado'
+                servico_preco = 0
+                if agendamento.get('servico_id'):
+                    servico_response = supabase.table('servicos').select('nome_servico, preco').eq('id', agendamento['servico_id']).execute()
+                    if servico_response.data:
+                        servico_nome = servico_response.data[0]['nome_servico']
+                        servico_preco = servico_response.data[0]['preco'] or 0
+                
+                agendamentos.append({
+                    'id': agendamento['id'],
+                    'data': agendamento['data'],
+                    'horario': agendamento['horario'],
+                    'descricao': agendamento.get('descricao', ''),
+                    'cliente_nome': cliente_nome,
+                    'servico_nome': servico_nome,
+                    'servico_preco': servico_preco
+                })
+
+        return jsonify({
+            'total': len(agendamentos),
+            'agendamentos': agendamentos
+        }), 200
+
+    except Exception as e:
+        print(f"Erro ao buscar agendamentos não vistos: {e}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500
+
+@agenda_bp.route('/api/notificacoes/marcar-visto', methods=['POST'])
+def marcar_agendamentos_como_vistos():
+    """Marca todos os agendamentos não vistos como vistos."""
+    if verificar_login():
+        return jsonify({'error': 'Usuário não autenticado'}), 401
+
+    usuario_id = obter_id_usuario()
+    if not usuario_id:
+        return jsonify({"erro": "Usuário não encontrado nos cookies"}), 401
+
+    try:
+        # Atualiza todos os agendamentos não vistos para visto = True
+        response = supabase.table('agenda').update({'visto': True}).eq('usuario_id', usuario_id).eq('visto', False).execute()
+        
+        return jsonify({'message': 'Agendamentos marcados como vistos'}), 200
+
+    except Exception as e:
+        print(f"Erro ao marcar agendamentos como vistos: {e}")
+        return jsonify({'error': 'Erro interno do servidor'}), 500

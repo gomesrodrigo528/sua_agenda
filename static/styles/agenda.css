@@ -28,11 +28,11 @@ body {
 
 
 .modal-backdrop {
-    z-index: 1040 !important;
+    z-index: 9997 !important;
 }
 
 #agendamentoModal {
-    z-index: 1050 !important;
+    z-index: 9998 !important;
 }
 
 #calendar-container {
@@ -303,7 +303,7 @@ button:hover {
     #list-container {
         display: block;
         padding: 20px 16px;
-        background: #f9f9f9;
+        background: transparent;
         min-height: 100vh;
         margin: 0;
         border-radius: 0;
@@ -315,22 +315,7 @@ button:hover {
         background: #f9f9f9;
     }
 
-    /* Header moderno para mobile */
-    .mobile-header {
-        background: #007bff;
-        color: white;
-        padding: 20px 16px;
-        margin: -20px -16px 20px -16px;
-        border-radius: 0 0 24px 24px;
-        box-shadow: 0 8px 32px rgba(0, 123, 255, 0.3);
-    }
-
-    .mobile-header h1 {
-        margin: 0;
-        font-size: 24px;
-        font-weight: 600;
-        text-align: center;
-    }
+    /* Layout mobile minimalista - sem header azul */
 
     /* Cards de agendamento modernos */
     #appointment-list li {
@@ -441,27 +426,29 @@ button:hover {
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
     }
 
-    /* Filtro moderno */
+    /* Filtro minimalista para mobile */
     .filter-container {
-        margin: 20px 0;
-        position: relative;
+        margin: 0 0 20px 0;
+        text-align: center;
     }
 
     select#filter {
         background: #ffffff;
         border: 1px solid #dee2e6;
-        border-radius: 12px;
-        padding: 16px;
+        border-radius: 8px;
+        padding: 12px 16px;
         font-size: 16px;
         font-weight: 500;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 200px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
     }
 
     select#filter:focus {
         border-color: #007bff;
         outline: none;
-        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 123, 255, 0.2);
     }
 
     /* Botão de novo agendamento moderno */

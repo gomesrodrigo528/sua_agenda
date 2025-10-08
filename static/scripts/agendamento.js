@@ -553,6 +553,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (form) {
         // Variável para controlar se já está processando
         let processando = false;
+        let timeoutId = null;
         
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -561,20 +562,42 @@ document.addEventListener('DOMContentLoaded', function() {
             // Evitar múltiplas submissões
             if (processando) {
                 console.log('Já está processando, ignorando nova submissão');
+                mostrarAlerta('Aguarde o processamento do agendamento anterior.', 'warning');
                 return;
             }
             
             processando = true;
             console.log('=== INICIANDO PROCESSAMENTO ===');
 
-            // Desabilitar botão de submit
+            // Desabilitar botão de submit e todos os campos
             const submitBtn = form.querySelector('button[type="submit"]');
+            const formFields = form.querySelectorAll('input, select, textarea, button');
+            
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Processando...';
             }
+            
+            // Desabilitar todos os campos do formulário
+            formFields.forEach(field => {
+                if (field !== submitBtn) {
+                    field.disabled = true;
+                }
+            });
 
-            mostrarCarregamento(); // Exibe a tela de carregamento
+            // Mostrar tela de carregamento com timeout de segurança
+            mostrarCarregamento();
+            
+            // Timeout de segurança (30 segundos)
+            timeoutId = setTimeout(() => {
+                if (processando) {
+                    console.log('Timeout de segurança atingido');
+                    processando = false;
+                    esconderCarregamento();
+                    mostrarAlerta('Timeout: O agendamento está demorando mais que o esperado. Tente novamente.', 'error');
+                    reabilitarFormulario();
+                }
+            }, 30000);
 
             const dados = new FormData(e.target);
             const dadosObj = Object.fromEntries(dados.entries());
@@ -631,7 +654,35 @@ document.addEventListener('DOMContentLoaded', function() {
                     document.getElementById('horario-selecionado').innerHTML = '';
                 } else {
                     console.log('ERRO - Mostrando popup de erro');
-                    mostrarAlerta(responseData.error || 'Erro ao realizar o agendamento', 'error');
+                    
+                    // Tratamento específico por código de erro
+                    let mensagemErro = responseData.error || 'Erro ao realizar o agendamento';
+                    let tipoErro = 'error';
+                    
+                    switch (fetchResponse.status) {
+                        case 409:
+                            mensagemErro = 'Este horário já está ocupado. Escolha outro horário.';
+                            tipoErro = 'warning';
+                            break;
+                        case 429:
+                            mensagemErro = 'Muitas tentativas. Aguarde alguns segundos antes de tentar novamente.';
+                            tipoErro = 'warning';
+                            break;
+                        case 400:
+                            mensagemErro = responseData.error || 'Dados inválidos. Verifique as informações.';
+                            tipoErro = 'warning';
+                            break;
+                        case 401:
+                            mensagemErro = 'Sessão expirada. Faça login novamente.';
+                            tipoErro = 'warning';
+                            break;
+                        case 500:
+                            mensagemErro = 'Erro interno do servidor. Tente novamente em alguns minutos.';
+                            tipoErro = 'error';
+                            break;
+                    }
+                    
+                    mostrarAlerta(mensagemErro, tipoErro);
                 }
                 
             } catch (err) {
@@ -643,21 +694,43 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('Erro de rede detectado, mostrando mensagem de erro');
                 mostrarAlerta('Erro de conexão. Verifique sua internet e tente novamente.', 'error');
             } finally {
+                // Limpar timeout
+                if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                }
+                
                 esconderCarregamento();
                 processando = false;
-                
-                // Reabilitar botão de submit
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Confirmar Agendamento';
-                }
+                reabilitarFormulario();
                 
                 console.log('=== PROCESSAMENTO FINALIZADO ===');
             }
         });
     }
 });
+
+// Função para reabilitar o formulário
+function reabilitarFormulario() {
+    const form = document.getElementById('form-agendamento');
+    if (!form) return;
+    
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const formFields = form.querySelectorAll('input, select, textarea, button');
+    
+    // Reabilitar botão de submit
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> Confirmar Agendamento';
+    }
+    
+    // Reabilitar todos os campos do formulário
+    formFields.forEach(field => {
+        if (field !== submitBtn) {
+            field.disabled = false;
+        }
+    });
+}
 
 // Event listeners para campos de data e profissional
 document.addEventListener('DOMContentLoaded', function() {
@@ -675,9 +748,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 function mostrarCarregamento() {
+    console.log('=== MOSTRANDO TELA DE CARREGAMENTO ===');
     const loadingScreen = document.getElementById('loading-screen');
+    console.log('Elemento loading-screen encontrado:', loadingScreen);
     if (loadingScreen) {
+        console.log('Exibindo tela de carregamento...');
         loadingScreen.style.display = 'flex'; // Exibe o carregamento
+        console.log('Tela de carregamento exibida com sucesso');
     } else {
         console.error('Elemento de carregamento não encontrado!');
     }

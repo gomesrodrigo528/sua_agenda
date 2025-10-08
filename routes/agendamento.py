@@ -3,7 +3,7 @@ from supabase_config import supabase
 from utils.email_service import EmailService
 from routes.push import agendar_notificacao_push, cancelar_notificacao_push, agendar_notificacao_push_cliente, cancelar_notificacao_push_cliente
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import smtplib
 from zoneinfo import ZoneInfo
 from email.mime.multipart import MIMEMultipart
@@ -76,6 +76,12 @@ def agendar_cliente():
     if not verificar_cliente_logado():
         return jsonify({"error": "Cliente não está logado. Faça login para continuar."}), 401
 
+    # VALIDAÇÃO 0.1: Verificar se não há agendamento duplicado recente (últimos 30 segundos)
+    # Isso evita duplicações por múltiplos cliques ou problemas de rede
+    agendamento_recente = supabase.table("agenda").select("id").eq("cliente_id", cliente_id).eq("usuario_id", dados["usuario_id"]).eq("data", dados["data"]).eq("horario", dados["horario"]).gte("created_at", f"{(datetime.now() - timedelta(seconds=30)).strftime('%Y-%m-%d %H:%M:%S')}").execute()
+    if agendamento_recente.data:
+        return jsonify({"error": "Agendamento já foi realizado recentemente. Aguarde alguns segundos antes de tentar novamente."}), 429
+
     # Validação simples: verifica se todos os campos obrigatórios estão presentes
     campos_obrigatorios = ["usuario_id", "servico_id", "data", "horario"]
     for campo in campos_obrigatorios:
@@ -135,23 +141,35 @@ def agendar_cliente():
         return jsonify({"error": "Horário fora do horário de funcionamento (8h às 18h)."}), 400
 
     # VALIDAÇÃO 6: Verificar se o horário está disponível (não conflita com outros agendamentos)
-    agendamentos_existentes = supabase.table("agenda").select("horario, servico_id").eq("usuario_id", dados["usuario_id"]).eq("data", dados["data"]).neq("status", "finalizado").execute()
-    if agendamentos_existentes.data:
-        duracao_servico = supabase.table("servicos").select("tempo").eq("id", dados["servico_id"]).execute()
-        duracao_minutos = int(duracao_servico.data[0]["tempo"]) if duracao_servico.data and duracao_servico.data[0]["tempo"] else 60
+    # Usar transação para evitar condições de corrida em aplicações multi-tenant
+    try:
+        # Verificar agendamentos existentes com lock para evitar duplicações simultâneas
+        agendamentos_existentes = supabase.table("agenda").select("horario, servico_id, cliente_id").eq("usuario_id", dados["usuario_id"]).eq("data", dados["data"]).neq("status", "finalizado").execute()
+        
+        # VALIDAÇÃO 6.1: Verificar se o mesmo cliente já tem agendamento no mesmo horário
         for agendamento in agendamentos_existentes.data:
-            horario_existente = agendamento["horario"]
-            servico_existente_id = agendamento["servico_id"]
-            duracao_existente = supabase.table("servicos").select("tempo").eq("id", servico_existente_id).execute()
-            duracao_existente_minutos = int(duracao_existente.data[0]["tempo"]) if duracao_existente.data and duracao_existente.data[0]["tempo"] else 60
-            hora_existente, minuto_existente = map(int, horario_existente.split(':')[:2])
-            hora_nova, minuto_novo = map(int, horario.split(':')[:2])
-            inicio_existente = hora_existente * 60 + minuto_existente
-            fim_existente = inicio_existente + duracao_existente_minutos
-            inicio_novo = hora_nova * 60 + minuto_novo
-            fim_novo = inicio_novo + duracao_minutos
-            if (inicio_novo < fim_existente and fim_novo > inicio_existente):
-                return jsonify({"error": f"Horário {horario} conflita com agendamento existente às {horario_existente}."}), 400
+            if agendamento.get("cliente_id") == cliente_id and agendamento["horario"] == dados["horario"]:
+                return jsonify({"error": "Você já possui um agendamento neste horário."}), 409
+        
+        if agendamentos_existentes.data:
+            duracao_servico = supabase.table("servicos").select("tempo").eq("id", dados["servico_id"]).execute()
+            duracao_minutos = int(duracao_servico.data[0]["tempo"]) if duracao_servico.data and duracao_servico.data[0]["tempo"] else 60
+            for agendamento in agendamentos_existentes.data:
+                horario_existente = agendamento["horario"]
+                servico_existente_id = agendamento["servico_id"]
+                duracao_existente = supabase.table("servicos").select("tempo").eq("id", servico_existente_id).execute()
+                duracao_existente_minutos = int(duracao_existente.data[0]["tempo"]) if duracao_existente.data and duracao_existente.data[0]["tempo"] else 60
+                hora_existente, minuto_existente = map(int, horario_existente.split(':')[:2])
+                hora_nova, minuto_novo = map(int, horario.split(':')[:2])
+                inicio_existente = hora_existente * 60 + minuto_existente
+                fim_existente = inicio_existente + duracao_existente_minutos
+                inicio_novo = hora_nova * 60 + minuto_novo
+                fim_novo = inicio_novo + duracao_minutos
+                if (inicio_novo < fim_existente and fim_novo > inicio_existente):
+                    return jsonify({"error": f"Horário {horario} conflita com agendamento existente às {horario_existente}."}), 400
+    except Exception as e:
+        print(f"Erro na validação de agendamentos: {e}")
+        return jsonify({"error": "Erro interno na validação de agendamentos"}), 500
 
     # Buscar dados do cliente logado
     cliente = supabase.table("clientes").select("nome_cliente, id_usuario_cliente").eq("id", cliente_id).single().execute().data

@@ -1,140 +1,216 @@
-/* Mantém o scroll desativado em telas grandes */
-body, html {
+/* Estilos minimalistas para relatórios - seguindo padrão do projeto */
+
+/* Reset básico */
+* {
     margin: 0;
     padding: 0;
-    font-family: 'Roboto', Arial, sans-serif;
-    background-color: #f4f5f7;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f8f9fa;
     color: #333;
-    height: 100%;
-    overflow: hidden;  /* Desativa o scroll em resoluções maiores */
-}
-/* Container principal para o conteúdo interno */
-.main-content {
-    height: 100%;  /* Ocupa toda a altura */
-    overflow-y: auto;  /* Permite o scroll apenas no conteúdo interno */
-    padding: 20px;  /* Espaçamento interno */
 }
 
-/* Header */
-header {
-    text-align: center;
-    margin-bottom: 2rem;
+/* Container principal */
+.container-fluid {
+    padding: 20px;
 }
 
-.title {
-    font-size: 3rem;
-    font-weight: 700;
-    color: #e74c3c;  /* Cor forte para o título */
-}
-
-.subtitle {
+/* Header minimalista */
+h2 {
     font-size: 1.5rem;
-    color: #bdc3c7;
-    margin-top: 0.5rem;
+    font-weight: 400;
+    color: #333;
 }
 
-/* Cards */
+/* Filtros minimalistas */
+.form-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+}
+
+.form-control-sm, .form-select-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+}
+
+.form-control-sm:focus, .form-select-sm:focus {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Botões minimalistas */
+.btn-sm {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+}
+
+.btn-outline-primary {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-outline-success {
+    border-color: #198754;
+    color: #198754;
+}
+
+.btn-outline-success:hover {
+    background-color: #198754;
+    border-color: #198754;
+}
+
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+/* Cards minimalistas */
 .card {
-    margin: 2%;
     border: none;
-    border-radius: 15px;
-    background: linear-gradient(135deg, #2c3e50, #34495e);  /* Gradiente mais forte */
-    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2), 0 3px 6px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
 }
 
-.card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 15px 25px rgba(0, 0, 0, 0.25), 0 6px 12px rgba(0, 0, 0, 0.15);
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
 }
 
 .card-body {
-    padding: 0.5rem;
-    text-align: center;
-}
-
-.card-title {
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #ecf0f1;
-    margin-bottom: 1.2rem;
-}
-
-.card-text {
-    font-size: 1.3rem;
-    color: #bdc3c7;
-}
-
-/* Cores específicas para diferentes tipos de cards */
-.card-financeiro {
-    background: linear-gradient(135deg, #f39c12, #e67e22);
-}
-
-.card-atendimento {
-    background: linear-gradient(135deg, #27ae60, #2ecc71);
-}
-
-.card-usuario {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-}
-
-.card-meio-pagamento {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad);
-}
-
-/* Tabelas */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 2rem;
-}
-
-table th, table td {
     padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid #34495e;
 }
 
-table th {
-    background-color: #34495e;
-    color: #ecf0f1;
-    font-size: 1.1rem;
-    font-weight: bold;
+/* Cards de resumo */
+.bg-opacity-10 {
+    background-color: rgba(var(--bs-primary-rgb), 0.1) !important;
 }
 
-table td {
-    background-color: #2c3e50;
-    color: #bdc3c7;
+.bg-primary.bg-opacity-10 {
+    background-color: rgba(13, 110, 253, 0.1) !important;
+}
+
+.bg-success.bg-opacity-10 {
+    background-color: rgba(25, 135, 84, 0.1) !important;
+}
+
+.bg-info.bg-opacity-10 {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+}
+
+.bg-warning.bg-opacity-10 {
+    background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+.rounded-circle {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Abas minimalistas */
+.nav-pills .nav-link {
+    border-radius: 0.375rem;
+    color: #6c757d;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+}
+
+.nav-pills .nav-link.active {
+    background-color: #0d6efd;
+    color: #fff;
+}
+
+.nav-pills .nav-link:hover:not(.active) {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+/* Tabelas minimalistas */
+.table-sm {
+    font-size: 0.875rem;
+}
+
+.table-borderless th,
+.table-borderless td {
+    border: none;
+    padding: 0.5rem 0.75rem;
+}
+
+.table-borderless th {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.table-borderless tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Gráficos */
+canvas {
+    max-height: 250px;
 }
 
 /* Responsividade */
-@media (max-width: 768px){
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 15px;
+    }
+    
+    .card-body {
+        padding: 0.75rem;
+    }
+    
+    .rounded-circle {
+        width: 2rem;
+        height: 2rem;
+    }
+    
+    .flex-grow-1.ms-3 {
+        margin-left: 0.75rem !important;
+    }
+}
 
-    body, html {
-        overflow: auto;  /* Ativa o scroll para resoluções menores */
-    }
-    .title {
-        font-size: 2.5rem;
-    }
-    .main-content {
-        height: auto;  /* Permite que o conteúdo interno se ajuste */
-        overflow-y: auto;  /* Mantém o scroll no conteúdo */
-    }
+/* Cores do tema */
+.text-primary {
+    color: #0d6efd !important;
+}
 
+.text-success {
+    color: #198754 !important;
+}
 
-    .subtitle {
-        font-size: 1.2rem;
-    }
+.text-info {
+    color: #0dcaf0 !important;
+}
 
-    .card-title {
-        font-size: 1.5rem;
-    }
+.text-warning {
+    color: #ffc107 !important;
+}
 
-    .card-text {
-        font-size: 1.1rem;
-    }
+.text-muted {
+    color: #6c757d !important;
+}
 
-    table th, table td {
-        font-size: 1rem;
-    }
+/* Sombras sutis */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
 }
