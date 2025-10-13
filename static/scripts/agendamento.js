@@ -112,11 +112,21 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     esconderCarregamento(); // Garante que a tela de carregamento estará oculta ao carregar a página
     preencherDadosCliente(); // Preenche os campos com dados dos cookies se disponível
     configurarValidacaoData(); // Configura a validação de data
     verificarSincronizacaoDados(); // Verifica se os dados precisam ser sincronizados
+    
+    // Verificar login do cliente
+    const logado = await testarLogin();
+    if (!logado) {
+        console.log('Cliente não está logado - algumas funcionalidades podem não funcionar');
+        // Opcional: mostrar aviso discreto para o usuário
+        // mostrarAlerta('Faça login para ter acesso completo às funcionalidades.', 'info');
+    } else {
+        console.log('Cliente logado com sucesso');
+    }
 });
 
 // Funcionalidade do Menu Lateral
@@ -548,26 +558,83 @@ function abrirModalAgendamento(empresaId) {
 
 
 
-document.addEventListener('DOMContentLoaded', function() {
+// Função para verificar se o cliente está logado
+function verificarLoginCliente() {
+    const clienteId = getCookie('cliente_id');
+    const idUsuarioCliente = getCookie('id_usuario_cliente');
+    const idEmpresa = getCookie('id_empresa');
+    
+    console.log('=== VERIFICAÇÃO DE LOGIN ===');
+    console.log('cliente_id:', clienteId);
+    console.log('id_usuario_cliente:', idUsuarioCliente);
+    console.log('id_empresa:', idEmpresa);
+    
+    if (!clienteId || !idUsuarioCliente || !idEmpresa) {
+        console.log('ERRO: Cliente não está logado');
+        mostrarAlerta('Você precisa estar logado para fazer agendamentos. Faça login primeiro.', 'warning');
+        return false;
+    }
+    
+    console.log('Cliente logado com sucesso');
+    return true;
+}
+
+// Função para testar login via API
+async function testarLogin() {
+    try {
+        const response = await fetch('/api/verificar-login-cliente');
+        const data = await response.json();
+        console.log('Status do login via API:', data);
+        return data.logado;
+    } catch (error) {
+        console.error('Erro ao verificar login via API:', error);
+        return false;
+    }
+}
+
+// Event listener principal para o formulário de agendamento
+function configurarFormularioAgendamento() {
     const form = document.getElementById('form-agendamento');
-    if (form) {
-        // Variável para controlar se já está processando
-        let processando = false;
-        let timeoutId = null;
+    if (!form) {
+        console.log('Formulário de agendamento não encontrado');
+        return;
+    }
+    
+    console.log('Formulário de agendamento encontrado, configurando event listener...');
+    
+    // Teste simples para verificar se o botão funciona
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        console.log('Botão de submit encontrado:', submitBtn);
+        submitBtn.addEventListener('click', function(e) {
+            console.log('=== BOTÃO CLICADO ===');
+        });
+    } else {
+        console.log('Botão de submit não encontrado');
+    }
+    
+    // Variável para controlar se já está processando
+    let processando = false;
+    let timeoutId = null;
+    
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        console.log('=== EVENTO SUBMIT DISPARADO ===');
         
-        form.addEventListener('submit', async function (e) {
-            e.preventDefault();
-            console.log('=== EVENTO SUBMIT DISPARADO ===');
-            
-            // Evitar múltiplas submissões
-            if (processando) {
-                console.log('Já está processando, ignorando nova submissão');
-                mostrarAlerta('Aguarde o processamento do agendamento anterior.', 'warning');
-                return;
-            }
-            
-            processando = true;
-            console.log('=== INICIANDO PROCESSAMENTO ===');
+        // Verificar login primeiro
+        if (!verificarLoginCliente()) {
+            return;
+        }
+        
+        // Evitar múltiplas submissões
+        if (processando) {
+            console.log('Já está processando, ignorando nova submissão');
+            mostrarAlerta('Aguarde o processamento do agendamento anterior.', 'warning');
+            return;
+        }
+        
+        processando = true;
+        console.log('=== INICIANDO PROCESSAMENTO ===');
 
             // Desabilitar botão de submit e todos os campos
             const submitBtn = form.querySelector('button[type="submit"]');
@@ -707,7 +774,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('=== PROCESSAMENTO FINALIZADO ===');
             }
         });
-    }
+}
+
+// Chamar a configuração do formulário quando o DOM estiver carregado
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('=== INICIANDO CONFIGURAÇÃO DO FORMULÁRIO ===');
+    configurarFormularioAgendamento();
+    console.log('=== CONFIGURAÇÃO DO FORMULÁRIO FINALIZADA ===');
 });
 
 // Função para reabilitar o formulário

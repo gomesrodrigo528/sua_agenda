@@ -83,6 +83,9 @@ function renderMenu(containerId) {
                     <li class="nav-item mb-3">
                         <a href="/clientes" class="nav-link text-white"><i class="bi bi-people"></i> Clientes</a>
                     </li>
+                    <li class="nav-item mb-3">
+                        <a href="/whatsapp" class="nav-link text-white"><i class="bi bi-whatsapp"></i> WhatsApp CRM</a>
+                    </li>
 
                     <!-- Operações de suporte -->
                     <li class="nav-item mb-3">
@@ -181,6 +184,9 @@ function renderDefaultMenu(container, isPDV) {
             </li>
             <li class="nav-item mb-3">
                 <a href="/clientes" class="nav-link text-white"><i class="bi bi-people"></i> Clientes</a>
+            </li>
+            <li class="nav-item mb-3">
+                <a href="/whatsapp" class="nav-link text-white"><i class="bi bi-whatsapp"></i> WhatsApp CRM</a>
             </li>
 
             <!-- Operações de suporte -->

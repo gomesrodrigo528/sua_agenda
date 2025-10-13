@@ -6,10 +6,10 @@ let graficoFaturamento = null;
 // Inicialização quando a página carrega
 document.addEventListener('DOMContentLoaded', function() {
     atualizarDataAtual();
-    carregarDashboard();
+    carregarComponentesIndividuais();
     
     // Atualizar dashboard a cada 5 minutos
-    setInterval(carregarDashboard, 300000);
+    setInterval(carregarComponentesIndividuais, 300000);
 });
 
 // Atualizar data atual no header
@@ -25,78 +25,132 @@ function atualizarDataAtual() {
     document.getElementById('data-atual').textContent = dataFormatada;
 }
 
-// Carregar dados do dashboard
-async function carregarDashboard() {
+// Carregar componentes individualmente
+async function carregarComponentesIndividuais() {
     try {
-        mostrarLoading(true);
+        // Carregar métricas principais primeiro (mais rápido)
+        await carregarMetricas();
         
-        // Carregar dados principais
-        const response = await fetch('/api/dashboard/dados');
-        if (!response.ok) {
-            throw new Error('Erro ao carregar dados do dashboard');
-        }
-        
-        dashboardData = await response.json();
-        
-        // Atualizar interface
-        atualizarMetricas();
-        atualizarProximosAtendimentos();
-        atualizarServicosPopulares();
-        atualizarResumoFinanceiro();
-        
-        // Carregar gráfico
-        await carregarGraficoFaturamento();
-        
-        mostrarLoading(false);
+        // Carregar outros componentes em paralelo
+        Promise.all([
+            carregarProximosAtendimentos(),
+            carregarServicosPopulares(),
+            carregarResumoFinanceiro(),
+            carregarGraficoFaturamento()
+        ]).catch(error => {
+            console.error('Erro ao carregar componentes:', error);
+        });
         
     } catch (error) {
         console.error('Erro ao carregar dashboard:', error);
         mostrarErro('Erro ao carregar dados do dashboard');
-        mostrarLoading(false);
+    }
+}
+
+// Carregar métricas principais
+async function carregarMetricas() {
+    try {
+        const response = await fetch('/api/dashboard/metricas');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar métricas');
+        }
+        
+        const metricas = await response.json();
+        atualizarMetricas(metricas);
+        
+    } catch (error) {
+        console.error('Erro ao carregar métricas:', error);
+        // Manter valores padrão em caso de erro
+    }
+}
+
+// Carregar próximos atendimentos
+async function carregarProximosAtendimentos() {
+    try {
+        const response = await fetch('/api/dashboard/proximos-atendimentos');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar atendimentos');
+        }
+        
+        const atendimentos = await response.json();
+        atualizarProximosAtendimentos(atendimentos);
+        
+    } catch (error) {
+        console.error('Erro ao carregar atendimentos:', error);
+        mostrarEstadoVazio('proximos-atendimentos', 'Nenhum atendimento nas próximas 3 horas');
+    }
+}
+
+// Carregar serviços populares
+async function carregarServicosPopulares() {
+    try {
+        const response = await fetch('/api/dashboard/servicos-populares');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar serviços');
+        }
+        
+        const servicos = await response.json();
+        atualizarServicosPopulares(servicos);
+        
+    } catch (error) {
+        console.error('Erro ao carregar serviços:', error);
+        mostrarEstadoVazio('servicos-populares', 'Nenhum serviço popular encontrado');
+    }
+}
+
+// Carregar resumo financeiro
+async function carregarResumoFinanceiro() {
+    try {
+        const response = await fetch('/api/dashboard/resumo-financeiro');
+        if (!response.ok) {
+            throw new Error('Erro ao carregar resumo financeiro');
+        }
+        
+        const financeiro = await response.json();
+        atualizarResumoFinanceiro(financeiro);
+        
+    } catch (error) {
+        console.error('Erro ao carregar resumo financeiro:', error);
+        // Manter valores padrão em caso de erro
     }
 }
 
 // Atualizar métricas principais
-function atualizarMetricas() {
+function atualizarMetricas(metricas) {
     // Faturamento do dia
     document.getElementById('faturamento-hoje').textContent = 
-        formatarMoeda(dashboardData.faturamento_hoje || 0);
+        formatarMoeda(metricas.faturamento_hoje || 0);
     
     // Atendimentos do dia
     document.getElementById('atendimentos-hoje').textContent = 
-        dashboardData.atendimentos_hoje || 0;
+        metricas.atendimentos_hoje || 0;
     document.getElementById('atendimentos-concluidos').textContent = 
-        `${dashboardData.atendimentos_concluidos || 0} concluídos`;
+        `${metricas.atendimentos_concluidos || 0} concluídos`;
     
     // Faturamento do mês
     document.getElementById('faturamento-mes').textContent = 
-        formatarMoeda(dashboardData.faturamento_mes || 0);
+        formatarMoeda(metricas.faturamento_mes || 0);
     
     // Meta do mês (se configurada)
-    if (dashboardData.meta_mes && dashboardData.meta_mes > 0) {
+    if (metricas.meta_mes && metricas.meta_mes > 0) {
         document.getElementById('meta-card').style.display = 'flex';
         document.getElementById('percentual-meta').textContent = 
-            `${Math.round(dashboardData.percentual_meta || 0)}%`;
+            `${Math.round(metricas.percentual_meta || 0)}%`;
         document.getElementById('valor-meta').textContent = 
-            formatarMoeda(dashboardData.meta_mes);
+            formatarMoeda(metricas.meta_mes);
     }
 }
 
 // Atualizar próximos atendimentos
-function atualizarProximosAtendimentos() {
+function atualizarProximosAtendimentos(atendimentos) {
     const container = document.getElementById('proximos-atendimentos');
     
-    if (!dashboardData.proximos_atendimentos || dashboardData.proximos_atendimentos.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-calendar-x"></i>
-                <p>Nenhum atendimento nas próximas 3 horas</p>
-            </div>
-        `;
+    if (!atendimentos || atendimentos.length === 0) {
+        mostrarEstadoVazio('proximos-atendimentos', 'Nenhum atendimento nas próximas 3 horas');
         return;
     }
     
-    const html = dashboardData.proximos_atendimentos.map(atendimento => {
+    const html = atendimentos.map(atendimento => {
         const cliente = atendimento.clientes || {};
         const servico = atendimento.servicos || {};
         const horario = formatarHorario(atendimento.horario);
@@ -118,20 +172,15 @@ function atualizarProximosAtendimentos() {
 }
 
 // Atualizar serviços populares
-function atualizarServicosPopulares() {
+function atualizarServicosPopulares(servicos) {
     const container = document.getElementById('servicos-populares');
     
-    if (!dashboardData.servicos_populares || dashboardData.servicos_populares.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <i class="bi bi-star"></i>
-                <p>Nenhum serviço popular encontrado</p>
-            </div>
-        `;
+    if (!servicos || servicos.length === 0) {
+        mostrarEstadoVazio('servicos-populares', 'Nenhum serviço popular encontrado');
         return;
     }
     
-    const html = dashboardData.servicos_populares.map(servico => `
+    const html = servicos.map(servico => `
         <div class="servico-item">
             <div class="servico-nome">${servico[0]}</div>
             <div class="servico-count">${servico[1]}x</div>
@@ -142,15 +191,42 @@ function atualizarServicosPopulares() {
 }
 
 // Atualizar resumo financeiro
-function atualizarResumoFinanceiro() {
+function atualizarResumoFinanceiro(financeiro) {
     document.getElementById('clientes-novos').textContent = 
-        dashboardData.clientes_novos || 0;
+        financeiro.clientes_novos || 0;
     
     document.getElementById('contas-pendentes').textContent = 
-        dashboardData.contas_pendentes || 0;
+        financeiro.contas_pendentes || 0;
     
     document.getElementById('valor-pendente').textContent = 
-        formatarMoeda(dashboardData.valor_pendente || 0);
+        formatarMoeda(financeiro.valor_pendente || 0);
+    
+    document.getElementById('contas-pagas').textContent = 
+        financeiro.contas_pagas || 0;
+    
+    document.getElementById('valor-recebido').textContent = 
+        formatarMoeda(financeiro.valor_recebido || 0);
+    
+    document.getElementById('contas-pagar-pendentes').textContent = 
+        financeiro.contas_pagar_pendentes || 0;
+    
+    document.getElementById('valor-pagar-pendente').textContent = 
+        formatarMoeda(financeiro.valor_pagar_pendente || 0);
+    
+    document.getElementById('contas-pagar-pagas').textContent = 
+        financeiro.contas_pagar_pagas || 0;
+    
+    document.getElementById('valor-pago').textContent = 
+        formatarMoeda(financeiro.valor_pago || 0);
+    
+    document.getElementById('entradas-mes').textContent = 
+        formatarMoeda(financeiro.entradas_mes || 0);
+    
+    document.getElementById('saidas-mes').textContent = 
+        formatarMoeda(financeiro.saidas_mes || 0);
+    
+    document.getElementById('saldo-mes').textContent = 
+        formatarMoeda(financeiro.saldo_mes || 0);
 }
 
 // Carregar gráfico de faturamento
@@ -162,11 +238,16 @@ async function carregarGraficoFaturamento() {
         }
         
         const dadosGrafico = await response.json();
+        
+        // Esconder skeleton e mostrar gráfico
+        document.getElementById('chart-loading').style.display = 'none';
+        document.getElementById('grafico-faturamento').style.display = 'block';
+        
         criarGraficoFaturamento(dadosGrafico);
         
     } catch (error) {
         console.error('Erro ao carregar gráfico:', error);
-        document.getElementById('grafico-faturamento').parentElement.innerHTML = 
+        document.getElementById('chart-loading').innerHTML = 
             '<div class="empty-state"><i class="bi bi-bar-chart"></i><p>Erro ao carregar gráfico</p></div>';
     }
 }
@@ -239,9 +320,15 @@ function formatarHorario(horario) {
     return horario.substring(0, 5); // HH:MM
 }
 
-function mostrarLoading(mostrar) {
-    const overlay = document.getElementById('dashboard-loading');
-    overlay.style.display = mostrar ? 'flex' : 'none';
+// Mostrar estado vazio
+function mostrarEstadoVazio(containerId, mensagem) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = `
+        <div class="empty-state">
+            <i class="bi bi-calendar-x"></i>
+            <p>${mensagem}</p>
+        </div>
+    `;
 }
 
 function mostrarErro(mensagem) {
@@ -255,14 +342,14 @@ function mostrarErro(mensagem) {
 
 // Função para refresh manual
 function refreshDashboard() {
-    carregarDashboard();
+    carregarComponentesIndividuais();
 }
 
 // Event listeners
 document.addEventListener('click', function(e) {
     // Refresh button
     if (e.target.closest('.refresh-btn')) {
-        carregarDashboard();
+        carregarComponentesIndividuais();
     }
 });
 
@@ -293,7 +380,7 @@ if ('Notification' in window && 'serviceWorker' in navigator) {
 // Detectar mudanças de conectividade
 window.addEventListener('online', function() {
     console.log('Conexão restaurada');
-    carregarDashboard();
+    carregarComponentesIndividuais();
 });
 
 window.addEventListener('offline', function() {

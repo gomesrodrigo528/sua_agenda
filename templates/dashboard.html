@@ -33,7 +33,9 @@
             </div>
             <div class="metric-content">
                 <div class="metric-label">Faturamento Hoje</div>
-                <div class="metric-value" id="faturamento-hoje">R$ 0,00</div>
+                <div class="metric-value" id="faturamento-hoje">
+                    <div class="loading-skeleton">R$ 0,00</div>
+                </div>
             </div>
         </div>
 
@@ -44,8 +46,12 @@
             </div>
             <div class="metric-content">
                 <div class="metric-label">Atendimentos Hoje</div>
-                <div class="metric-value" id="atendimentos-hoje">0</div>
-                <div class="metric-subtitle" id="atendimentos-concluidos">0 concluídos</div>
+                <div class="metric-value" id="atendimentos-hoje">
+                    <div class="loading-skeleton">0</div>
+                </div>
+                <div class="metric-subtitle" id="atendimentos-concluidos">
+                    <div class="loading-skeleton-small">0 concluídos</div>
+                </div>
             </div>
         </div>
 
@@ -56,7 +62,9 @@
             </div>
             <div class="metric-content">
                 <div class="metric-label">Faturamento Mês</div>
-                <div class="metric-value" id="faturamento-mes">R$ 0,00</div>
+                <div class="metric-value" id="faturamento-mes">
+                    <div class="loading-skeleton">R$ 0,00</div>
+                </div>
             </div>
         </div>
 
@@ -67,8 +75,12 @@
             </div>
             <div class="metric-content">
                 <div class="metric-label">Meta Mensal</div>
-                <div class="metric-value" id="percentual-meta">0%</div>
-                <div class="metric-subtitle" id="valor-meta">R$ 0,00</div>
+                <div class="metric-value" id="percentual-meta">
+                    <div class="loading-skeleton">0%</div>
+                </div>
+                <div class="metric-subtitle" id="valor-meta">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
         </div>
     </div>
@@ -80,9 +92,10 @@
             <a href="/agenda" class="btn-link">Ver Agenda</a>
         </div>
         <div class="atendimentos-list" id="proximos-atendimentos">
-            <div class="loading-item">
-                <div class="spinner"></div>
-                <span>Carregando...</span>
+            <div class="loading-skeleton-list">
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
             </div>
         </div>
     </div>
@@ -94,9 +107,10 @@
             <a href="/servicos" class="btn-link">Ver Serviços</a>
         </div>
         <div class="servicos-list" id="servicos-populares">
-            <div class="loading-item">
-                <div class="spinner"></div>
-                <span>Carregando...</span>
+            <div class="loading-skeleton-list">
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
+                <div class="skeleton-item"></div>
             </div>
         </div>
     </div>
@@ -111,41 +125,65 @@
             <!-- Contas a Receber -->
             <div class="financeiro-item">
                 <div class="financeiro-label">Contas a Receber</div>
-                <div class="financeiro-value" id="contas-pendentes">0</div>
-                <div class="financeiro-subtitle" id="valor-pendente">R$ 0,00</div>
+                <div class="financeiro-value" id="contas-pendentes">
+                    <div class="loading-skeleton-small">0</div>
+                </div>
+                <div class="financeiro-subtitle" id="valor-pendente">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <div class="financeiro-item">
                 <div class="financeiro-label">Contas Recebidas</div>
-                <div class="financeiro-value" id="contas-pagas">0</div>
-                <div class="financeiro-subtitle" id="valor-recebido">R$ 0,00</div>
+                <div class="financeiro-value" id="contas-pagas">
+                    <div class="loading-skeleton-small">0</div>
+                </div>
+                <div class="financeiro-subtitle" id="valor-recebido">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <!-- Contas a Pagar -->
             <div class="financeiro-item">
                 <div class="financeiro-label">Contas a Pagar</div>
-                <div class="financeiro-value" id="contas-pagar-pendentes">0</div>
-                <div class="financeiro-subtitle" id="valor-pagar-pendente">R$ 0,00</div>
+                <div class="financeiro-value" id="contas-pagar-pendentes">
+                    <div class="loading-skeleton-small">0</div>
+                </div>
+                <div class="financeiro-subtitle" id="valor-pagar-pendente">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <div class="financeiro-item">
                 <div class="financeiro-label">Contas Pagas</div>
-                <div class="financeiro-value" id="contas-pagar-pagas">0</div>
-                <div class="financeiro-subtitle" id="valor-pago">R$ 0,00</div>
+                <div class="financeiro-value" id="contas-pagar-pagas">
+                    <div class="loading-skeleton-small">0</div>
+                </div>
+                <div class="financeiro-subtitle" id="valor-pago">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <!-- Entradas e Saídas -->
             <div class="financeiro-item">
                 <div class="financeiro-label">Entradas do Mês</div>
-                <div class="financeiro-value" id="entradas-mes">R$ 0,00</div>
+                <div class="financeiro-value" id="entradas-mes">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <div class="financeiro-item">
                 <div class="financeiro-label">Saídas do Mês</div>
-                <div class="financeiro-value" id="saidas-mes">R$ 0,00</div>
+                <div class="financeiro-value" id="saidas-mes">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <div class="financeiro-item">
                 <div class="financeiro-label">Saldo do Mês</div>
-                <div class="financeiro-value" id="saldo-mes">R$ 0,00</div>
+                <div class="financeiro-value" id="saldo-mes">
+                    <div class="loading-skeleton-small">R$ 0,00</div>
+                </div>
             </div>
             <div class="financeiro-item">
                 <div class="financeiro-label">Clientes Novos (7 dias)</div>
-                <div class="financeiro-value" id="clientes-novos">0</div>
+                <div class="financeiro-value" id="clientes-novos">
+                    <div class="loading-skeleton-small">0</div>
+                </div>
             </div>
         </div>
     </div>
@@ -156,7 +194,10 @@
             <h3><i class="bi bi-bar-chart"></i> Faturamento (7 dias)</h3>
         </div>
         <div class="chart-container">
-            <canvas id="grafico-faturamento" width="400" height="200"></canvas>
+            <div class="loading-skeleton-chart" id="chart-loading">
+                <div class="skeleton-chart"></div>
+            </div>
+            <canvas id="grafico-faturamento" width="400" height="200" style="display: none;"></canvas>
         </div>
     </div>
 
@@ -183,14 +224,6 @@
                 <span>Gerenciar Serviços</span>
             </a>
         </div>
-    </div>
-</div>
-
-<!-- Loading Overlay -->
-<div id="dashboard-loading" class="loading-overlay">
-    <div class="loading-content">
-        <div class="spinner-large"></div>
-        <p>Carregando dashboard...</p>
     </div>
 </div>
 {% endblock %}

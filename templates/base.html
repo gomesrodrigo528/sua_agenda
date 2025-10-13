@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="empresa-id" content="{{ request.cookies.get('empresa_id', '1') }}">
     <title>{% block title %}Sua Agenda{% endblock %}</title>
     
     <!-- CSS Global -->
@@ -16,7 +17,14 @@
     <link rel="stylesheet" href="/static/styles/style.css">
     <link rel="stylesheet" href="/static/styles/theme.css">
     <link rel="stylesheet" href="/static/styles/notification-bar.css">
+    <link rel="stylesheet" href="/static/styles/whatsapp-notification.css">
     <link rel="icon" href="/static/img/logo fav icon.png" type="image/png">
+    
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    
+    <!-- Sistema de Notificação WhatsApp -->
+    <script src="/static/scripts/whatsapp-notification.js"></script>
     
     <!-- CSS Específico da Página -->
     {% block extra_css %}{% endblock %}
@@ -163,44 +171,29 @@
       </div>
     </div>
 
-    <!-- Botão flutuante de vendas -->
-    {% set pagina = request.endpoint %}
-    {% if 'pdv' not in pagina and 'agenda' not in pagina %}
-    <style>
-    #btn-vendas-flutuante {
-        position: fixed;
-        bottom: 32px;
-        right: 32px;
-        z-index: 9999;
-        background: linear-gradient(135deg, #2ecc40 80%, #27ae60 100%);
-        border: none;
-        outline: none;
-        cursor: pointer;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-        border-radius: 50%;
-        width: 64px;
-        height: 64px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: box-shadow 0.2s, transform 0.2s;
-    }
-    #btn-vendas-flutuante:hover {
-        box-shadow: 0 8px 32px rgba(0,0,0,0.28);
-        transform: scale(1.08);
-    }
-    #btn-vendas-flutuante .cifrao {
-        color: #fff;
-        font-size: 2.2rem;
-        font-weight: bold;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.18);
-        line-height: 1;
-    }
-    </style>
-    <a id="btn-vendas-flutuante" href="/vendas" title="Ir para vendas">
-        <span class="cifrao">&#36;</span>
-    </a>
-    {% endif %}
+    <!-- Sistema de Notificação Global WhatsApp -->
+    <div id="whatsapp-notification" class="whatsapp-notification hidden">
+        <div class="notification-content">
+            <div class="notification-avatar">
+                <img id="notification-avatar-img" src="" alt="Avatar" class="avatar-img">
+                <i class="bi bi-person avatar-fallback" id="notification-avatar-fallback"></i>
+            </div>
+            <div class="notification-info">
+                <div class="notification-name" id="notification-name">Nome do Cliente</div>
+                <div class="notification-message" id="notification-message">Nova mensagem recebida</div>
+            </div>
+            <button class="notification-close" onclick="closeWhatsAppNotification()">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Áudio para notificação -->
+    <audio id="notification-sound" preload="auto">
+        <source src="/static/audio/notification.mp3" type="audio/mpeg">
+        <source src="/static/audio/notification.wav" type="audio/wav">
+    </audio>
+
 </body>
 
 </html>

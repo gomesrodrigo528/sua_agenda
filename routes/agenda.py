@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, render_template, session, redirec
 from supabase_config import supabase
 from utils.email_service import EmailService
 from utils.servico_financeiro import obter_servico_padrao_financeiro
+from utils.empresa_helper import EmpresaHelper, obter_empresa_logada, obter_cor_empresa, obter_email_empresa, obter_senha_app, verificar_envia_email
 from routes.push import agendar_notificacao_push, cancelar_notificacao_push, agendar_notificacao_push_cliente, cancelar_notificacao_push_cliente
 import os
 import smtplib
@@ -32,15 +33,15 @@ def obter_dados_empresa_logada():
     if not empresa_id:
         return jsonify({"erro": "Empresa não encontrada nos cookies"}), 401
 
-    # Consulta a tabela para obter os dados da empresa logada
-    response = supabase.table("empresa").select("logo, cor_emp,nome_empresa").eq("id", empresa_id).execute()
+    # Consulta a tabela para obter os dados da empresa logada usando helper
+    empresa = EmpresaHelper.obter_empresa_completa(empresa_id)
 
-    if response.data:
-        empresa = response.data[0]
+    if empresa:
         return jsonify({
+            "id": empresa_id,
             "logo": empresa.get("logo", "/static/img/logo.png"),
             "cor_emp": empresa.get("cor_emp", "#343a40"),
-            "nome_empresa": empresa.get("nome_empresa", "Empresa não identificada")  # Inclui o nome da empresa
+            "nome_empresa": empresa.get("nome_empresa", "Empresa não identificada")
         }), 200
     else:
         return jsonify({"erro": "Dados da empresa não encontrados"}), 404
@@ -95,7 +96,7 @@ def agendar():
     }).execute()
 
     if response.data:
-        empresa = supabase.table('empresa').select("email, senha_app, envia_email").eq('id', empresa_id).execute().data[0]
+        empresa = EmpresaHelper.obter_empresa_completa(empresa_id)
         # Buscar nome_cliente e id_usuario_cliente
         cliente = supabase.table("clientes").select("nome_cliente, id_usuario_cliente").eq("id", dados["cliente_id"]).execute().data[0]
         
@@ -170,14 +171,14 @@ def agendar():
         email_enviado_profissional = False
 
         # Verificar se a empresa permite envio de emails
-        if empresa.get('envia_email', True):  # Default True para compatibilidade
+        if verificar_envia_email(empresa_id):
             if email_cliente:
                 email_enviado_cliente = EmailService.enviar_agendamento_cliente(
-                    dados_email, empresa['email'], empresa['senha_app']
+                    dados_email, obter_email_empresa(empresa_id), obter_senha_app(empresa_id)
                 )
 
             email_enviado_profissional = EmailService.enviar_agendamento_profissional(
-                dados_email, empresa['email'], empresa['senha_app']
+                dados_email, obter_email_empresa(empresa_id), obter_senha_app(empresa_id)
             )
         else:
             print(f"[EMAIL] Envio de emails desabilitado para a empresa {empresa_id}")
@@ -255,7 +256,7 @@ def listar_agendamentos():
     # Estruturando os dados para o retorno
     agendamentos = []
     for item in response.data:
-        valor_servico = item["servicos"]["preco"]
+        valor_servico = item["servicos"]["preco"] if item["servicos"] else 0
         # Se for conta a receber, buscar o valor na tabela contas_receber
         if item.get("conta_receber", False):
             contas_receber_resp = supabase.table("contas_receber").select("valor").eq("id_agendamento", item["id"]).eq("id_empresa", empresa_id).execute()
@@ -266,9 +267,9 @@ def listar_agendamentos():
             "data": item["data"],
             "horario": item["horario"],
             "descricao": item.get("descricao", "Sem descrição"),
-            "cliente_nome": item["clientes"]["nome_cliente"],
-            'telefone': item["clientes"]["telefone"],
-            "servico_nome": item["servicos"]["nome_servico"],
+            "cliente_nome": item["clientes"]["nome_cliente"] if item["clientes"] else "Cliente não encontrado",
+            'telefone': item["clientes"]["telefone"] if item["clientes"] else "Telefone não encontrado",
+            "servico_nome": item["servicos"]["nome_servico"] if item["servicos"] else "Serviço não encontrado",
             "servico_preco": valor_servico,
             "nome_empresa": response_empresa.data[0]["nome_empresa"],
             "conta_receber": item.get("conta_receber", False)
@@ -409,8 +410,7 @@ def cancelar_agendamento(id):
             servico_response = supabase.table("servicos").select("nome_servico").eq("id", agendamento["servico_id"]).execute()
             servico = servico_response.data[0] if servico_response.data else None
             
-            empresa_response = supabase.table("empresa").select("email, senha_app, envia_email").eq("id", empresa_id).execute()
-            empresa = empresa_response.data[0] if empresa_response.data else None
+            empresa = EmpresaHelper.obter_empresa_completa(empresa_id)
             
         except Exception as e:
             print(f"Erro ao buscar dados relacionados: {e}")
@@ -444,15 +444,15 @@ def cancelar_agendamento(id):
         email_enviado_profissional = False
 
         # Verificar se a empresa permite envio de emails
-        if empresa.get('envia_email', True):  # Default True para compatibilidade
+        if verificar_envia_email(empresa_id):
             if email_cliente:
                 email_enviado_cliente = EmailService.enviar_cancelamento_cliente(
-                    dados_email, empresa['email'], empresa['senha_app']
+                    dados_email, obter_email_empresa(empresa_id), obter_senha_app(empresa_id)
                 )
 
             if usuario['email']:
                 email_enviado_profissional = EmailService.enviar_cancelamento_profissional(
-                    dados_email, empresa['email'], empresa['senha_app']
+                    dados_email, obter_email_empresa(empresa_id), obter_senha_app(empresa_id)
                 )
         else:
             print(f"[EMAIL] Envio de emails desabilitado para a empresa {empresa_id}")

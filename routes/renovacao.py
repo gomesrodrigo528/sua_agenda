@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session, jsonify
 from supabase_config import supabase
+from utils.empresa_helper import EmpresaHelper
 from config import Config
 import os
 import mercadopago
@@ -93,7 +94,7 @@ def notificacao_pagamento():
                 dias_atual = empresa[0]['dias_restantes'] or 0
                 dias_novos = PLANOS[plano]['dias']
                 novo_total = dias_atual + dias_novos
-                supabase.table("empresa").update({"dias_restantes": novo_total, "acesso": True}).eq("id", empresa_id).execute()
+                EmpresaHelper.atualizar_config_empresa(empresa_id, {"dias_restantes": novo_total, "acesso": True})
             return jsonify({'status': 'ok'}), 200
     return jsonify({'status': 'ignored'}), 200
 
@@ -132,10 +133,10 @@ def renovacao_sucesso():
             novo_total = dias_atuais + dias
             print(f"[DEBUG] Atualizando dias_restantes para: {novo_total}")
             # Atualizar dias_restantes e acesso
-            supabase.table('empresa').update({
+            EmpresaHelper.atualizar_config_empresa(empresa_id, {
                 'dias_restantes': novo_total,
                 'acesso': True
-            }).eq('id', empresa_id).execute()
+            })
             print(f'Dias restantes atualizados para empresa {empresa_id}: {novo_total} e acesso ativado')
         else:
             print('[DEBUG] Plano inválido para atualização.')

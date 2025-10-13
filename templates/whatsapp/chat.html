@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Chat - {{ chat.name }} - Sua Agenda{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/styles/whatsapp.css">
+{% endblock %}
+
+{% block content %}
+<div class="whatsapp-container">
+    <!-- Header do Chat -->
+    <div class="whatsapp-header">
+        <div class="header-content">
+            <a href="/whatsapp" class="btn-back">
+                <i class="bi bi-arrow-left"></i>
+            </a>
+            <div class="chat-user-info">
+                <div class="user-avatar">
+                    {% if chat.avatar %}
+                        <img src="{{ chat.avatar }}" alt="{{ chat.name }}">
+                    {% else %}
+                        <i class="bi bi-person"></i>
+                    {% endif %}
+                </div>
+                <div class="user-details">
+                    <h1>{{ chat.name }}</h1>
+                    <p>{{ chat.phone }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-refresh" onclick="carregarMensagens()" title="Atualizar">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Área de Mensagens -->
+    <div class="chat-main">
+        <div class="messages-area">
+            <div id="messagesContainer" class="messages-container">
+                <!-- Mensagens aparecerão aqui -->
+                <div id="emptyState" class="empty-state">
+                    <div class="empty-icon">
+                        <i class="bi bi-chat-dots"></i>
+                    </div>
+                    <p>Nenhuma mensagem ainda</p>
+                    <p class="empty-subtitle">Envie uma mensagem para iniciar a conversa</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Input de Mensagem -->
+        <div class="message-input-area">
+            <form id="messageForm" class="message-form">
+                <div class="input-group">
+                    <button 
+                        type="button"
+                        class="btn-attach"
+                        onclick="document.getElementById('fileInput').click()"
+                        title="Anexar arquivo"
+                    >
+                        <i class="bi bi-paperclip"></i>
+                    </button>
+                    <input type="file" id="fileInput" class="hidden" accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar,.txt">
+                    
+                    <div class="message-input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            rows="1" 
+                            placeholder="Digite sua mensagem..." 
+                            class="message-input"
+                        ></textarea>
+                    </div>
+                    
+                    <button 
+                        type="submit" 
+                        class="btn-send"
+                        id="sendBtn"
+                    >
+                        <i class="bi bi-send"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dados do chat
+    const CHAT_ID = {{ chat.chat_id }};
+    const USER_ID = {{ chat.user_id }};
+    const USER_NAME = "{{ chat.name }}";
+    const USER_PHONE = "{{ chat.phone }}";
+    const USER_AVATAR = "{{ chat.avatar or '' }}";
+    
+    let messages = [];
+    let isLoading = false;
+    let isSending = false;
+
+    // Elementos DOM
+    const messagesContainer = document.getElementById('messagesContainer');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const emptyState = document.getElementById('emptyState');
+
+    // Função para formatar timestamp
+    function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+        const seconds = Math.floor(diff / 1000);
+        
+        if (seconds < 60) return 'Agora';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+        
+        return date.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    // Função para escapar HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Função para renderizar mensagens
+    function renderMessages() {
+        if (messages.length === 0) {
+            emptyState.style.display = 'block';
+            return;
+        }
+
+        emptyState.style.display = 'none';
+        
+        messagesContainer.innerHTML = messages.map(msg => {
+            const isOwn = msg.direction === 'sent';
+            const alignment = isOwn ? 'justify-end' : 'justify-start';
+            const bgClass = isOwn ? 'message-sent' : 'message-received';
+            
+            let mediaContent = '';
+            
+            switch (msg.message_type) {
+                case 'image':
+                    mediaContent = `
+                        <div class="message-media">
+                            <img src="${msg.media_url}" alt="Imagem" class="media-image" onclick="abrirLightbox('${msg.media_url}')">
+                        </div>
+                    `;
+                    break;
+                case 'audio':
+                    mediaContent = `
+                        <div class="message-media">
+                            <audio controls class="media-audio">
+                                <source src="${msg.media_url}" type="audio/mpeg">
+                                Seu navegador não suporta áudio.
+                            </audio>
+                        </div>
+                    `;
+                    break;
+                case 'video':
+                    mediaContent = `
+                        <div class="message-media">
+                            <video controls class="media-video">
+                                <source src="${msg.media_url}" type="video/mp4">
+                                Seu navegador não suporta vídeo.
+                            </video>
+                        </div>
+                    `;
+                    break;
+                case 'document':
+                    mediaContent = `
+                        <div class="message-media">
+                            <div class="media-document">
+                                <i class="bi bi-file-earmark"></i>
+                                <a href="${msg.media_url}" target="_blank" class="document-link">
+                                    ${msg.media_filename || 'Documento'}
+                                </a>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                default:
+                    mediaContent = `
+                        <div class="message-text">
+                            ${escapeHtml(msg.message)}
+                        </div>
+                    `;
+            }
+
+            return `
+                <div class="message-wrapper ${alignment}">
+                    <div class="message ${bgClass}">
+                        ${mediaContent}
+                        <div class="message-time">
+                            ${formatTimestamp(msg.timestamp)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        scrollToBottom();
+    }
+
+    // Função para scroll automático
+    function scrollToBottom() {
+        setTimeout(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 100);
+    }
+
+    // Função para carregar mensagens
+    async function carregarMensagens() {
+        if (isLoading) return;
+        
+        try {
+            isLoading = true;
+            
+            const response = await fetch(`/api/whatsapp/messages/${CHAT_ID}`);
+            if (!response.ok) throw new Error('Erro ao carregar mensagens');
+            
+            const newMessages = await response.json();
+            
+            if (JSON.stringify(newMessages) !== JSON.stringify(messages)) {
+                messages = newMessages;
+                renderMessages();
+            }
+            
+        } catch (error) {
+            console.error('Erro ao carregar mensagens:', error);
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    // Função para enviar mensagem
+    async function enviarMensagem(message) {
+        if (isSending) return;
+        
+        try {
+            isSending = true;
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+            
+            const response = await fetch('/api/whatsapp/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    chat_id: CHAT_ID,
+                    message: message
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                await carregarMensagens();
+            } else {
+                alert(result.error || 'Erro ao enviar mensagem');
+            }
+            
+        } catch (error) {
+            console.error('Erro ao enviar mensagem:', error);
+            alert('Erro ao enviar mensagem. Verifique sua conexão.');
+        } finally {
+            isSending = false;
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<i class="bi bi-send"></i>';
+            messageInput.focus();
+        }
+    }
+
+    // Event Listeners
+    messageForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const message = messageInput.value.trim();
+        
+        if (!message) {
+            alert('Digite uma mensagem');
+            return;
+        }
+        
+        await enviarMensagem(message);
+    });
+
+    // Auto-resize textarea
+    messageInput.addEventListener('input', () => {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
+    });
+
+    // Enter para enviar (Shift+Enter para nova linha)
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            messageForm.dispatchEvent(new Event('submit'));
+        }
+    });
+
+    // Auto-refresh a cada 3 segundos
+    setInterval(carregarMensagens, 3000);
+
+    // Carrega mensagens ao iniciar
+    document.addEventListener('DOMContentLoaded', () => {
+        carregarMensagens();
+        messageInput.focus();
+    });
+</script>
+{% endblock %}

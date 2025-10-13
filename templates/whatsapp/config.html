@@ -1,0 +1,504 @@
+{% extends "base.html" %}
+
+{% block title %}Configurações do CRM WhatsApp{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 sidebar">
+            <div class="sidebar-header">
+                <h5><i class="bi bi-gear"></i> Configurações</h5>
+            </div>
+            
+            <nav class="nav flex-column">
+                <a class="nav-link active" href="#mensagens" data-bs-toggle="pill">
+                    <i class="bi bi-chat-dots"></i> Mensagens
+                </a>
+                <a class="nav-link" href="#atendimento" data-bs-toggle="pill">
+                    <i class="bi bi-clock"></i> Atendimento
+                </a>
+                <a class="nav-link" href="#notificacoes" data-bs-toggle="pill">
+                    <i class="bi bi-bell"></i> Notificações
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <a href="/whatsapp" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-arrow-left"></i> Voltar ao CRM
+                </a>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 col-lg-10 main-content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="bi bi-gear text-primary"></i> Configurações do CRM WhatsApp</h1>
+                <div>
+                    <button class="btn btn-success" onclick="saveAllConfig()">
+                        <i class="bi bi-check"></i> Salvar Todas as Configurações
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Tabs Content -->
+            <div class="tab-content" id="configTabContent">
+                <!-- Tab Mensagens -->
+                <div class="tab-pane fade show active" id="mensagens" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-chat-heart"></i> Mensagens Automáticas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mensagem de Boas-vindas</label>
+                                        <textarea class="form-control" id="mensagemBoasVindas" rows="3" placeholder="Olá! Como posso ajudá-lo hoje?"></textarea>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="ativarBoasVindas">
+                                            <label class="form-check-label" for="ativarBoasVindas">
+                                                Ativar mensagem de boas-vindas
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Mensagem de Finalização</label>
+                                        <textarea class="form-control" id="mensagemFinalizacao" rows="3" placeholder="Obrigado por entrar em contato! Tenha um ótimo dia!"></textarea>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="ativarFinalizacao">
+                                            <label class="form-check-label" for="ativarFinalizacao">
+                                                Ativar mensagem de finalização
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mensagem de Ausente</label>
+                                        <textarea class="form-control" id="mensagemAusente" rows="3" placeholder="Desculpe, não estou disponível no momento. Deixe sua mensagem que retornarei em breve."></textarea>
+                                        <div class="form-check mt-2">
+                                            <input class="form-check-input" type="checkbox" id="ativarAusente">
+                                            <label class="form-check-label" for="ativarAusente">
+                                                Ativar mensagem de ausente
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Assinatura nas Mensagens</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="ativarAssinatura">
+                                            <label class="form-check-label" for="ativarAssinatura">
+                                                Incluir nome do usuário logado automaticamente em todas as mensagens
+                                            </label>
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Quando ativado, o nome do usuário logado será adicionado automaticamente em negrito acima de cada mensagem enviada.
+                                            Exemplo: "*Rodrigo Gomes*" (em negrito) + quebra de linha + sua mensagem.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5><i class="bi bi-lightning"></i> Mensagens Rápidas</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mensagem Rápida 1</label>
+                                    <input type="text" class="form-control" id="mensagemRapida1" placeholder="Obrigado pelo contato!">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mensagem Rápida 2</label>
+                                    <input type="text" class="form-control" id="mensagemRapida2" placeholder="Em que posso ajudá-lo?">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mensagem Rápida 3</label>
+                                    <input type="text" class="form-control" id="mensagemRapida3" placeholder="Precisa de mais alguma coisa?">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mensagem Rápida 4</label>
+                                    <input type="text" class="form-control" id="mensagemRapida4" placeholder="Tenha um ótimo dia!">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Mensagem Rápida 5</label>
+                                    <input type="text" class="form-control" id="mensagemRapida5" placeholder="Volte sempre!">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab Atendimento -->
+                <div class="tab-pane fade" id="atendimento" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-clock"></i> Configurações de Atendimento</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Tempo para Resposta Automática (minutos)</label>
+                                        <input type="number" class="form-control" id="tempoRespostaAutomatica" min="1" max="1440" value="30">
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Horário de Início</label>
+                                            <input type="time" class="form-control" id="horarioInicio" value="08:00">
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Horário de Fim</label>
+                                            <input type="time" class="form-control" id="horarioFim" value="18:00">
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label class="form-label">Dias de Atendimento</label>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="segunda" checked>
+                                            <label class="form-check-label" for="segunda">Segunda-feira</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="terca" checked>
+                                            <label class="form-check-label" for="terca">Terça-feira</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="quarta" checked>
+                                            <label class="form-check-label" for="quarta">Quarta-feira</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="quinta" checked>
+                                            <label class="form-check-label" for="quinta">Quinta-feira</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sexta" checked>
+                                            <label class="form-check-label" for="sexta">Sexta-feira</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="sabado">
+                                            <label class="form-check-label" for="sabado">Sábado</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="domingo">
+                                            <label class="form-check-label" for="domingo">Domingo</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                
+                <!-- Tab Notificações -->
+                <div class="tab-pane fade" id="notificacoes" role="tabpanel">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="bi bi-bell"></i> Configurações de Notificação</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="notificarNovaMensagem" checked>
+                                            <label class="form-check-label" for="notificarNovaMensagem">
+                                                Notificar sobre novas mensagens
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="notificarMensagemNaoLida" checked>
+                                            <label class="form-check-label" for="notificarMensagemNaoLida">
+                                                Notificar sobre mensagens não lidas
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Som de Notificação</label>
+                                        <select class="form-select" id="somNotificacao">
+                                            <option value="padrao">Padrão</option>
+                                            <option value="personalizado">Personalizado</option>
+                                            <option value="silencioso">Silencioso</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <h6><i class="bi bi-palette"></i> Configurações de Interface</h6>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">Tema da Interface</label>
+                                        <select class="form-select" id="temaInterface">
+                                            <option value="claro">Claro</option>
+                                            <option value="escuro">Escuro</option>
+                                            <option value="automatico">Automático</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="mostrarOnline" checked>
+                                            <label class="form-check-label" for="mostrarOnline">
+                                                Mostrar status online
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="mostrarUltimaVez" checked>
+                                            <label class="form-check-label" for="mostrarUltimaVez">
+                                                Mostrar última vez online
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.sidebar {
+    background: #f8f9fa;
+    min-height: calc(100vh - 60px);
+    border-right: 1px solid #dee2e6;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    background: #fff;
+}
+
+.sidebar .nav-link {
+    color: #495057;
+    padding: 0.75rem 1rem;
+    border-radius: 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sidebar .nav-link:hover {
+    background: #e9ecef;
+    color: #007bff;
+}
+
+.sidebar .nav-link.active {
+    background: #007bff;
+    color: white;
+}
+
+.sidebar-footer {
+    padding: 1rem;
+    border-top: 1px solid #dee2e6;
+    margin-top: auto;
+}
+
+.main-content {
+    padding: 2rem;
+    background: #fff;
+    min-height: calc(100vh - 60px);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+.progress {
+    height: 1.5rem;
+}
+
+.progress-bar {
+    transition: width 0.3s ease;
+}
+</style>
+
+<script>
+// Estado global
+let configData = {};
+
+// Carregar configurações ao inicializar
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Página de configurações carregada');
+    loadCrmConfig();
+});
+
+async function loadCrmConfig() {
+    try {
+        console.log('📥 Carregando configurações...');
+        const response = await fetch('/api/whatsapp/config');
+        
+        if (response.ok) {
+            const config = await response.json();
+            configData = config;
+            populateConfigForm(config);
+            console.log('✅ Configurações carregadas:', config);
+        } else {
+            console.error('❌ Erro ao carregar configurações:', response.statusText);
+            mostrarNotificacao('Erro ao carregar configurações', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Erro ao carregar configurações:', error);
+        mostrarNotificacao('Erro ao carregar configurações', 'error');
+    }
+}
+
+function populateConfigForm(config) {
+    // Mensagens automáticas
+    document.getElementById('mensagemBoasVindas').value = config.mensagem_boas_vindas || '';
+    document.getElementById('mensagemFinalizacao').value = config.mensagem_finalizacao || '';
+    document.getElementById('mensagemAusente').value = config.mensagem_ausente || '';
+    document.getElementById('ativarBoasVindas').checked = config.ativar_mensagem_boas_vindas || false;
+    document.getElementById('ativarFinalizacao').checked = config.ativar_mensagem_finalizacao || false;
+    document.getElementById('ativarAusente').checked = config.ativar_mensagem_ausente || false;
+
+    // Mensagens rápidas
+    document.getElementById('mensagemRapida1').value = config.mensagem_rapida_1 || '';
+    document.getElementById('mensagemRapida2').value = config.mensagem_rapida_2 || '';
+    document.getElementById('mensagemRapida3').value = config.mensagem_rapida_3 || '';
+    document.getElementById('mensagemRapida4').value = config.mensagem_rapida_4 || '';
+    document.getElementById('mensagemRapida5').value = config.mensagem_rapida_5 || '';
+
+    // Configurações de atendimento
+    document.getElementById('tempoRespostaAutomatica').value = config.tempo_resposta_automatica || 30;
+    document.getElementById('horarioInicio').value = config.horario_atendimento_inicio || '08:00';
+    document.getElementById('horarioFim').value = config.horario_atendimento_fim || '18:00';
+
+    // Dias de atendimento
+    const dias = (config.dias_atendimento || 'segunda,terca,quarta,quinta,sexta').split(',');
+    document.getElementById('segunda').checked = dias.includes('segunda');
+    document.getElementById('terca').checked = dias.includes('terca');
+    document.getElementById('quarta').checked = dias.includes('quarta');
+    document.getElementById('quinta').checked = dias.includes('quinta');
+    document.getElementById('sexta').checked = dias.includes('sexta');
+    document.getElementById('sabado').checked = dias.includes('sabado');
+    document.getElementById('domingo').checked = dias.includes('domingo');
+
+    // Configuração de assinatura (nome do usuário)
+    document.getElementById('ativarAssinatura').checked = config.ativar_assinatura || false;
+
+    // Configurações de notificação
+    document.getElementById('notificarNovaMensagem').checked = config.notificar_nova_mensagem || false;
+    document.getElementById('notificarMensagemNaoLida').checked = config.notificar_mensagem_nao_lida || false;
+    document.getElementById('somNotificacao').value = config.som_notificacao || 'padrao';
+
+    // Configurações de interface
+    document.getElementById('temaInterface').value = config.tema_interface || 'claro';
+    document.getElementById('mostrarOnline').checked = config.mostrar_online || false;
+    document.getElementById('mostrarUltimaVez').checked = config.mostrar_ultima_vez || false;
+}
+
+
+function getSelectedDays() {
+    const days = [];
+    if (document.getElementById('segunda').checked) days.push('segunda');
+    if (document.getElementById('terca').checked) days.push('terca');
+    if (document.getElementById('quarta').checked) days.push('quarta');
+    if (document.getElementById('quinta').checked) days.push('quinta');
+    if (document.getElementById('sexta').checked) days.push('sexta');
+    if (document.getElementById('sabado').checked) days.push('sabado');
+    if (document.getElementById('domingo').checked) days.push('domingo');
+    return days.join(',');
+}
+
+async function saveAllConfig() {
+    try {
+        console.log('💾 Salvando todas as configurações...');
+        
+        // Coletar dados do formulário
+        const config = {
+            mensagem_boas_vindas: document.getElementById('mensagemBoasVindas').value,
+            mensagem_finalizacao: document.getElementById('mensagemFinalizacao').value,
+            mensagem_ausente: document.getElementById('mensagemAusente').value,
+            mensagem_rapida_1: document.getElementById('mensagemRapida1').value,
+            mensagem_rapida_2: document.getElementById('mensagemRapida2').value,
+            mensagem_rapida_3: document.getElementById('mensagemRapida3').value,
+            mensagem_rapida_4: document.getElementById('mensagemRapida4').value,
+            mensagem_rapida_5: document.getElementById('mensagemRapida5').value,
+            tempo_resposta_automatica: parseInt(document.getElementById('tempoRespostaAutomatica').value),
+            ativar_mensagem_boas_vindas: document.getElementById('ativarBoasVindas').checked,
+            ativar_mensagem_finalizacao: document.getElementById('ativarFinalizacao').checked,
+            ativar_mensagem_ausente: document.getElementById('ativarAusente').checked,
+            horario_atendimento_inicio: document.getElementById('horarioInicio').value,
+            horario_atendimento_fim: document.getElementById('horarioFim').value,
+            dias_atendimento: getSelectedDays(),
+            ativar_assinatura: document.getElementById('ativarAssinatura').checked,
+            notificar_nova_mensagem: document.getElementById('notificarNovaMensagem').checked,
+            notificar_mensagem_nao_lida: document.getElementById('notificarMensagemNaoLida').checked,
+            som_notificacao: document.getElementById('somNotificacao').value,
+            tema_interface: document.getElementById('temaInterface').value,
+            mostrar_online: document.getElementById('mostrarOnline').checked,
+            mostrar_ultima_vez: document.getElementById('mostrarUltimaVez').checked
+        };
+
+        const response = await fetch('/api/whatsapp/config', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            mostrarNotificacao('Configurações salvas com sucesso!', 'success');
+            console.log('✅ Configurações salvas:', result);
+        } else {
+            const error = await response.json();
+            mostrarNotificacao('Erro ao salvar configurações: ' + error.error, 'error');
+            console.error('❌ Erro ao salvar:', error);
+        }
+    } catch (error) {
+        console.error('❌ Erro ao salvar configurações:', error);
+        mostrarNotificacao('Erro ao salvar configurações', 'error');
+    }
+}
+
+function mostrarNotificacao(mensagem, tipo = 'info') {
+    // Criar notificação Bootstrap
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${tipo} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${mensagem}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Remover automaticamente após 5 segundos
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

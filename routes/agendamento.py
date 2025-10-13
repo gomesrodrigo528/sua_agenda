@@ -52,6 +52,29 @@ def enviar_email(destinatario, assunto, mensagem, email_remetente, senha_remeten
         print(f"Erro inesperado ao enviar e-mail: {e}")
         raise e
 
+@agendamento_bp.route('/api/verificar-login-cliente', methods=['GET'])
+def verificar_login_cliente():
+    try:
+        if verificar_cliente_logado():
+            return jsonify({
+                "logado": True,
+                "cliente_id": request.cookies.get('cliente_id'),
+                "id_usuario_cliente": request.cookies.get('id_usuario_cliente'),
+                "id_empresa": request.cookies.get('id_empresa')
+            }), 200
+        else:
+            return jsonify({
+                "logado": False,
+                "error": "Cliente não está logado",
+                "cookies": {
+                    "cliente_id": request.cookies.get('cliente_id'),
+                    "id_usuario_cliente": request.cookies.get('id_usuario_cliente'),
+                    "id_empresa": request.cookies.get('id_empresa')
+                }
+            }), 401
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @agendamento_bp.route('/api/agendar-cliente', methods=['POST'])
 def agendar_cliente():
     print("=== INÍCIO DO AGENDAMENTO ===")

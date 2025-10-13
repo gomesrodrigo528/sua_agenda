@@ -91,6 +91,70 @@
         </div>
     </div>
 
+    <!-- Configurações WhatsApp -->
+    <div class="mb-4">
+        <h4>WhatsApp CRM:</h4>
+        <div class="mb-3">
+            <label class="form-label">Status da Conexão</label>
+            <div id="whatsapp-status" class="form-control bg-light">
+                <span id="status-text">Verificando...</span>
+                <span id="status-indicator" class="badge ms-2"></span>
+            </div>
+        </div>
+        <div class="mb-3">
+            <button type="button" id="btn-conectar-whatsapp" class="btn btn-success me-2">
+                <i class="bi bi-whatsapp"></i> Conectar WhatsApp
+            </button>
+               <button type="button" id="btn-desconectar-whatsapp" class="btn btn-danger me-2" style="display: none;">
+                   <i class="bi bi-x-circle"></i> Desconectar
+               </button>
+               <button type="button" id="btn-limpar-conexoes" class="btn btn-warning me-2">
+                   <i class="bi bi-arrow-clockwise"></i> Limpar Conexões
+               </button>
+               <a href="/whatsapp" class="btn btn-primary">
+                   <i class="bi bi-chat-dots"></i> Abrir CRM
+               </a>
+        </div>
+        
+        <!-- Modal QR Code -->
+        <div class="modal fade" id="modalQrCode" tabindex="-1" aria-labelledby="modalQrCodeLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalQrCodeLabel">
+                            <i class="bi bi-whatsapp text-success"></i> Conectar WhatsApp
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="mb-3">Escaneie o QR Code com seu WhatsApp:</p>
+                        <div id="qr-code-container" class="mb-3">
+                            <div id="qr-loading" class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <div id="qr-code-display" style="display: none;"></div>
+                        </div>
+                        <div id="qr-instructions" class="alert alert-info">
+                            <small>
+                                <strong>Instruções:</strong><br>
+                                1. Abra o WhatsApp no seu celular<br>
+                                2. Toque em Menu > Dispositivos conectados<br>
+                                3. Toque em "Conectar um dispositivo"<br>
+                                4. Escaneie o QR Code acima
+                            </small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                        <button type="button" id="btn-refresh-qr" class="btn btn-primary">
+                            <i class="bi bi-arrow-clockwise"></i> Atualizar QR Code
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Informações da Assinatura -->
     <div class="mb-4">
         <h4>Informações da Assinatura:</h4>
@@ -109,6 +173,22 @@
 
 {% block page_scripts %}
 <script>
+// Configurações da API WhatsApp
+// Detectar se está em produção ou desenvolvimento
+const currentHost = window.location.hostname;
+const isProduction = currentHost === 'www.suaagenda.fun' || currentHost === 'suaagenda.fun';
+
+// FORÇAR USO DA API DE PRODUÇÃO PARA TESTES
+// Remover esta linha quando não precisar mais testar com a API de produção
+const FORCE_PRODUCTION_API = true;
+
+const WHATSAPP_API_URL = (isProduction || FORCE_PRODUCTION_API) ? 'https://api.suaagenda.fun' : `http://${currentHost}:3000`;
+
+console.log('🌐 Host atual:', currentHost);
+console.log('🏭 Ambiente:', isProduction ? 'PRODUÇÃO' : 'DESENVOLVIMENTO');
+console.log('🔧 Forçar API de produção:', FORCE_PRODUCTION_API);
+console.log('🔗 URL da API WhatsApp:', WHATSAPP_API_URL);
+
 // Garantir que o valor da cor esteja no formato correto
 document.addEventListener('DOMContentLoaded', function() {
     const corInput = document.getElementById('cor_emp');
@@ -126,6 +206,452 @@ document.addEventListener('DOMContentLoaded', function() {
             cor = '#' + cor;
         }
         this.value = cor;
+    });
+
+    // ============= WHATSAPP CONFIGURAÇÕES =============
+    
+    // Elementos do DOM
+    const btnConectar = document.getElementById('btn-conectar-whatsapp');
+    const btnDesconectar = document.getElementById('btn-desconectar-whatsapp');
+    const statusText = document.getElementById('status-text');
+    const statusIndicator = document.getElementById('status-indicator');
+    const modalQrCode = document.getElementById('modalQrCode');
+    const qrLoading = document.getElementById('qr-loading');
+    const qrDisplay = document.getElementById('qr-code-display');
+    const btnRefreshQr = document.getElementById('btn-refresh-qr');
+
+    // Verificar status inicial
+    verificarStatusWhatsApp();
+    
+    // Polling para verificar mudanças de status
+    let statusPollingInterval = null;
+    
+    function iniciarPollingStatus() {
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+        }
+        
+        statusPollingInterval = setInterval(async () => {
+            try {
+                // CHAMAR DIRETAMENTE O NODE.JS
+                const response = await fetch(`${WHATSAPP_API_URL}/status`);
+                if (response.ok) {
+                    const data = await response.json();
+                    // Verificar se há conexão para alguma empresa
+                    const hasConnection = data.success && data.connections && Object.keys(data.connections).length > 0;
+                    const empresaId = getCookie('empresa_id') || '365';
+                    const connection = data.connections?.[empresaId];
+                    
+                    if (connection && connection.connected) {
+                        // Conexão estabelecida - parar polling e atualizar UI
+                        clearInterval(statusPollingInterval);
+                        statusPollingInterval = null;
+                        
+                        // Fechar modal se estiver aberto
+                        if (window.currentModal) {
+                            window.currentModal.hide();
+                        }
+                        
+                        // Atualizar status
+                        statusText.textContent = 'Conectado';
+                        statusIndicator.className = 'badge bg-success ms-2';
+                        statusIndicator.textContent = 'Conectado';
+                        btnConectar.style.display = 'none';
+                        btnDesconectar.style.display = 'inline-block';
+                        
+                        // Mostrar notificação de sucesso
+                        mostrarNotificacao('WhatsApp conectado com sucesso!', 'success');
+                        
+                        console.log('✅ WhatsApp conectado com sucesso!');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro no polling de status:', error);
+            }
+        }, 2000); // Verificar a cada 2 segundos
+    }
+    
+    function pararPollingStatus() {
+        if (statusPollingInterval) {
+            clearInterval(statusPollingInterval);
+            statusPollingInterval = null;
+        }
+    }
+    
+    function mostrarNotificacao(mensagem, tipo = 'info') {
+        // Criar notificação Bootstrap
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${tipo} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alertDiv.innerHTML = `
+            ${mensagem}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        // Remover automaticamente após 5 segundos
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    // Event listeners
+    btnConectar.addEventListener('click', conectarWhatsApp);
+    btnDesconectar.addEventListener('click', desconectarWhatsApp);
+    btnRefreshQr.addEventListener('click', atualizarQrCode);
+    document.getElementById('btn-limpar-conexoes').addEventListener('click', limparConexoes);
+    
+    // Limpar referência do modal quando fechado
+    modalQrCode.addEventListener('hidden.bs.modal', function () {
+        window.currentModal = null;
+    });
+
+    // Verificar status a cada 5 segundos
+    setInterval(verificarStatusWhatsApp, 5000);
+
+    // Função para verificar status do WhatsApp
+    async function verificarStatusWhatsApp() {
+        try {
+            // Obter ID da empresa
+            let empresaId = getCookie('empresa_id') || 
+                           localStorage.getItem('id_empresa') || 
+                           getCookie('id_empresa') || 
+                           document.querySelector('meta[name="empresa-id"]')?.getAttribute('content');
+            
+            if (!empresaId) {
+                empresaId = '1'; // ID padrão para teste
+            }
+            
+            console.log('🔍 Verificando status para empresa:', empresaId);
+            // CHAMAR DIRETAMENTE O NODE.JS, NÃO O FLASK!
+            const response = await fetch(`${WHATSAPP_API_URL}/status`);
+            const data = await response.json();
+            console.log('🔍 Status response do Node.js:', data);
+            
+            // Verificar se há conexão ativa para esta empresa
+            if (data.success && data.connections) {
+                const connection = data.connections[empresaId];
+                console.log(`🔍 Conexão para empresa ${empresaId}:`, connection);
+                
+                if (connection && connection.connected) {
+                    const userName = connection.user ? connection.user.name : 'Usuário';
+                    statusText.textContent = `Conectado como: ${userName}`;
+                    statusIndicator.className = 'badge bg-success ms-2';
+                    statusIndicator.textContent = 'Conectado';
+                    btnConectar.style.display = 'none';
+                    btnDesconectar.style.display = 'inline-block';
+                } else {
+                    statusText.textContent = 'Desconectado';
+                    statusIndicator.className = 'badge bg-danger ms-2';
+                    statusIndicator.textContent = 'Desconectado';
+                    btnConectar.style.display = 'inline-block';
+                    btnDesconectar.style.display = 'none';
+                }
+            } else {
+                statusText.textContent = 'Desconectado';
+                statusIndicator.className = 'badge bg-danger ms-2';
+                statusIndicator.textContent = 'Desconectado';
+                btnConectar.style.display = 'inline-block';
+                btnDesconectar.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Erro ao verificar status:', error);
+            statusText.textContent = 'Erro ao verificar status';
+            statusIndicator.className = 'badge bg-warning ms-2';
+            statusIndicator.textContent = 'Erro';
+        }
+    }
+
+    // Função para conectar WhatsApp
+    async function conectarWhatsApp() {
+        try {
+            // Obter ID da empresa de múltiplas fontes
+            let empresaId = getCookie('empresa_id') || 
+                           localStorage.getItem('id_empresa') || 
+                           getCookie('id_empresa') || 
+                           document.querySelector('meta[name="empresa-id"]')?.getAttribute('content');
+            
+            // Se ainda não encontrou, tentar obter via API
+            if (!empresaId) {
+                try {
+                    const response = await fetch('/api/empresa/logada');
+                    const data = await response.json();
+                    if (data.id) {
+                        empresaId = data.id;
+                        localStorage.setItem('id_empresa', empresaId);
+                    }
+                } catch (e) {
+                    console.warn('Não foi possível obter ID da empresa via API');
+                }
+            }
+            
+            // Fallback para ID padrão se ainda não encontrou
+            if (!empresaId) {
+                empresaId = '1'; // ID padrão para teste
+                console.warn('Usando ID de empresa padrão:', empresaId);
+            }
+            
+            console.log('🔍 DEBUG - ID da empresa:', empresaId);
+            console.log('🔍 DEBUG - localStorage:', localStorage.getItem('id_empresa'));
+            console.log('🔍 DEBUG - Cookie:', getCookie('id_empresa'));
+            console.log('🔍 DEBUG - Meta tag:', document.querySelector('meta[name="empresa-id"]')?.getAttribute('content'));
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(modalQrCode);
+            modal.show();
+            
+            // Armazenar referência do modal para uso posterior
+            window.currentModal = modal;
+            
+            // Iniciar conexão
+            console.log(`📞 Iniciando conexão para ${WHATSAPP_API_URL}/connect/${empresaId}`);
+            const response = await fetch(`${WHATSAPP_API_URL}/connect/${empresaId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            console.log(`📊 Resposta do servidor:`, response.status, response.statusText);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log(`✅ Conexão iniciada:`, data);
+                
+                // Aguardar QR Code
+                aguardarQrCode(empresaId);
+                
+                // Iniciar polling para detectar conexão
+                iniciarPollingStatus();
+            } else {
+                const errorData = await response.text();
+                console.error(`❌ Erro na resposta:`, errorData);
+                throw new Error(`Erro ao iniciar conexão: ${response.status} - ${errorData}`);
+            }
+        } catch (error) {
+            console.error('❌ Erro ao conectar:', error);
+            alert(`Erro ao conectar WhatsApp: ${error.message}\n\nVerifique se o servidor Baileys está rodando em ${WHATSAPP_API_URL}`);
+        }
+    }
+
+    // Função para aguardar QR Code
+    async function aguardarQrCode(empresaId) {
+        console.log('Aguardando QR Code para empresa:', empresaId);
+        qrLoading.style.display = 'block';
+        qrDisplay.style.display = 'none';
+        
+        // Polling para verificar QR Code
+        const interval = setInterval(async () => {
+            try {
+                console.log('Verificando QR Code para empresa:', empresaId);
+                const response = await fetch(`${WHATSAPP_API_URL}/qr/${empresaId}`);
+                const data = await response.json();
+                
+                console.log('Resposta do servidor QR:', data);
+                
+                if (data.qr) {
+                    console.log('QR Code encontrado:', data.qr.substring(0, 50) + '...');
+                    clearInterval(interval);
+                    exibirQrCode(data.qr);
+                } else if (data.connected) {
+                    console.log('Conexão estabelecida');
+                    clearInterval(interval);
+                    if (window.currentModal) {
+                        window.currentModal.hide();
+                    }
+                    verificarStatusWhatsApp();
+                } else {
+                    console.log('Aguardando QR Code...');
+                }
+            } catch (error) {
+                console.error('Erro ao verificar QR Code:', error);
+            }
+        }, 2000);
+
+        // Timeout após 60 segundos
+        setTimeout(() => {
+            clearInterval(interval);
+            if (qrLoading.style.display !== 'none') {
+                alert('Timeout ao gerar QR Code. Tente novamente.');
+                if (window.currentModal) {
+                    window.currentModal.hide();
+                }
+            }
+        }, 60000);
+    }
+
+    // Função para exibir QR Code
+    function exibirQrCode(qrData) {
+        qrLoading.style.display = 'none';
+        qrDisplay.style.display = 'block';
+        
+        console.log('🔍 DEBUG - QRCode disponível:', typeof QRCode);
+        console.log('🔍 DEBUG - QR Data:', qrData);
+        
+        // Verificar se a biblioteca está carregada
+        if (typeof QRCode === 'undefined') {
+            console.error('❌ Biblioteca QRCode não carregada, usando fallback');
+            // Fallback: usar API online para gerar QR Code
+            qrDisplay.innerHTML = `
+                <div class="text-center">
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrData)}" 
+                         alt="QR Code" 
+                         class="img-fluid border rounded"
+                         style="max-width: 256px;">
+                    <div class="mt-2">
+                        <small class="text-muted">QR Code gerado via API externa</small>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Usar biblioteca QR Code
+        qrDisplay.innerHTML = '';
+        QRCode.toCanvas(qrDisplay, qrData, {
+            width: 256,
+            height: 256,
+            color: {
+                dark: '#000000',
+                light: '#ffffff'
+            },
+            margin: 2,
+            errorCorrectionLevel: 'M'
+        }, function (error) {
+            if (error) {
+                console.error('Erro ao gerar QR Code:', error);
+                qrDisplay.innerHTML = `
+                    <div class="alert alert-warning">
+                        <strong>QR Code:</strong><br>
+                        <code>${qrData}</code><br>
+                        <small>Erro ao gerar QR Code visual</small>
+                    </div>
+                `;
+            } else {
+                console.log('✅ QR Code gerado com sucesso');
+            }
+        });
+    }
+
+    // Função para atualizar QR Code
+    function atualizarQrCode() {
+        // Obter ID da empresa
+        let empresaId = getCookie('empresa_id') || 
+                       localStorage.getItem('id_empresa') || 
+                       getCookie('id_empresa') || 
+                       document.querySelector('meta[name="empresa-id"]')?.getAttribute('content');
+        
+        if (!empresaId) {
+            empresaId = '1'; // ID padrão para teste
+        }
+        
+        aguardarQrCode(empresaId);
+    }
+
+    // Função para desconectar WhatsApp
+    async function desconectarWhatsApp() {
+        if (confirm('Tem certeza que deseja desconectar o WhatsApp?')) {
+            try {
+                // Obter ID da empresa
+                let empresaId = getCookie('empresa_id') || 
+                               localStorage.getItem('id_empresa') || 
+                               getCookie('id_empresa') || 
+                               document.querySelector('meta[name="empresa-id"]')?.getAttribute('content');
+                
+                if (!empresaId) {
+                    empresaId = '1'; // ID padrão para teste
+                }
+                
+                const response = await fetch(`${WHATSAPP_API_URL}/disconnect/${empresaId}`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    pararPollingStatus();
+                    // Aguardar um pouco para garantir que a desconexão foi processada
+                    setTimeout(() => {
+                        verificarStatusWhatsApp();
+                        mostrarNotificacao('WhatsApp desconectado com sucesso!', 'info');
+                    }, 1000);
+                } else {
+                    throw new Error('Erro ao desconectar');
+                }
+            } catch (error) {
+                console.error('Erro ao desconectar:', error);
+                alert('Erro ao desconectar WhatsApp.');
+            }
+        }
+    }
+
+    // Função para limpar todas as conexões
+    async function limparConexoes() {
+        if (confirm('Tem certeza que deseja limpar todas as conexões WhatsApp? Isso forçará uma nova autenticação.')) {
+            try {
+                const response = await fetch(`${WHATSAPP_API_URL}/clear-all`, {
+                    method: 'POST'
+                });
+                
+                if (response.ok) {
+                    pararPollingStatus();
+                    // Aguardar um pouco para garantir que a limpeza foi processada
+                    setTimeout(() => {
+                        verificarStatusWhatsApp();
+                        mostrarNotificacao('Todas as conexões foram limpas! Agora você pode conectar novamente.', 'warning');
+                    }, 1000);
+                } else {
+                    throw new Error('Erro ao limpar conexões');
+                }
+            } catch (error) {
+                console.error('Erro ao limpar conexões:', error);
+                alert('Erro ao limpar conexões WhatsApp.');
+            }
+        }
+    }
+
+    // Função auxiliar para obter cookie
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+
+    // Debug completo dos cookies
+    function debugCookies() {
+        console.log('🍪 DEBUG - Todos os cookies:', document.cookie);
+        console.log('🍪 DEBUG - empresa_id:', getCookie('empresa_id'));
+        console.log('🍪 DEBUG - id_empresa:', getCookie('id_empresa'));
+        console.log('🍪 DEBUG - localStorage id_empresa:', localStorage.getItem('id_empresa'));
+        console.log('🍪 DEBUG - Meta tag empresa-id:', document.querySelector('meta[name="empresa-id"]')?.getAttribute('content'));
+    }
+
+    // Executar debug na inicialização
+    debugCookies();
+    
+    // Verificar se QRCode está disponível
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🔍 DEBUG - QRCode após DOM carregado:', typeof QRCode);
+        
+        // Aguardar um pouco para garantir que todos os scripts carregaram
+        setTimeout(function() {
+            console.log('🔍 DEBUG - QRCode após timeout:', typeof QRCode);
+            if (typeof QRCode === 'undefined') {
+                console.warn('⚠️ QRCode não disponível, tentando recarregar...');
+                // Tentar recarregar a biblioteca
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
+                script.onload = function() {
+                    console.log('✅ QRCode recarregado com sucesso');
+                };
+                script.onerror = function() {
+                    console.error('❌ Falha ao recarregar QRCode');
+                };
+                document.head.appendChild(script);
+            }
+        }, 1000);
     });
 });
 </script>

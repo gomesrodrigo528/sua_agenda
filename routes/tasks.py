@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for
 from supabase_config import supabase
+from utils.empresa_helper import EmpresaHelper
 import os
 import time
 import threading
@@ -15,25 +16,27 @@ loop_started = False
 
 def update_dias_restantes():
     try:
-        # Busca todas as linhas da tabela "empresa"
-        response = supabase.table('empresa').select('*').execute()
+        # Busca todas as linhas da tabela "config_emp"
+        response = supabase.table('config_emp').select('*').execute()
 
         # Verificando se a resposta contém dados
         if response.data is None:
             pass
         else:
-            empresas = response.data
+            configs = response.data
 
             # Atualiza o valor de "dias_restantes" para cada linha
-            for empresa in empresas:
-                dias_restantes = empresa.get('dias_restantes', 0)
+            for config in configs:
+                dias_restantes = config.get('dias_restantes', 0)
+                empresa_id = config.get('id_empresa')
+                
                 if dias_restantes > 0:
                     novo_valor = dias_restantes - 1  # Subtrai um dia
                     # Atualiza a coluna "dias_restantes" com o novo valor
-                    supabase.table('empresa').update({'dias_restantes': novo_valor}).eq('id', empresa['id']).execute()
+                    EmpresaHelper.atualizar_config_empresa(empresa_id, {'dias_restantes': novo_valor})
                 else:
                     # Se os dias_restantes forem 0, altera 'acesso' para False
-                    supabase.table('empresa').update({'acesso': False}).eq('id', empresa['id']).execute()
+                    EmpresaHelper.atualizar_config_empresa(empresa_id, {'acesso': False})
 
     except Exception as e:
         print("Erro durante a atualização:", str(e))
@@ -46,14 +49,21 @@ def loop_update_dias_restantes():
         return  # Evita que o loop seja iniciado novamente
 
     loop_started = True
+    
+    # Aguarda 1 hora antes da primeira execução para evitar execução imediata no restart
+    print("⏰ Aguardando 1 hora antes da primeira verificação de dias restantes...")
+    time.sleep(3600)  # 3600 segundos = 1 hora
 
     while True:
         try:
+            print("🔄 Executando verificação de dias restantes...")
             update_dias_restantes()  # Chama a função para atualizar os dias restantes
+            print("✅ Verificação de dias restantes concluída")
         except Exception as e:
-            print(f"Erro ao executar a atualização: {e}")
+            print(f"❌ Erro ao executar a atualização: {e}")
 
         # Aguarda 1 dia antes de rodar novamente
+        print("⏰ Aguardando 24 horas para próxima verificação...")
         time.sleep(86400)  #86400 segundos = 1 dia
 
 

@@ -6,6 +6,7 @@ from datetime import timedelta
 
 from supabase_config import supabase
 from utils.security import PasswordManager, EmailValidator
+from utils.empresa_helper import EmpresaHelper
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -45,13 +46,13 @@ def login():
             if senha_banco != senha:
                 return jsonify(success=False, message='Senha incorreta. Tente novamente.'), 401
 
-        # Buscar dados da empresa, incluindo o campo 'acesso'
+        # Buscar dados da empresa usando helper
         empresa_id = usuario_data.data['id_empresa']
-        empresa_data = supabase.table('empresa').select('id, nome_empresa, acesso').eq('id', empresa_id).single().execute()
-        if not empresa_data.data:
+        empresa_data = EmpresaHelper.obter_empresa_completa(empresa_id)
+        if not empresa_data:
             return jsonify(success=False, message='Empresa não encontrada.'), 404
 
-        if not empresa_data.data.get('acesso', True):
+        if not empresa_data.get('acesso', True):
             # Setar cookies mesmo com acesso bloqueado
             resp = make_response(jsonify(success=False, bloqueio=True, message='Seu acesso está bloqueado. É necessário renovar seu plano para continuar usando o sistema.'))
             resp.set_cookie('user_id', str(usuario_data.data['id']), max_age=timedelta(days=30))
