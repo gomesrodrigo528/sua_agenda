@@ -1,12 +1,27 @@
 
 services:
   - type: web
-    name: agenda-flask
+    name: sua-agenda-flask
     env: python
-    buildCommand: ""
-    startCommand: gunicorn -b 0.0.0.0:$PORT main:app  # A aplicação 'app' é no arquivo 'main.py' dentro de 'backend'
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -b 0.0.0.0:$PORT main:app --workers 4 --threads 2 --timeout 120 --keepalive 2
     autoDeploy: true
     envVars:
       - key: FLASK_ENV
         value: production
-    runtime: python3.9
+      - key: FLASK_DEBUG
+        value: False
+      - key: GUNICORN_WORKERS
+        value: 4
+      - key: GUNICORN_THREADS
+        value: 2
+      - key: GUNICORN_TIMEOUT
+        value: 120
+      - key: LOG_LEVEL
+        value: INFO
+    runtime: python3.11
+    disk:
+      name: flask-uploads
+      mountPath: /opt/render/project/src/static/uploads
+      sizeGB: 1

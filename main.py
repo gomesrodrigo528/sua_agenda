@@ -1,5 +1,11 @@
 from flask import Flask, redirect, url_for
 from config import Config
+from dotenv import load_dotenv
+import os
+from datetime import datetime
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 # Iniciar o agendador
 from waitress import serve
@@ -25,11 +31,15 @@ from routes.contas_receber import contas_receber_bp
 from routes.contas_pagar import contas_pagar_bp
 from routes.push import push_bp
 from routes.dashboard import dashboard_bp
+from routes.whatsapp import whatsapp_bp
 import os
 
 # Configuração do Flask
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Configurações adicionais para templates
+app.config['WHATSAPP_API_URL'] = os.getenv('WHATSAPP_API_URL', 'http://localhost:3000')
 
 # Validar variáveis de ambiente obrigatórias
 try:
@@ -62,10 +72,33 @@ app.register_blueprint(contas_receber_bp)
 app.register_blueprint(contas_pagar_bp)
 app.register_blueprint(push_bp)
 app.register_blueprint(dashboard_bp)
+app.register_blueprint(whatsapp_bp)
 
 @app.route("/")
 def inicio():
     return redirect(url_for('dashboard.dashboard'))
+
+@app.route("/health")
+def health_check():
+    """Endpoint de health check para o Render"""
+    return {
+        'status': 'healthy',
+        'service': 'sua-agenda-flask',
+        'timestamp': datetime.now().isoformat(),
+        'version': '1.0.0',
+        'environment': os.getenv('FLASK_ENV', 'development')
+    }
+
+@app.route("/render-health")
+def render_health_check():
+    """Endpoint específico para health check do Render"""
+    return {
+        'status': 'healthy',
+        'service': 'sua-agenda-flask',
+        'timestamp': datetime.now().isoformat(),
+        'uptime': 'running',
+        'environment': os.getenv('FLASK_ENV', 'development')
+    }
 
 
 #if __name__ == '__main__':
