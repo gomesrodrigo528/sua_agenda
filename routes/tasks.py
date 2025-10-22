@@ -51,19 +51,19 @@ def loop_update_dias_restantes():
     loop_started = True
     
     # Aguarda 1 hora antes da primeira execução para evitar execução imediata no restart
-    print("⏰ Aguardando 1 hora antes da primeira verificação de dias restantes...")
+    print("Aguardando 1 hora antes da primeira verificacao de dias restantes...")
     time.sleep(3600)  # 3600 segundos = 1 hora
 
     while True:
         try:
-            print("🔄 Executando verificação de dias restantes...")
+            print("Executando verificacao de dias restantes...")
             update_dias_restantes()  # Chama a função para atualizar os dias restantes
-            print("✅ Verificação de dias restantes concluída")
+            print("Verificacao de dias restantes concluida")
         except Exception as e:
-            print(f"❌ Erro ao executar a atualização: {e}")
+            print(f"Erro ao executar a atualizacao: {e}")
 
         # Aguarda 1 dia antes de rodar novamente
-        print("⏰ Aguardando 24 horas para próxima verificação...")
+        print("Aguardando 24 horas para proxima verificacao...")
         time.sleep(86400)  #86400 segundos = 1 dia
 
 

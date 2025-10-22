@@ -14,6 +14,17 @@ from email.mime.text import MIMEText
 # Criação do Blueprint
 agendamento_bp = Blueprint('agendamento_bp', __name__)
 
+# Função auxiliar para criar URLs amigáveis
+def criar_url_amigavel(nome_empresa):
+    """Converte o nome da empresa para uma URL amigável"""
+    import re
+    # Remover caracteres especiais e converter para minúsculas
+    url_amigavel = re.sub(r'[^a-zA-Z0-9\s]', '', nome_empresa)
+    # Substituir espaços por hífens
+    url_amigavel = re.sub(r'\s+', '-', url_amigavel.strip())
+    # Converter para minúsculas
+    return url_amigavel.lower()
+
 # Função auxiliar para verificar se o cliente está logado
 # NOVO: usa os cookies id_usuario_cliente, cliente_id, id_empresa
 def verificar_cliente_logado():
@@ -312,50 +323,109 @@ def agendar_cliente():
 @agendamento_bp.route('/api/empresas', methods=['GET'])
 def listar_empresas():
     try:
+        print("🔍 Iniciando busca de empresas...")
         nome_empresa = request.args.get('nome_empresa', '').strip()
         cidade = request.args.get('cidade', '').strip().lower()
-
         
+        print(f"📋 Parâmetros: nome_empresa='{nome_empresa}', cidade='{cidade}'")
 
         query = supabase.table("empresa").select(
-            "id, nome_empresa, logo, descricao, setor, horario, kids, acessibilidade, estacionamento, wifi, tel_empresa, cidade,endereco"
+            "id, nome_empresa, logo, descricao, setor, tel_empresa, cidade, endereco"
         ).eq("status", True)
 
-        # Adicionar filtro de cidade apenas se ela não for vazia
-      
-
         if nome_empresa:
+            print(f"🔍 Filtrando por nome: {nome_empresa}")
             query = query.ilike("nome_empresa", f"%{nome_empresa}%")
 
         if cidade:
-            query = query.ilike("cidade", cidade)  # Filtro de cidade
+            print(f"🔍 Filtrando por cidade: {cidade}")
+            query = query.ilike("cidade", f"%{cidade}%")
 
+        print("📡 Executando query no Supabase...")
         response = query.execute()
+        print(f"✅ Query executada com sucesso. {len(response.data)} empresas encontradas")
 
-     
+        # Adicionar URL amigável para cada empresa
+        empresas_com_url = []
+        for empresa in response.data:
+            empresa_dict = dict(empresa)
+            empresa_dict['url_amigavel'] = criar_url_amigavel(empresa['nome_empresa'])
+            empresas_com_url.append(empresa_dict)
 
-        return jsonify(response.data), 200  
+        return jsonify(empresas_com_url), 200  
 
     except Exception as e:
-        print(f"[ERRO] Falha ao buscar empresas: {e}")
-        return jsonify([]), 500  
+        print(f"❌ [ERRO] Falha ao buscar empresas: {e}")
+        print(f"❌ [ERRO] Tipo do erro: {type(e)}")
+        import traceback
+        print(f"❌ [ERRO] Traceback: {traceback.format_exc()}")
+        return jsonify({'error': str(e)}), 500  
 
+
+@agendamento_bp.route('/agendamento/<nome_empresa>')
+def pagina_empresa(nome_empresa):
+    """Rota amigável para acessar a página de agendamento de uma empresa específica pelo nome"""
+    try:
+        # Converter o nome da empresa de volta para formato normal (remover hífens e capitalizar)
+        nome_empresa_formatado = nome_empresa.replace('-', ' ').replace('_', ' ').title()
+        
+        print(f"🔍 Buscando empresa pelo nome: '{nome_empresa_formatado}'")
+        
+        # Buscar empresa pelo nome
+        response = supabase.table("empresa").select(
+            "id, nome_empresa, logo, descricao, setor, tel_empresa, cidade, endereco"
+        ).eq("status", True).ilike("nome_empresa", f"%{nome_empresa_formatado}%").execute()
+        
+        if not response.data:
+            # Se não encontrar, tentar busca exata
+            response = supabase.table("empresa").select(
+                "id, nome_empresa, logo, descricao, setor, tel_empresa, cidade, endereco"
+            ).eq("status", True).eq("nome_empresa", nome_empresa_formatado).execute()
+        
+        if not response.data:
+            print(f"❌ Empresa '{nome_empresa_formatado}' não encontrada")
+            # Redirecionar para página de erro ou lista de empresas
+            return redirect(url_for('agendamento_bp.agendamento'))
+        
+        empresa = response.data[0]
+        print(f"✅ Empresa encontrada: {empresa['nome_empresa']} (ID: {empresa['id']})")
+        
+        # Renderizar a página de agendamento com os dados da empresa pré-selecionada
+        return render_template('agendamento_cli.html', 
+                             empresa_selecionada=empresa,
+                             auto_select_empresa=True)
+        
+    except Exception as e:
+        print(f"❌ Erro ao buscar empresa pelo nome: {e}")
+        # Em caso de erro, redirecionar para a página principal
+        return redirect(url_for('agendamento_bp.pagina_agendamento'))
 
 @agendamento_bp.route('/api/empresa/<int:empresa_id>', methods=['GET'])
 def obter_empresa(empresa_id):
     try:
-        # Busca os detalhes da empresa com o ID especificado
-        response = supabase.table("empresa").select("id, nome_empresa, logo, descricao, setor, horario, kids, acessibilidade, estacionamento, wifi, tel_empresa,endereco").eq("id", empresa_id).execute()
+        print(f"🔍 Buscando empresa ID: {empresa_id}")
+        
+        # Busca os detalhes da empresa com o ID especificado (apenas colunas existentes)
+        response = supabase.table("empresa").select(
+            "id, nome_empresa, logo, descricao, setor, tel_empresa, cidade, endereco"
+        ).eq("id", empresa_id).execute()
+
+        print(f"📡 Query executada. Dados encontrados: {len(response.data)}")
 
         # Verifica se a empresa foi encontrada
         if not response.data:
+            print(f"❌ Empresa ID {empresa_id} não encontrada")
             return jsonify({"error": "Empresa não encontrada"}), 404
 
+        print(f"✅ Empresa encontrada: {response.data[0]['nome_empresa']}")
         return jsonify(response.data[0]), 200  # Retorna os dados da empresa como JSON
 
     except Exception as e:
-        print(f"Erro ao buscar informações da empresa: {e}")
-        return jsonify({"error": "Erro ao buscar informações da empresa"}), 500
+        print(f"❌ Erro ao buscar informações da empresa: {e}")
+        print(f"❌ Tipo do erro: {type(e)}")
+        import traceback
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return jsonify({"error": str(e)}), 500
 
 @agendamento_bp.route('/api/servicos/detalhes/<int:servico_id>', methods=['GET'])
 def obter_servico_detalhes(servico_id):

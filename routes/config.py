@@ -28,6 +28,14 @@ def configuracao_empresa():
         return redirect(url_for('login.login'))  # Redireciona para a página de login
 
     empresa = response.data[0]
+    
+    # Busca as configurações da empresa
+    config_response = supabase.table("config_emp").select("*").eq("id_empresa", empresa_id).execute()
+    config = config_response.data[0] if config_response.data else {}
+    
+    # Mescla os dados da empresa com as configurações
+    empresa.update(config)
+    
     return render_template('configuracao.html', empresa=empresa)
 
 # Rota para atualizar os dados da empresa
@@ -39,30 +47,53 @@ def atualizar_configuracao():
 
     empresa_id = request.cookies.get('empresa_id')
 
-    # Dados enviados pelo formulário
-    dados_atualizados = {
+    # Separar dados da empresa das configurações
+    dados_empresa = {
+        "endereco": request.form.get("endereco"),
+        "cep": request.form.get("cep"),
+        "cidade": request.form.get("cidade"),
+        "setor": request.form.get("setor"),
+        "tel_empresa": request.form.get("tel_empresa"),
+        "status": request.form.get("status") == 'on' if request.form.get("status") else True,
+        "descricao": request.form.get("descricao")
+    }
+
+    # Remover campos vazios
+    dados_empresa = {k: v for k, v in dados_empresa.items() if v is not None and v != ''}
+
+    dados_config = {
         "kids": request.form.get("kids") == 'on',
         "estacionamento": request.form.get("estacionamento") == 'on',
         "wifi": request.form.get("wifi") == 'on',
         "acessibilidade": request.form.get("acessibilidade") == 'on',
         "horario": request.form.get("horario"),
-        "endereco": request.form.get("endereco"),
-        "cep": request.form.get("cep"),
-        "cidade": request.form.get("cidade"),
-        "setor" : request.form.get("setor"),
-        "tel_empresa": request.form.get("tel_empresa"),
-        "status": request.form.get("status"),
-        "descricao": request.form.get("descricao"),
         "cor_emp": request.form.get("cor")
     }
 
+    # Remover campos vazios das configurações
+    dados_config = {k: v for k, v in dados_config.items() if v is not None and v != ''}
+
     try:
-        # Atualiza os dados no banco de dados
-        response = supabase.table("empresa").update(dados_atualizados).eq("id", empresa_id).execute()
-        if response.status_code == 204:
-            flash('Configurações atualizadas com sucesso!', 'success')
+        # Atualizar dados da empresa
+        if dados_empresa:
+            response_empresa = supabase.table("empresa").update(dados_empresa).eq("id", empresa_id).execute()
+            print(f"Empresa atualizada: {response_empresa.data}")
+
+        # Verificar se existe configuração para a empresa
+        config_existente = supabase.table("config_emp").select("*").eq("id_empresa", empresa_id).execute()
+        
+        if config_existente.data:
+            # Atualizar configuração existente
+            if dados_config:
+                response_config = supabase.table("config_emp").update(dados_config).eq("id_empresa", empresa_id).execute()
+                print(f"Configuração atualizada: {response_config.data}")
         else:
-            flash('Erro ao atualizar configurações.', 'danger')
+            # Criar nova configuração
+            dados_config['id_empresa'] = empresa_id
+            response_config = supabase.table("config_emp").insert(dados_config).execute()
+            print(f"Nova configuração criada: {response_config.data}")
+
+        flash('Configurações atualizadas com sucesso!', 'success')
     except Exception as e:
         print(f"Erro ao atualizar configurações: {e}")
         flash('Erro ao atualizar configurações.', 'danger')
@@ -91,4 +122,3 @@ def dias_restantes():
 def get_dias_restantes():
     dias = dias_restantes()  # Agora não precisa passar o empresa_id
     return jsonify({"dias_restantes": dias})
-

@@ -28,8 +28,17 @@ WHATSAPP_API_URL_PRODUCTION = os.getenv('WHATSAPP_API_URL_PRODUCTION', 'https://
 # Usar URL de produção se estiver em produção
 def get_whatsapp_api_url():
     """Retorna a URL da API do WhatsApp baseada no ambiente"""
-    if os.getenv('FLASK_ENV') == 'production':
+    # Se a URL de produção estiver configurada e for diferente da URL de desenvolvimento, usar produção
+    if WHATSAPP_API_URL_PRODUCTION and WHATSAPP_API_URL_PRODUCTION != 'http://localhost:3000':
+        try:
+            print(f"🔗 [FLASK] Usando WHATSAPP_API_URL_PRODUCTION: {WHATSAPP_API_URL_PRODUCTION}")
+        except Exception:
+            pass
         return WHATSAPP_API_URL_PRODUCTION
+    try:
+        print(f"🔗 [FLASK] Usando WHATSAPP_API_URL (dev): {WHATSAPP_API_URL}")
+    except Exception:
+        pass
     return WHATSAPP_API_URL
 
 whatsapp_bp = Blueprint('whatsapp', __name__)
@@ -201,7 +210,7 @@ def get_or_create_whatsapp_user(empresa_id, phone, profile_name=None, profile_pi
         return None
 
 def get_chat_by_user_id(empresa_id, user_id):
-    """Busca o chat de um usuário"""
+    """Busca o chat de um usuário ou cria um novo se não existir"""
     try:
         chat_response = supabase.table('whatsapp_chats').select('*').eq('id_empresa', empresa_id).eq('user_id', user_id).execute()
         
@@ -211,10 +220,39 @@ def get_chat_by_user_id(empresa_id, user_id):
             return chat
         else:
             print(f"❌ Chat não encontrado para user_id={user_id}, empresa_id={empresa_id}")
-            return None
+            # Criar novo chat
+            return create_new_chat(empresa_id, user_id)
             
     except Exception as e:
         print(f"❌ Erro ao buscar chat: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def create_new_chat(empresa_id, user_id):
+    """Cria um novo chat para um usuário"""
+    try:
+        chat_data = {
+            'id_empresa': empresa_id,
+            'user_id': user_id,
+            'status': 'aguardando',
+            'mensagens_nao_lidas': 0,
+            'ultima_atualizacao': datetime.now().isoformat()
+        }
+        
+        print(f"🆕 Criando novo chat para user_id={user_id}, empresa_id={empresa_id}")
+        chat_response = supabase.table('whatsapp_chats').insert(chat_data).execute()
+        
+        if chat_response.data:
+            chat = chat_response.data[0]
+            print(f"✅ Chat criado com ID: {chat['id']}")
+            return chat
+        else:
+            print(f"❌ Erro ao criar chat no banco")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Erro ao criar chat: {e}")
         import traceback
         traceback.print_exc()
         return None

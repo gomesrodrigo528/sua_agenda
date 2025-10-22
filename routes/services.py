@@ -108,7 +108,7 @@ def listar_usuarios():
 
 
 
-@services_bp.route('/sevicos/listar')
+@services_bp.route('/servicos/listar')
 def listar_servicos():
     try:
         empresa_id = request.cookies.get('empresa_id')
