@@ -4,6 +4,14 @@ let empresaIdAtual = null;
 // Variável global para o carrinho
 let carrinho = [];
 
+// Função global para obter cookies
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
 // Funções para gerenciar popups
 function mostrarPopup(tipo, mensagem, titulo = null, callback = null) {
     const popup = document.getElementById(`popup-${tipo}`);
