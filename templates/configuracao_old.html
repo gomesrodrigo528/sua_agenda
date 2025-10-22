@@ -3,258 +3,136 @@
 {% block title %}Configurações - Sua Agenda{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0">
-                    <i class="bi bi-gear-fill text-primary me-2"></i>
-                    Configurações da Empresa
-                </h1>
-                <button type="submit" form="configForm" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-2"></i>
-                    Salvar Alterações
+<form action="{{ url_for('config.atualizar_configuracao') }}" method="POST" class="p-4 border rounded shadow">
+    <h2 class="text-center mb-4">Perfil da Empresa</h2>
+    
+    <!-- Checkboxes -->
+    <div class="mb-4">
+        <h4>Opções:</h4>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="kids" name="kids" {% if empresa.kids %}checked{% endif %}>
+            <label class="form-check-label" for="kids">Kids</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="estacionamento" name="estacionamento" {% if empresa.estacionamento %}checked{% endif %}>
+            <label class="form-check-label" for="estacionamento">Estacionamento</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="wifi" name="wifi" {% if empresa.wifi %}checked{% endif %}>
+            <label class="form-check-label" for="wifi">Wi-Fi</label>
+        </div>
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="acessibilidade" name="acessibilidade" {% if empresa.acessibilidade %}checked{% endif %}>
+            <label class="form-check-label" for="acessibilidade">Acessibilidade</label>
+        </div>
+    </div>
+
+    <!-- Informações da Empresa -->
+    <div class="mb-4">
+        <h4>Informações da Empresa:</h4>
+        <div class="mb-3">
+            <label for="nome_empresa" class="form-label">Nome da Empresa</label>
+            <input type="text" class="form-control" id="nome_empresa" name="nome_empresa" value="{{ empresa.nome_empresa if empresa.nome_empresa else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="cnpj" class="form-label">CNPJ</label>
+            <input type="text" class="form-control" id="cnpj" name="cnpj" value="{{ empresa.cnpj if empresa.cnpj else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="setor" class="form-label">Setor</label>
+            <input type="text" class="form-control" id="setor" name="setor" value="{{ empresa.setor if empresa.setor else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="descricao" class="form-label">Descrição</label>
+            <textarea class="form-control" id="descricao" name="descricao" rows="3">{{ empresa.descricao if empresa.descricao else '' }}</textarea>
+        </div>
+        <div class="mb-3">
+            <label for="horario" class="form-label">Horário de Funcionamento</label>
+            <input type="text" class="form-control" id="horario" name="horario" value="{{ empresa.horario if empresa.horario else '' }}">
+        </div>
+    </div>
+
+    <!-- Informações de Contato -->
+    <div class="mb-4">
+        <h4>Informações de Contato:</h4>
+        <div class="mb-3">
+            <label for="tel_empresa" class="form-label">Telefone</label>
+            <input type="tel" class="form-control" id="tel_empresa" name="tel_empresa" value="{{ empresa.tel_empresa if empresa.tel_empresa else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="email_empresa" class="form-label">E-mail</label>
+            <input type="email" class="form-control" id="email_empresa" name="email_empresa" value="{{ empresa.email_empresa if empresa.email_empresa else '' }}">
+        </div>
+    </div>
+
+    <!-- Endereço -->
+    <div class="mb-4">
+        <h4>Endereço:</h4>
+        <div class="mb-3">
+            <label for="cep" class="form-label">CEP</label>
+            <input type="text" class="form-control" id="cep" name="cep" value="{{ empresa.cep if empresa.cep else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="endereco" class="form-label">Endereço</label>
+            <input type="text" class="form-control" id="endereco" name="endereco" value="{{ empresa.endereco if empresa.endereco else '' }}">
+        </div>
+        <div class="mb-3">
+            <label for="cidade" class="form-label">Cidade</label>
+            <input type="text" class="form-control" id="cidade" name="cidade" value="{{ empresa.cidade if empresa.cidade else '' }}">
+        </div>
+    </div>
+
+    <!-- URL Amigável para Agendamento -->
+    <div class="mb-4">
+        <h4>🔗 Link de Agendamento:</h4>
+        <div class="mb-3">
+            <label for="url_agendamento" class="form-label">URL para compartilhar no WhatsApp</label>
+            <div class="input-group">
+                <input type="text" class="form-control" id="url_agendamento" readonly 
+                       value="https://www.suaagenda.fun/agendamento/{{ empresa.nome_empresa|lower|replace(' ', '-')|replace('_', '-') if empresa.nome_empresa else 'sua-empresa' }}">
+                <button class="btn btn-outline-secondary" type="button" onclick="copiarUrlAgendamento()">
+                    <i class="bi bi-clipboard"></i> Copiar
                 </button>
             </div>
+            <small class="form-text text-muted">
+                📱 Use este link em mensagens rápidas do WhatsApp para que clientes possam agendar diretamente
+            </small>
         </div>
     </div>
 
-    <form id="configForm" action="{{ url_for('config.atualizar_configuracao') }}" method="POST">
-    
-    <div class="row">
-        <!-- Seção 1: Informações Básicas da Empresa -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-building me-2"></i>
-                        Informações Básicas
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="nome_empresa" class="form-label">Nome da Empresa</label>
-                        <input type="text" class="form-control" id="nome_empresa" name="nome_empresa" value="{{ empresa.nome_empresa if empresa.nome_empresa else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="cnpj" class="form-label">CNPJ</label>
-                        <input type="text" class="form-control" id="cnpj" name="cnpj" value="{{ empresa.cnpj if empresa.cnpj else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="setor" class="form-label">Setor</label>
-                        <input type="text" class="form-control" id="setor" name="setor" value="{{ empresa.setor if empresa.setor else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        <textarea class="form-control" id="descricao" name="descricao" rows="3">{{ empresa.descricao if empresa.descricao else '' }}</textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="horario" class="form-label">Horário de Funcionamento</label>
-                        <input type="text" class="form-control" id="horario" name="horario" value="{{ empresa.horario if empresa.horario else '' }}">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Seção 2: Contato e Endereço -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-info text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-geo-alt me-2"></i>
-                        Contato e Localização
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="tel_empresa" class="form-label">Telefone</label>
-                        <input type="tel" class="form-control" id="tel_empresa" name="tel_empresa" value="{{ empresa.tel_empresa if empresa.tel_empresa else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="email_empresa" class="form-label">E-mail</label>
-                        <input type="email" class="form-control" id="email_empresa" name="email_empresa" value="{{ empresa.email_empresa if empresa.email_empresa else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="cep" class="form-label">CEP</label>
-                        <input type="text" class="form-control" id="cep" name="cep" value="{{ empresa.cep if empresa.cep else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="endereco" class="form-label">Endereço</label>
-                        <input type="text" class="form-control" id="endereco" name="endereco" value="{{ empresa.endereco if empresa.endereco else '' }}">
-                    </div>
-                    <div class="mb-3">
-                        <label for="cidade" class="form-label">Cidade</label>
-                        <input type="text" class="form-control" id="cidade" name="cidade" value="{{ empresa.cidade if empresa.cidade else '' }}">
-                    </div>
-                </div>
-            </div>
+    <!-- Personalização -->
+    <div class="mb-4">
+        <h4>Personalização:</h4>
+        <div class="mb-3">
+            <label for="cor_emp" class="form-label">Cor do Tema</label>
+            <input type="color" class="form-control" id="cor_emp" name="cor_emp" value="{{ empresa.cor_emp if empresa.cor_emp else '#000000' }}">
         </div>
     </div>
 
-    <div class="row">
-        <!-- Seção 3: Serviços e Comodidades -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-star me-2"></i>
-                        Serviços e Comodidades
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="kids" name="kids" {% if empresa.kids %}checked{% endif %}>
-                                <label class="form-check-label" for="kids">
-                                    <i class="bi bi-emoji-smile text-warning me-1"></i>
-                                    Kids
-                                </label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="estacionamento" name="estacionamento" {% if empresa.estacionamento %}checked{% endif %}>
-                                <label class="form-check-label" for="estacionamento">
-                                    <i class="bi bi-car-front text-primary me-1"></i>
-                                    Estacionamento
-                                </label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="wifi" name="wifi" {% if empresa.wifi %}checked{% endif %}>
-                                <label class="form-check-label" for="wifi">
-                                    <i class="bi bi-wifi text-info me-1"></i>
-                                    Wi-Fi
-                                </label>
-                            </div>
-                            <div class="form-check mb-3">
-                                <input class="form-check-input" type="checkbox" id="acessibilidade" name="acessibilidade" {% if empresa.acessibilidade %}checked{% endif %}>
-                                <label class="form-check-label" for="acessibilidade">
-                                    <i class="bi bi-universal-access text-success me-1"></i>
-                                    Acessibilidade
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Configurações WhatsApp -->
+    <div class="mb-4">
+        <h4>WhatsApp CRM:</h4>
+        <div class="mb-3">
+            <label class="form-label">Status da Conexão</label>
+            <div id="whatsapp-status" class="form-control bg-light">
+                <span id="status-text">Verificando...</span>
+                <span id="status-indicator" class="badge ms-2"></span>
             </div>
         </div>
-
-        <!-- Seção 4: Personalização -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-palette me-2"></i>
-                        Personalização
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="cor" class="form-label">Cor do Tema</label>
-                        <div class="d-flex align-items-center">
-                            <input type="color" class="form-control form-control-color me-3" id="cor" name="cor" value="{{ empresa.cor_emp if empresa.cor_emp else '#030413' }}" style="width: 60px; height: 40px;">
-                            <div class="flex-grow-1">
-                                <small class="text-muted">Escolha a cor principal da sua empresa para personalizar o sistema</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="mb-3">
+            <button type="button" id="btn-conectar-whatsapp" class="btn btn-success me-2">
+                <i class="bi bi-whatsapp"></i> Conectar WhatsApp
+            </button>
+               <button type="button" id="btn-desconectar-whatsapp" class="btn btn-danger me-2" style="display: none;">
+                   <i class="bi bi-x-circle"></i> Desconectar
+               </button>
+               <button type="button" id="btn-limpar-conexoes" class="btn btn-warning me-2">
+                   <i class="bi bi-arrow-clockwise"></i> Limpar Conexões
+               </button>
+               <a href="/whatsapp" class="btn btn-primary">
+                   <i class="bi bi-chat-dots"></i> Abrir CRM
+               </a>
         </div>
-    </div>
-
-    <div class="row">
-        <!-- Seção 5: Link de Agendamento -->
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-link-45deg me-2"></i>
-                        Link de Agendamento
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label for="url_agendamento" class="form-label">URL para compartilhar no WhatsApp</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="url_agendamento" readonly 
-                                   value="https://www.suaagenda.fun/agendamento/{{ empresa.nome_empresa|lower|replace(' ', '-')|replace('_', '-') if empresa.nome_empresa else 'sua-empresa' }}">
-                            <button class="btn btn-outline-secondary" type="button" onclick="copiarUrlAgendamento()">
-                                <i class="bi bi-clipboard"></i> Copiar
-                            </button>
-                        </div>
-                        <small class="form-text text-muted">
-                            <i class="bi bi-whatsapp text-success me-1"></i>
-                            Use este link em mensagens rápidas do WhatsApp para que clientes possam agendar diretamente
-                        </small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Seção 6: Configurações WhatsApp -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-whatsapp me-2"></i>
-                        WhatsApp CRM
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Status da Conexão</label>
-                        <div id="whatsapp-status" class="form-control bg-light">
-                            <span id="status-text">Verificando...</span>
-                            <span id="status-indicator" class="badge ms-2"></span>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <button type="button" id="btn-conectar-whatsapp" class="btn btn-success me-2">
-                            <i class="bi bi-whatsapp"></i> Conectar WhatsApp
-                        </button>
-                        <button type="button" id="btn-desconectar-whatsapp" class="btn btn-danger me-2" style="display: none;">
-                            <i class="bi bi-x-circle"></i> Desconectar
-                        </button>
-                        <button type="button" id="btn-limpar-conexoes" class="btn btn-warning me-2">
-                            <i class="bi bi-arrow-clockwise"></i> Limpar Conexões
-                        </button>
-                        <a href="/whatsapp" class="btn btn-primary">
-                            <i class="bi bi-chat-dots"></i> Abrir CRM
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Seção 7: Informações da Assinatura -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-credit-card me-2"></i>
-                        Informações da Assinatura
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Dias Restantes</label>
-                        <div id="dias-restantes" class="form-control bg-light">{{ empresa.dias_restantes if empresa.dias_restantes is not none else 'Carregando...' }}</div>
-                    </div>
-                    <a href="/planos-renovacao" class="btn btn-success btn-lg w-100 mt-2" style="font-size: 1.2rem;">
-                        <i class="bi bi-arrow-repeat"></i> Renovar Plano
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    </form>
         
         <!-- Modal QR Code -->
         <div class="modal fade" id="modalQrCode" tabindex="-1" aria-labelledby="modalQrCodeLabel" aria-hidden="true">
@@ -307,7 +185,8 @@
         </a>
     </div>
 
-</div>
+    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+</form>
 {% endblock %}
 
 {% block page_scripts %}
@@ -317,8 +196,9 @@
 const currentHost = window.location.hostname;
 const isProduction = currentHost === 'www.suaagenda.fun' || currentHost === 'suaagenda.fun';
 
-// FORÇAR USO DA API DE PRODUÇÃO PARA TESTES (desativado)
-const FORCE_PRODUCTION_API = false;
+// FORÇAR USO DA API DE PRODUÇÃO PARA TESTES
+// Remover esta linha quando não precisar mais testar com a API de produção
+const FORCE_PRODUCTION_API = true;
 
 const WHATSAPP_API_URL = (isProduction || FORCE_PRODUCTION_API) ? 'https://api.suaagenda.fun' : `http://${currentHost}:3000`;
 
@@ -329,7 +209,7 @@ console.log('🔗 URL da API WhatsApp:', WHATSAPP_API_URL);
 
 // Garantir que o valor da cor esteja no formato correto
 document.addEventListener('DOMContentLoaded', function() {
-    const corInput = document.getElementById('cor');
+    const corInput = document.getElementById('cor_emp');
     
     // Garante que o valor inicial esteja no formato correto
     if (corInput.value && !corInput.value.startsWith('#')) {

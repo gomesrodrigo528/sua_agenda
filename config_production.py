@@ -3,9 +3,8 @@ Configurações específicas para produção
 """
 
 import os
-from config import Config
 
-class ProductionConfig(Config):
+class ProductionConfig:
     """Configurações para produção"""
     
     # Flask

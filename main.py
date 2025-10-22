@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for, request
 from config import Config
 from dotenv import load_dotenv
 import os
@@ -41,11 +41,20 @@ app.config.from_object(Config)
 # Configurações adicionais para templates
 app.config['WHATSAPP_API_URL'] = os.getenv('WHATSAPP_API_URL', 'http://localhost:3000')
 
-# Validar variáveis de ambiente obrigatórias
+# Logar a URL efetiva da API WhatsApp utilizada pelo Flask
 try:
-    Config.validate_required_env()
-except ValueError as e:
-    print(f"ERRO: {e}")
+    _dev_api = os.getenv('WHATSAPP_API_URL', 'http://localhost:3000')
+    _prod_api = os.getenv('WHATSAPP_API_URL_PRODUCTION', '')
+    _effective_api = _prod_api if (_prod_api and _prod_api != 'http://localhost:3000') else _dev_api
+    print(f"🔗 [FLASK-BOOT] WHATSAPP_API_URL (dev): {_dev_api}")
+    print(f"🔗 [FLASK-BOOT] WHATSAPP_API_URL_PRODUCTION: {_prod_api}")
+    print(f"✅ [FLASK-BOOT] URL efetiva usada pelo Flask para chamar o Node: {_effective_api}")
+except Exception as _e:
+    print(f"⚠️ [FLASK-BOOT] Falha ao determinar URL efetiva da API WhatsApp: {_e}")
+
+# Validar variáveis de ambiente obrigatórias
+if not Config.SUPABASE_URL or not Config.SUPABASE_KEY:
+    print("ERRO: SUPABASE_URL e SUPABASE_KEY são obrigatórias")
     print("Certifique-se de configurar todas as variáveis de ambiente obrigatórias.")
     exit(1)
 
@@ -73,6 +82,20 @@ app.register_blueprint(contas_pagar_bp)
 app.register_blueprint(push_bp)
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(whatsapp_bp)
+
+# Middleware de log para cada requisição (inclui chamadas do Node)
+@app.before_request
+def log_request_info():
+    try:
+        full_url = request.url
+        method = request.method
+        origin = request.headers.get('Origin')
+        user_agent = request.headers.get('User-Agent')
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        referer = request.headers.get('Referer')
+        print(f"🔍 [FLASK-REQ] {method} {full_url} | IP: {ip} | Origin: {origin} | UA: {user_agent} | Referer: {referer}")
+    except Exception as e:
+        print(f"⚠️ [FLASK-REQ] Falha ao logar requisição: {e}")
 
 @app.route("/")
 def inicio():

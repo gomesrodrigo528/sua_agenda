@@ -1749,6 +1749,12 @@
                 const result = await response.json();
                 console.log('✅ Status atualizado:', result);
                 
+                // Se o status for "finalizado", fechar o chat
+                if (newStatus === 'finalizado') {
+                    console.log('🔒 Conversa finalizada, fechando chat...');
+                    fecharChatFinalizado();
+                }
+                
                 // Atualizar cache e interface
                 await loadChatsByStatus(currentStatus);
                 await loadChatStats();
@@ -1760,6 +1766,44 @@
                 console.error('❌ Erro ao alterar status:', error);
                 alert('Erro ao alterar status: ' + error.message);
             }
+        }
+        
+        // Função para fechar chat quando finalizado
+        function fecharChatFinalizado() {
+            // Limpar o chat atual
+            currentChatId = null;
+            
+            // Esconder a área do chat
+            const chatArea = document.getElementById('chatArea');
+            if (chatArea) {
+                chatArea.style.display = 'none';
+            }
+            
+            // Mostrar apenas a lista de conversas
+            const chatList = document.getElementById('chatList');
+            if (chatList) {
+                chatList.style.display = 'block';
+            }
+            
+            // Limpar o container de mensagens
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
+                messagesContainer.innerHTML = '';
+            }
+            
+            // Limpar o input de mensagem
+            const messageInput = document.getElementById('messageInput');
+            if (messageInput) {
+                messageInput.value = '';
+            }
+            
+            // Esconder mensagens rápidas
+            const quickMessages = document.getElementById('quickMessages');
+            if (quickMessages) {
+                quickMessages.style.display = 'none';
+            }
+            
+            console.log('✅ Chat fechado após finalização');
         }
         
         async function loadChatStats() {

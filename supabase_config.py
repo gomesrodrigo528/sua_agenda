@@ -4,6 +4,11 @@ Configuração centralizada do Supabase
 
 from config import Config
 from supabase import create_client, Client
+from dotenv import load_dotenv
+import os
+
+# Carregar variáveis de ambiente
+load_dotenv()
 
 # Configuração do Supabase usando variáveis de ambiente
 supabase_url = Config.SUPABASE_URL
