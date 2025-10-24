@@ -39,13 +39,13 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Configurações adicionais para templates
-app.config['WHATSAPP_API_URL'] = os.getenv('WHATSAPP_API_URL', 'http://localhost:3000')
+app.config['WHATSAPP_API_URL'] = os.getenv('WHATSAPP_API_URL', 'http://localhost:4000')
 
 # Logar a URL efetiva da API WhatsApp utilizada pelo Flask
 try:
-    _dev_api = os.getenv('WHATSAPP_API_URL', 'http://localhost:3000')
+    _dev_api = os.getenv('WHATSAPP_API_URL', 'http://localhost:4000')
     _prod_api = os.getenv('WHATSAPP_API_URL_PRODUCTION', '')
-    _effective_api = _prod_api if (_prod_api and _prod_api != 'http://localhost:3000') else _dev_api
+    _effective_api = _prod_api if (_prod_api and _prod_api != 'http://localhost:4000') else _dev_api
     print(f"🔗 [FLASK-BOOT] WHATSAPP_API_URL (dev): {_dev_api}")
     print(f"🔗 [FLASK-BOOT] WHATSAPP_API_URL_PRODUCTION: {_prod_api}")
     print(f"✅ [FLASK-BOOT] URL efetiva usada pelo Flask para chamar o Node: {_effective_api}")

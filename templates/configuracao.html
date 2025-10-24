@@ -296,7 +296,7 @@
     </div>
 
     <!-- Informações da Assinatura -->
-    <div class="mb-4">
+    <!-- <div class="mb-4">
         <h4>Informações da Assinatura:</h4>
         <div class="mb-3">
             <label class="form-label">Dias Restantes</label>
@@ -305,7 +305,7 @@
         <a href="/planos-renovacao" class="btn btn-success btn-lg w-100 mt-2" style="font-size: 1.2rem;">
             <i class="bi bi-arrow-repeat"></i> Renovar Plano
         </a>
-    </div>
+    </div> -->
 
 </div>
 {% endblock %}
@@ -320,7 +320,7 @@ const isProduction = currentHost === 'www.suaagenda.fun' || currentHost === 'sua
 // FORÇAR USO DA API DE PRODUÇÃO PARA TESTES (desativado)
 const FORCE_PRODUCTION_API = false;
 
-const WHATSAPP_API_URL = (isProduction || FORCE_PRODUCTION_API) ? 'https://api.suaagenda.fun' : `http://${currentHost}:3000`;
+const WHATSAPP_API_URL = (isProduction || FORCE_PRODUCTION_API) ? 'https://api.suaagenda.fun' : `{{ config.WHATSAPP_API_URL }}`;
 
 console.log('🌐 Host atual:', currentHost);
 console.log('🏭 Ambiente:', isProduction ? 'PRODUÇÃO' : 'DESENVOLVIMENTO');

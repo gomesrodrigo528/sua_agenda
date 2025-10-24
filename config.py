@@ -33,7 +33,7 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx'}
     
     # CORS
-    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
+    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4000', 'http://127.0.0.1:4000']
     
     # Cache
     CACHE_TYPE = 'simple'
@@ -47,7 +47,7 @@ class Config:
     RATELIMIT_DEFAULT = '100 per hour'
     
     # WhatsApp
-    WHATSAPP_API_URL = os.getenv('WHATSAPP_API_URL', 'http://localhost:3000')
+    WHATSAPP_API_URL = os.getenv('WHATSAPP_API_URL', 'http://localhost:4000')
     WHATSAPP_API_URL_PRODUCTION = os.getenv('WHATSAPP_API_URL_PRODUCTION', 'https://api.suaagenda.fun')
     
     # MercadoPago
