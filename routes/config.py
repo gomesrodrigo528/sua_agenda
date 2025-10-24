@@ -35,8 +35,12 @@ def configuracao_empresa():
     
     # Mescla os dados da empresa com as configurações
     empresa.update(config)
-    
-    return render_template('configuracao.html', empresa=empresa)
+
+    # Adicionar configuração do WhatsApp API URL
+    from flask import current_app
+    whatsapp_api_url = current_app.config.get('WHATSAPP_API_URL', 'http://localhost:4000')
+
+    return render_template('configuracao.html', empresa=empresa, config={'WHATSAPP_API_URL': whatsapp_api_url})
 
 # Rota para atualizar os dados da empresa
 @config_bp.route('/configuracao/atualizar', methods=['POST'])
