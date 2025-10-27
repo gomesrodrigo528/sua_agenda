@@ -109,10 +109,7 @@ function renderMenu(containerId) {
                         <a href="/configuracao" class="nav-link text-white"><i class="bi bi-gear"></i> Configurações</a>
                     </li>
 
-                    <!-- Sair -->
-                    <li class="nav-item mb-3">
-                        <a href="/login" class="nav-link text-white"><i class="bi bi-arrow-90deg-up"></i> Sair</a>
-                    </li>
+                    
                 </ul>
             </nav>
             `;
@@ -280,3 +277,4 @@ function setupMenu() {
         }
     });
 }
+
