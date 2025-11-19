@@ -19,7 +19,7 @@ login_bp = Blueprint('login', __name__)
 @login_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
-        return render_template('login.html')
+        return render_template('landing_page.html')
 
     # Obtém os valores do formulário e faz validação inicial
     email = request.form.get('email', '').strip()
@@ -209,4 +209,3 @@ def logout_cliente():
     resp.delete_cookie('id_usuario_cliente')
     resp.delete_cookie('id_empresa')
     return resp
-
